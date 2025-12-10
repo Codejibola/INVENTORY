@@ -8,9 +8,11 @@ import apiFetch from "../utils/apiFetch.js";
 
 export default function Invoices() {
   const [year, setYear] = useState(new Date().getFullYear());
+  const [month, setMonth] = useState(""); // NEW MONTH STATE
   const [years, setYears] = useState([]);
   const [dailySales, setDailySales] = useState([]);
-  const token = localStorage.getItem("token");
+  const [filteredSales, setFilteredSales] = useState([]); // NEW FILTERED DATA
+
   const [menuOpen, setMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [viewModalOpen, setViewModalOpen] = useState(false);
@@ -18,16 +20,30 @@ export default function Invoices() {
   const [selectedDate, setSelectedDate] = useState("");
   const [viewLoading, setViewLoading] = useState(false);
 
+  const token = localStorage.getItem("token");
+
+  /* Pagination */
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  const months = [
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December"
+  ];
+
+  /* GET USER */
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
     if (savedUser) setCurrentUser(JSON.parse(savedUser));
   }, []);
 
+  /* SET YEARS */
   useEffect(() => {
     const current = new Date().getFullYear();
     setYears(Array.from({ length: 5 }, (_, i) => current - i));
   }, []);
 
+  /* FETCH DAILY SALES */
   useEffect(() => {
     if (!token) return;
 
@@ -38,10 +54,57 @@ export default function Invoices() {
         if (!res.ok) throw new Error("Failed to fetch daily sales");
         return res.json();
       })
-      .then((data) => setDailySales(data))
+      .then((data) => {
+        setDailySales(data);
+      })
       .catch((err) => console.error(err));
   }, [year, token]);
 
+  /* APPLY MONTH FILTER */
+  useEffect(() => {
+    let filtered = dailySales;
+
+    if (month !== "") {
+      filtered = filtered.filter((item) => {
+        const dateObj = new Date(item.date);
+        return dateObj.getMonth() === month;
+      });
+    }
+
+    setFilteredSales(filtered);
+    setCurrentPage(1);
+  }, [month, dailySales]);
+
+  /* FORMAT DATE */
+  const formatDate = (dateStr) => {
+    const d = new Date(dateStr);
+    return d.toISOString().split("T")[0];
+  };
+
+  /* VIEW SALES */
+  const handleView = async (date) => {
+    setViewLoading(true);
+    setSelectedDate(date);
+
+    try {
+      const res = await apiFetch(
+        `http://localhost:5000/api/sales/daily/${formatDate(date)}/view`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (!res.ok) throw new Error("Failed to fetch sales");
+
+      const data = await res.json();
+      setSelectedSales(data);
+      setViewModalOpen(true);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setViewLoading(false);
+    }
+  };
+
+  /* DOWNLOAD PDF */
   const handleDownload = async (date) => {
     try {
       const res = await apiFetch(
@@ -65,37 +128,12 @@ export default function Invoices() {
     }
   };
 
-  const formatDate = (dateStr) => {
-    const d = new Date(dateStr);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  };
+  /* PAGINATION */
+  const indexOfLast = currentPage * itemsPerPage;
+  const indexOfFirst = indexOfLast - itemsPerPage;
+  const currentData = filteredSales.slice(indexOfFirst, indexOfLast);
+  const totalPages = Math.ceil(filteredSales.length / itemsPerPage);
 
-  const handleView = async (date) => {
-    setViewLoading(true);
-    setSelectedDate(date);
-
-    try {
-      const res = await apiFetch(
-        `http://localhost:5000/api/sales/daily/${formatDate(date)}/view`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (!res.ok) throw new Error("Failed to fetch sales for this date");
-
-      const data = await res.json();
-      setSelectedSales(data);
-      setViewModalOpen(true);
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setViewLoading(false);
-    }
-  };
-
-  /* Calculate total for selected day */
   const totalForSelectedDate = selectedSales.reduce(
     (acc, s) => acc + s.price * s.quantity,
     0
@@ -109,26 +147,60 @@ export default function Invoices() {
         <Topbar onMenuClick={() => setMenuOpen(true)} userName={currentUser?.name} />
 
         <main className="px-3 sm:px-4 md:px-6 py-6 space-y-6">
-          {/* Year Filter */}
-          <div className="flex flex-wrap gap-3 justify-between items-center mb-4">
-            <label className="text-base sm:text-lg font-semibold text-gray-200 flex items-center gap-2">
-              Select Year:
-              <select
-                value={year}
-                onChange={(e) => setYear(Number(e.target.value))}
-                className="select-year px-4 py-2 rounded bg-[#161b22] border border-[#30363d] 
-                text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600"
-              >
-                {years.map((y) => (
-                  <option key={y} value={y} className="bg-[#0d1117] text-gray-300">
-                    {y}
-                  </option>
-                ))}
-              </select>
-            </label>
+
+          {/* FILTER SECTION */}
+          <div className="flex flex-wrap gap-4 mb-4">
+
+            {/* YEAR DROPDOWN */}
+            <div className="flex flex-col">
+              <label className="mb-1 text-gray-200">Select Year</label>
+              <div className="relative">
+                <select
+                  value={year}
+                  onChange={(e) => setYear(Number(e.target.value))}
+                  className="px-4 py-3 pr-10 rounded bg-[#161b22] 
+                  border border-[#30363d] text-gray-300 appearance-none 
+                  focus:outline-none focus:ring-2 focus:ring-blue-600 w-44"
+                >
+                  {years.map((y) => (
+                    <option key={y} value={y} className="bg-[#0d1117]">
+                      {y}
+                    </option>
+                  ))}
+                </select>
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                 ⌄
+                </span>
+              </div>
+            </div>
+
+            {/* MONTH DROPDOWN (NEW) */}
+            <div className="flex flex-col">
+              <label className="mb-1 text-gray-200">Select Month</label>
+              <div className="relative">
+                <select
+                  value={month}
+                  onChange={(e) => setMonth(Number(e.target.value))}
+                  className="px-4 py-3 pr-10 rounded bg-[#161b22] 
+                  border border-[#30363d] text-gray-300 appearance-none 
+                  focus:outline-none focus:ring-2 focus:ring-blue-600 w-44"
+                >
+                  <option value="">All Months</option>
+                  {months.map((m, idx) => (
+                    <option key={m} value={idx} className="bg-[#0d1117]">
+                      {m}
+                    </option>
+                  ))}
+                </select>
+
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                  ⌄
+                </span>
+              </div>
+            </div>
           </div>
 
-          {/* Sales Table */}
+          {/* TABLE */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -145,37 +217,38 @@ export default function Invoices() {
               </thead>
 
               <tbody>
-                {dailySales.length === 0 ? (
+                {currentData.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="py-6 px-4 text-center text-gray-400">
-                      No sales found for {year}.
+                    <td colSpan="4" className="py-6 text-center text-gray-400">
+                      No sales found.
                     </td>
                   </tr>
                 ) : (
-                  dailySales.map((row, index) => (
+                  currentData.map((row, index) => (
                     <tr
                       key={row.date}
                       className="border-b border-[#30363d] hover:bg-[#1e2530] transition"
                     >
-                      <td className="py-3 px-4">{index + 1}</td>
+                      <td className="py-3 px-4">{indexOfFirst + index + 1}</td>
                       <td className="py-3 px-4">
                         {new Date(row.date).toLocaleDateString()}
                       </td>
                       <td className="py-3 px-4 font-semibold text-blue-400">
                         ₦{Number(row.total).toLocaleString()}
                       </td>
+
                       <td className="py-3 px-4 text-center">
                         <div className="flex items-center justify-center gap-3">
                           <button
                             onClick={() => handleView(row.date)}
-                            className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300"
+                            className="text-blue-400 hover:text-blue-300 flex items-center gap-1"
                           >
                             <Eye size={16} /> View
                           </button>
 
                           <button
                             onClick={() => handleDownload(formatDate(row.date))}
-                            className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300"
+                            className="text-blue-400 hover:text-blue-300 flex items-center gap-1"
                           >
                             <Download size={16} /> PDF
                           </button>
@@ -188,7 +261,42 @@ export default function Invoices() {
             </table>
           </motion.div>
 
-          {/* View Modal */}
+          {/* PAGINATION */}
+          {totalPages > 1 && (
+            <div className="flex justify-center gap-3 mt-4">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => p - 1)}
+                className="px-3 py-1 bg-[#161b22] border border-[#30363d] rounded disabled:opacity-40"
+              >
+                Prev
+              </button>
+
+              {[...Array(totalPages)].map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrentPage(i + 1)}
+                  className={`px-3 py-1 rounded border ${
+                    currentPage === i + 1
+                      ? "bg-blue-600 text-white border-blue-600"
+                      : "bg-[#161b22] border-[#30363d]"
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              ))}
+
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => p + 1)}
+                className="px-3 py-1 bg-[#161b22] border border-[#30363d] rounded disabled:opacity-40"
+              >
+                Next
+              </button>
+            </div>
+          )}
+
+          {/* VIEW MODAL */}
           {viewModalOpen && (
             <div
               className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
@@ -251,7 +359,7 @@ export default function Invoices() {
                       </tbody>
                     </table>
 
-                    {/* Total Amount for Selected Day */}
+                    {/* MODAL TOTAL */}
                     <div className="mt-4 flex justify-end text-lg font-semibold text-blue-400">
                       Total: ₦{totalForSelectedDate.toLocaleString()}
                     </div>

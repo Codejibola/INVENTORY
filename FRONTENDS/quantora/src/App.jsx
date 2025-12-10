@@ -8,6 +8,7 @@ import RecordSales from "./pages/Record_Sales";
 import Maintenance from "./pages/Maintenance";
 import PrivateRoute from "./components/PrivateRoute"; 
 import Notification from "./pages/Notification";
+// import NotesPage from "./pages/Notes.jsx"; 
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
             </PrivateRoute>
           }
         />
+
         <Route
           path="/manage_products"
           element={
@@ -37,6 +39,7 @@ export default function App() {
             </PrivateRoute>
           }
         />
+
         <Route
           path="/invoices"
           element={
@@ -45,6 +48,7 @@ export default function App() {
             </PrivateRoute>
           }
         />
+
         <Route
           path="/recordSales"
           element={
@@ -53,6 +57,7 @@ export default function App() {
             </PrivateRoute>
           }
         />
+
         <Route
           path="/notifications"
           element={
@@ -61,6 +66,16 @@ export default function App() {
             </PrivateRoute>
           }
         />
+
+        {/* ✅ NOTES PAGE (new) */}
+        {/* <Route
+          path="/notes"
+          element={
+            <PrivateRoute>
+              <NotesPage />
+            </PrivateRoute>
+          }
+        /> */}
 
         {/* 404 fallback */}
         <Route

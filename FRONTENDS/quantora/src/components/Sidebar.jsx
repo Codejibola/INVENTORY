@@ -10,6 +10,9 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     { name: "Manage Products", icon: "inventory_2", to: "/Manage_Products" },
     { name: "Record Sales", icon: "edit_note", to: "/recordSales" },
     { name: "Invoices", icon: "receipt_long", to: "/invoices" },
+
+    // ✅ Only addition — Notes
+    { name: "Notes", icon: "note_alt", to: "/notes" },
   ];
 
   const handleLogout = () => {

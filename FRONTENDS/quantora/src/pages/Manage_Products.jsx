@@ -1,4 +1,4 @@
-// eslint-disable-next-line no-unused-vars
+/* eslint-disable no-unused-vars */
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
@@ -139,6 +139,25 @@ export default function ManageProducts() {
     );
   });
 
+  // ------------------------------------------
+  // ✅ GROUP PRODUCTS BY MONTH USING REAL CREATED_AT
+  // ------------------------------------------
+  const months = [
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December"
+  ];
+
+  const productsWithMonth = filteredProducts.map((p) => {
+    const date = new Date(p.created_at); // use actual date
+    const monthName = months[date.getMonth()];
+    return { ...p, monthAdded: monthName, addedDate: date };
+  });
+
+  const groupedByMonth = months.reduce((acc, month) => {
+    acc[month] = productsWithMonth.filter((p) => p.monthAdded === month);
+    return acc;
+  }, {});
+
   return (
     <div className="flex min-h-screen bg-gray-900 text-gray-200">
       <Sidebar isOpen={menuOpen} setIsOpen={setMenuOpen} />
@@ -269,66 +288,71 @@ export default function ManageProducts() {
             </div>
           </div>
 
-          {/* Products Table */}
-          <motion.div
-            className="overflow-x-auto bg-gray-800 text-gray-200 rounded-xl shadow-lg"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <table className="min-w-full text-left text-sm sm:text-base">
-              <thead className="bg-gray-700 text-gray-200">
-                <tr>
-                  <th className="py-3 px-4">Name</th>
-                  <th className="py-3 px-4">Price</th>
-                  <th className="py-3 px-4">Stock</th>
-                  <th className="py-3 px-4">Category</th>
-                  <th className="py-3 px-4 text-center">Actions</th>
-                </tr>
-              </thead>
+          {/* Month Grouped Tables */}
+          {months.map((month) =>
+            groupedByMonth[month]?.length > 0 ? (
+              <div key={month} className="space-y-2">
 
-              <tbody>
-                {filteredProducts.length === 0 && (
-                  <tr>
-                    <td colSpan="5" className="py-4 text-center text-gray-400">
-                      No products found.
-                    </td>
-                  </tr>
-                )}
+                <h2 className="text-xl font-bold text-gray-100 mt-6">
+                  {month}
+                </h2>
 
-                {filteredProducts.map((p) => (
-                  <motion.tr
-                    key={p.id}
-                    className="border-b border-gray-700 hover:bg-gray-700"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                  >
-                    <td className="py-3 px-4">{toTitleCase(p.name)}</td>
-                    <td className="py-3 px-4">₦{Number(p.price).toFixed(2)}</td>
-                    <td className="py-3 px-4">{p.units}</td>
-                    <td className="py-3 px-4">
-                      {toTitleCase(p.category || "")}
-                    </td>
+                <motion.div
+                  className="overflow-x-auto bg-gray-800 text-gray-200 rounded-xl shadow-lg"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <table className="min-w-full text-left text-sm sm:text-base">
+                    <thead className="bg-gray-700 text-gray-200">
+                      <tr>
+                        <th className="py-3 px-4">Name</th>
+                        <th className="py-3 px-4">Price</th>
+                        <th className="py-3 px-4">Stock</th>
+                        <th className="py-3 px-4">Category</th>
+                        <th className="py-3 px-4">Date Added</th>
+                        <th className="py-3 px-4 text-center">Actions</th>
+                      </tr>
+                    </thead>
 
-                    <td className="py-3 px-4 flex justify-center gap-3">
-                      <button
-                        onClick={() => handleEdit(p)}
-                        className="text-blue-400 hover:text-blue-300"
-                      >
-                        <Edit size={18} />
-                      </button>
+                    <tbody>
+                      {groupedByMonth[month].map((p) => (
+                        <motion.tr
+                          key={p.id}
+                          className="border-b border-gray-700 hover:bg-gray-700"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                        >
+                          <td className="py-3 px-4">{toTitleCase(p.name)}</td>
+                          <td className="py-3 px-4">₦{Number(p.price).toFixed(2)}</td>
+                          <td className="py-3 px-4">{p.units}</td>
+                          <td className="py-3 px-4">{toTitleCase(p.category || "")}</td>
+                          <td className="py-3 px-4">
+                            {new Date(p.addedDate).toLocaleDateString()}
+                          </td>
 
-                      <button
-                        onClick={() => handleDelete(p.id)}
-                        className="text-red-500 hover:text-red-400"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
-          </motion.div>
+                          <td className="py-3 px-4 flex justify-center gap-3">
+                            <button
+                              onClick={() => handleEdit(p)}
+                              className="text-blue-400 hover:text-blue-300"
+                            >
+                              <Edit size={18} />
+                            </button>
+
+                            <button
+                              onClick={() => handleDelete(p.id)}
+                              className="text-red-500 hover:text-red-400"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </td>
+                        </motion.tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </motion.div>
+              </div>
+            ) : null
+          )}
 
         </main>
       </div>
