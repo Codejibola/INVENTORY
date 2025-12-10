@@ -15,22 +15,6 @@ import {
 } from "recharts";
 import apiFetch from "../utils/apiFetch";
 
-// Dummy chart data (you can replace with real)
-const data = [
-  { month: "Jan", sales: 250 },
-  { month: "Feb", sales: 220 },
-  { month: "Mar", sales: 260 },
-  { month: "Apr", sales: 290 },
-  { month: "May", sales: 830 },
-  { month: "Jun", sales: 450 },
-  { month: "July", sales: 689 },
-  { month: "Aug", sales: 839 },
-  { month: "Sept", sales: 689 },
-  { month: "Oct", sales: 689 },
-  { month: "Nov", sales: 689 },
-  { month: "Dec", sales: 689 },
-];
-
 export default function Dashboard() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -39,6 +23,7 @@ export default function Dashboard() {
 
   const [latestProduct, setLatestProduct] = useState(null);
   const [latestSale, setLatestSale] = useState(null);
+  const [chartData, setChartData] = useState([]);
 
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
@@ -49,12 +34,21 @@ export default function Dashboard() {
       .toLowerCase()
       .replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
 
+  // Compact number formatter (e.g. 1.2K, 3.4M)
+  const formatShortNumber = (value) => {
+    const num = Number(value) || 0;
+    try {
+      return new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(num);
+    } catch (e) {
+      return num.toLocaleString();
+    }
+  };
+
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
     if (savedUser) setCurrentUser(JSON.parse(savedUser));
 
-    fetchMonthlySales();
-    fetchLatestItems();
+    fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
@@ -82,84 +76,76 @@ export default function Dashboard() {
     }
   }, [monthlySales]);
 
-  // Monthly sales calculation (uses created_at on sales)
-  const fetchMonthlySales = async () => {
+  // Fetch sales, latest sale, chart, and latest product
+  const fetchData = async () => {
     try {
-      const res = await apiFetch("http://localhost:5000/api/sales", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error("Failed to fetch sales");
-      const salesData = await res.json();
-
-      const now = new Date();
-      const currentMonth = now.getMonth();
-      const currentYear = now.getFullYear();
-
-      const total = (Array.isArray(salesData) ? salesData : [])
-        .filter((s) => {
-          if (!s.created_at) return false;
-          const saleDate = new Date(s.created_at);
-          return saleDate.getMonth() === currentMonth && saleDate.getFullYear() === currentYear;
-        })
-        .reduce((sum, s) => sum + Number(s.price || 0) * Number(s.quantity || 0), 0);
-
-      setMonthlySales(total);
-    } catch (err) {
-      console.error("fetchMonthlySales:", err);
-      setMonthlySales(0);
-    }
-  };
-
-  // Latest sale (by created_at) and latest product (by max id)
-  const fetchLatestItems = async () => {
-    try {
-      // SALES - fetch and choose newest by created_at if present, fallback to last element
+      // SALES - fetch all sales
       const salesRes = await apiFetch("http://localhost:5000/api/sales", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (salesRes.ok) {
-        const salesData = await salesRes.json();
-        if (Array.isArray(salesData) && salesData.length > 0) {
-          const hasDates = salesData.some((s) => s.created_at);
-          const latest =
-            hasDates
-              ? [...salesData].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
-              : salesData[salesData.length - 1];
-          setLatestSale(latest);
-        } else {
-          setLatestSale(null);
-        }
+      const salesData = salesRes.ok ? await salesRes.json() : [];
+
+      // Latest Sale
+      if (Array.isArray(salesData) && salesData.length > 0) {
+        const hasDates = salesData.some((s) => s.created_at);
+        const latest =
+          hasDates
+            ? [...salesData].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
+            : salesData[salesData.length - 1];
+        setLatestSale(latest);
       } else {
-        console.error("Failed fetching sales for recent items:", salesRes.status);
+        setLatestSale(null);
       }
 
-      // PRODUCTS - pick product with highest id (reliable even if API re-sorts)
+      // Chart Data - monthly totals
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const months = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+      ];
+      const monthlyTotals = months.map((month, idx) => {
+        const total = (Array.isArray(salesData) ? salesData : [])
+          .filter((s) => {
+            if (!s.created_at) return false;
+            const date = new Date(s.created_at);
+            return date.getMonth() === idx && date.getFullYear() === currentYear;
+          })
+          .reduce((sum, s) => sum + Number(s.price || 0) * Number(s.quantity || 0), 0);
+        return { month, sales: isNaN(total) ? 0 : Number(total) }; // ensure numeric
+      });
+      // debug: inspect chart numbers when troubleshooting y-axis
+      // console.debug('monthlyTotals', monthlyTotals);
+      setChartData(monthlyTotals);
+
+      // Current month total for card
+      const currentMonthTotal = monthlyTotals[now.getMonth()]?.sales || 0;
+      setMonthlySales(currentMonthTotal);
+
+      // PRODUCTS - fetch latest product by max id
       const prodRes = await apiFetch("http://localhost:5000/api/products", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (prodRes.ok) {
-        const prodData = await prodRes.json();
-        if (Array.isArray(prodData) && prodData.length > 0) {
-          // Find max id item
-          let max = prodData[0];
-          for (let i = 1; i < prodData.length; i++) {
-            const item = prodData[i];
-            // ensure id is numeric
-            const idA = Number(item.id ?? item.product_id ?? item._id ?? NaN);
-            const idMax = Number(max.id ?? max.product_id ?? max._id ?? NaN);
-            if (!isNaN(idA) && idA > (isNaN(idMax) ? -Infinity : idMax)) max = item;
-          }
-          setLatestProduct(max);
-        } else {
-          setLatestProduct(null);
+      const prodData = prodRes.ok ? await prodRes.json() : [];
+      if (Array.isArray(prodData) && prodData.length > 0) {
+        let max = prodData[0];
+        for (let i = 1; i < prodData.length; i++) {
+          const item = prodData[i];
+          const idA = Number(item.id ?? item.product_id ?? item._id ?? NaN);
+          const idMax = Number(max.id ?? max.product_id ?? max._id ?? NaN);
+          if (!isNaN(idA) && idA > (isNaN(idMax) ? -Infinity : idMax)) max = item;
         }
+        setLatestProduct(max);
       } else {
-        console.error("Failed fetching products for recent items:", prodRes.status);
+        setLatestProduct(null);
       }
+
     } catch (err) {
-      console.error("fetchLatestItems:", err);
+      console.error("fetchData:", err);
       setLatestSale(null);
       setLatestProduct(null);
+      setMonthlySales(0);
+      setChartData([]);
     }
   };
 
@@ -178,20 +164,10 @@ export default function Dashboard() {
             transition={{ duration: 0.6 }}
             className="grid grid-cols-1 md:grid-cols-4 gap-6"
           >
-            <Card title="Monthly Sales" icon="₦" desc={`₦${displayedSales.toLocaleString()}`} isHighlight />
-            <Card
-              title="Manage your Products"
-              icon="inventory_2"
-              to="/Manage_Products"
-              desc=""
-            />
-            <Card
-              title="Record your Sales"
-              icon="trending_up"
-              to="/recordSales"
-               desc= "Take records of sales made "
-            />
-            <Card title="Invoices" icon="receipt_long" desc="View & manage invoices" to="/invoices"/>
+            <Card title="Monthly Sales" icon="₦" desc={`₦${formatShortNumber(displayedSales)}`} isHighlight />
+            <Card title="Manage your Products" icon="inventory_2" to="/Manage_Products" desc="" />
+            <Card title="Record your Sales" icon="trending_up" to="/recordSales" desc="Take records of sales made" />
+            <Card title="Invoices" icon="receipt_long" desc="View & manage invoices" to="/invoices" />
           </motion.div>
 
           {/* CHART + RECENT ACTIVITIES */}
@@ -205,16 +181,22 @@ export default function Dashboard() {
             >
               <h2 className="text-lg font-semibold mb-4">Sales Overview</h2>
               <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={data}>
-                  <XAxis dataKey="month" stroke="white" />
-                  <YAxis stroke="white" />
-                  <Tooltip />
-                  <Bar dataKey="sales" fill="#3b82f6" radius={[8, 8, 0, 0]} />
-                </BarChart>
+                {chartData.length > 0 ? (
+                  <BarChart data={chartData}>
+                    <XAxis dataKey="month" stroke="white" />
+                    {/* Ensure Y axis scales to data range; use dataMax so axis shows proper max instead of only 0 */}
+                    <YAxis stroke="white" domain={[0, 'dataMax']} tickFormatter={(v) => formatShortNumber(v)} />
+                    <Tooltip formatter={(value) => `₦${formatShortNumber(value)}`} />
+                    <Tooltip />
+                    <Bar dataKey="sales" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                ) : (
+                  <p className="text-white text-center">Loading chart...</p>
+                )}
               </ResponsiveContainer>
             </motion.div>
 
-            {/* Recent Activities Cards (Sleek) */}
+            {/* Recent Activities Cards */}
             <div className="flex flex-col gap-4">
               {/* Latest Sale Card */}
               <motion.div
