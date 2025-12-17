@@ -1,5 +1,4 @@
-// Dashboard.jsx
-// eslint-disable-next-line no-unused-vars
+/* eslint-disable no-unused-vars */
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -15,6 +14,9 @@ import {
 } from "recharts";
 import apiFetch from "../utils/apiFetch";
 
+// SEO
+import { Helmet, HelmetProvider } from "react-helmet-async";
+
 export default function Dashboard() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -28,17 +30,18 @@ export default function Dashboard() {
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
 
-  // Title case helper
   const toTitle = (str = "") =>
     String(str || "")
       .toLowerCase()
       .replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
 
-  // Compact number formatter (e.g. 1.2K, 3.4M)
   const formatShortNumber = (value) => {
     const num = Number(value) || 0;
     try {
-      return new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(num);
+      return new Intl.NumberFormat("en", {
+        notation: "compact",
+        maximumFractionDigits: 1,
+      }).format(num);
     } catch (e) {
       return num.toLocaleString();
     }
@@ -49,10 +52,8 @@ export default function Dashboard() {
     if (savedUser) setCurrentUser(JSON.parse(savedUser));
 
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  // Smooth animation for monthly sales
   useEffect(() => {
     if (monthlySales > 0) {
       let start = 0;
@@ -76,33 +77,27 @@ export default function Dashboard() {
     }
   }, [monthlySales]);
 
-  // Fetch sales, latest sale, chart, and latest product
   const fetchData = async () => {
     try {
-      // SALES - fetch all sales
       const salesRes = await apiFetch("http://localhost:5000/api/sales", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const salesData = salesRes.ok ? await salesRes.json() : [];
 
-      // Latest Sale
       if (Array.isArray(salesData) && salesData.length > 0) {
         const hasDates = salesData.some((s) => s.created_at);
-        const latest =
-          hasDates
-            ? [...salesData].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
-            : salesData[salesData.length - 1];
+        const latest = hasDates
+          ? [...salesData].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
+          : salesData[salesData.length - 1];
         setLatestSale(latest);
       } else {
         setLatestSale(null);
       }
 
-      // Chart Data - monthly totals
       const now = new Date();
       const currentYear = now.getFullYear();
       const months = [
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+        "Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"
       ];
       const monthlyTotals = months.map((month, idx) => {
         const total = (Array.isArray(salesData) ? salesData : [])
@@ -112,17 +107,12 @@ export default function Dashboard() {
             return date.getMonth() === idx && date.getFullYear() === currentYear;
           })
           .reduce((sum, s) => sum + Number(s.price || 0) * Number(s.quantity || 0), 0);
-        return { month, sales: isNaN(total) ? 0 : Number(total) }; // ensure numeric
+        return { month, sales: isNaN(total) ? 0 : Number(total) };
       });
-      // debug: inspect chart numbers when troubleshooting y-axis
-      // console.debug('monthlyTotals', monthlyTotals);
+
       setChartData(monthlyTotals);
+      setMonthlySales(monthlyTotals[now.getMonth()]?.sales || 0);
 
-      // Current month total for card
-      const currentMonthTotal = monthlyTotals[now.getMonth()]?.sales || 0;
-      setMonthlySales(currentMonthTotal);
-
-      // PRODUCTS - fetch latest product by max id
       const prodRes = await apiFetch("http://localhost:5000/api/products", {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -139,7 +129,6 @@ export default function Dashboard() {
       } else {
         setLatestProduct(null);
       }
-
     } catch (err) {
       console.error("fetchData:", err);
       setLatestSale(null);
@@ -150,124 +139,138 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-black flex relative">
-      <Sidebar isOpen={menuOpen} setIsOpen={setMenuOpen} />
+    <HelmetProvider>
+      <Helmet>
+        <title>Dashboard | Quantora</title>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
 
-      <div className="flex-1 flex flex-col">
-        <Topbar onMenuClick={() => setMenuOpen(true)} userName={currentUser?.name} />
+      <div className="min-h-screen bg-black flex relative">
+        <Sidebar isOpen={menuOpen} setIsOpen={setMenuOpen} />
 
-        <main className="flex-1 p-8 space-y-8 text-white">
-          {/* MAIN CARDS */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="grid grid-cols-1 md:grid-cols-4 gap-6"
-          >
-            <Card title="Monthly Sales" icon="₦" desc={`₦${formatShortNumber(displayedSales)}`} isHighlight />
-            <Card title="Manage your Products" icon="inventory_2" to="/Manage_Products" desc="" />
-            <Card title="Record your Sales" icon="trending_up" to="/recordSales" desc="Take records of sales made" />
-            <Card title="Invoices" icon="receipt_long" desc="View & manage invoices" to="/invoices" />
-          </motion.div>
+        <div className="flex-1 flex flex-col">
+          <Topbar onMenuClick={() => setMenuOpen(true)} userName={currentUser?.name} />
 
-          {/* CHART + RECENT ACTIVITIES */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Sales Chart */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.6 }}
-              className="bg-gray-900 rounded-xl shadow p-6 lg:col-span-2 text-white"
-            >
-              <h2 className="text-lg font-semibold mb-4">Sales Overview</h2>
-              <ResponsiveContainer width="100%" height={250}>
-                {chartData.length > 0 ? (
-                  <BarChart data={chartData}>
-                    <XAxis dataKey="month" stroke="white" />
-                    {/* Ensure Y axis scales to data range; use dataMax so axis shows proper max instead of only 0 */}
-                    <YAxis stroke="white" domain={[0, 'dataMax']} tickFormatter={(v) => formatShortNumber(v)} />
-                    <Tooltip formatter={(value) => `₦${formatShortNumber(value)}`} />
-                    <Tooltip />
-                    <Bar dataKey="sales" fill="#3b82f6" radius={[8, 8, 0, 0]} />
-                  </BarChart>
-                ) : (
-                  <p className="text-white text-center">Loading chart...</p>
-                )}
-              </ResponsiveContainer>
-            </motion.div>
-
-            {/* Recent Activities Cards */}
-            <div className="flex flex-col gap-4">
-              {/* Latest Sale Card */}
+          <main className="flex-1 p-8 space-y-8 text-white" aria-label="Dashboard Main Content">
+            {/* MAIN CARDS */}
+            <section aria-label="Quick Action Cards">
               <motion.div
-                whileHover={{ scale: 1.02 }}
-                className="bg-gradient-to-r from-green-600 to-green-800 rounded-xl shadow p-4 cursor-default"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="grid grid-cols-1 md:grid-cols-4 gap-6"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h4 className="text-white font-semibold">Latest Sale</h4>
-                    {latestSale ? (
-                      <>
-                        <p className="text-white font-bold text-lg mt-1">{toTitle(latestSale.product_name)}</p>
-                        <div className="mt-2 text-gray-100 text-sm">
-                          <span className="inline-block mr-3">Qty: {latestSale.quantity}</span>
-                          <span className="inline-block">Unit: ₦{Number(latestSale.price || 0).toLocaleString()}</span>
-                        </div>
-                        <p className="mt-2 text-gray-200 font-semibold">
-                          Total: ₦{(Number(latestSale.price || 0) * Number(latestSale.quantity || 0)).toLocaleString()}
-                        </p>
-                      </>
-                    ) : (
-                      <p className="text-gray-200 mt-1">No sales recorded yet.</p>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <button
-                      onClick={() => navigate("/recordSales")}
-                      className="bg-white/10 hover:bg-white/20 text-white px-3 py-1 rounded"
-                    >
-                      View
-                    </button>
-                  </div>
-                </div>
+                <Card
+                  title="Monthly Sales"
+                  icon="₦"
+                  desc={`₦${formatShortNumber(displayedSales)}`}
+                  isHighlight
+                />
+                <Card title="Manage your Products" icon="inventory_2" to="/Manage_Products" desc="" />
+                <Card title="Record your Sales" icon="trending_up" to="/recordSales" desc="Take records of sales made" />
+                <Card title="Invoices" icon="receipt_long" desc="View & manage invoices" to="/invoices" />
               </motion.div>
+            </section>
 
-              {/* Latest Product Card */}
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-xl shadow p-4 cursor-default"
+            {/* CHART + RECENT ACTIVITIES */}
+            <section aria-label="Sales Overview and Recent Activities" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Sales Chart */}
+              <article
+                aria-label="Monthly Sales Chart"
+                className="bg-gray-900 rounded-xl shadow p-6 lg:col-span-2 text-white"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h4 className="text-white font-semibold">Latest Product</h4>
-                    {latestProduct ? (
-                      <>
-                        <p className="text-white font-bold text-lg mt-1">{toTitle(latestProduct.name)}</p>
-                        <div className="mt-2 text-gray-100 text-sm">
-                          <span className="inline-block mr-3">Stock: {latestProduct.units}</span>
-                          <span className="inline-block">Price: ₦{Number(latestProduct.price || 0).toLocaleString()}</span>
-                        </div>
-                        <p className="mt-2 text-gray-200 text-sm">{latestProduct.category ? toTitle(latestProduct.category) : ""}</p>
-                      </>
-                    ) : (
-                      <p className="text-gray-200 mt-1">No products added yet.</p>
-                    )}
+                <h2 className="text-lg font-semibold mb-4">Sales Overview</h2>
+                <ResponsiveContainer width="100%" height={250}>
+                  {chartData.length > 0 ? (
+                    <BarChart data={chartData}>
+                      <XAxis dataKey="month" stroke="white" />
+                      <YAxis stroke="white" domain={[0, "dataMax"]} tickFormatter={(v) => formatShortNumber(v)} />
+                      <Tooltip formatter={(value) => `₦${formatShortNumber(value)}`} />
+                      <Bar dataKey="sales" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                  ) : (
+                    <p className="text-white text-center">Loading chart...</p>
+                  )}
+                </ResponsiveContainer>
+              </article>
+
+              {/* Recent Activities Cards */}
+              <section aria-label="Recent Activities" className="flex flex-col gap-4">
+                {/* Latest Sale Card */}
+                <article
+                  aria-label="Latest Sale"
+                  className="bg-gradient-to-r from-green-600 to-green-800 rounded-xl shadow p-4 cursor-default"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-white font-semibold">Latest Sale</h3>
+                      {latestSale ? (
+                        <>
+                          <p className="text-white font-bold text-lg mt-1">{toTitle(latestSale.product_name)}</p>
+                          <div className="mt-2 text-gray-100 text-sm">
+                            <span className="inline-block mr-3">Qty: {latestSale.quantity}</span>
+                            <span className="inline-block">Unit: ₦{Number(latestSale.price || 0).toLocaleString()}</span>
+                          </div>
+                          <p className="mt-2 text-gray-200 font-semibold">
+                            Total: ₦{(Number(latestSale.price || 0) * Number(latestSale.quantity || 0)).toLocaleString()}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-gray-200 mt-1">No sales recorded yet.</p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <button
+                        onClick={() => navigate("/recordSales")}
+                        className="bg-white/10 hover:bg-white/20 text-white px-3 py-1 rounded"
+                      >
+                        View
+                      </button>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <button
-                      onClick={() => navigate("/Manage_Products")}
-                      className="bg-white/10 hover:bg-white/20 text-white px-3 py-1 rounded"
-                    >
-                      Manage
-                    </button>
+                </article>
+
+                {/* Latest Product Card */}
+                <article
+                  aria-label="Latest Product"
+                  className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-xl shadow p-4 cursor-default"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-white font-semibold">Latest Product</h3>
+                      {latestProduct ? (
+                        <>
+                          <p className="text-white font-bold text-lg mt-1">{toTitle(latestProduct.name)}</p>
+                          <div className="mt-2 text-gray-100 text-sm">
+                            <span className="inline-block mr-3">Stock: {latestProduct.units}</span>
+                            <span className="inline-block">
+                              Price: ₦{Number(latestProduct.price || 0).toLocaleString()}
+                            </span>
+                          </div>
+                          <p className="mt-2 text-gray-200 text-sm">
+                            {latestProduct.category ? toTitle(latestProduct.category) : ""}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-gray-200 mt-1">No products added yet.</p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <button
+                        onClick={() => navigate("/Manage_Products")}
+                        className="bg-white/10 hover:bg-white/20 text-white px-3 py-1 rounded"
+                      >
+                        Manage
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        </main>
+                </article>
+              </section>
+            </section>
+          </main>
+        </div>
       </div>
-    </div>
+    </HelmetProvider>
   );
 }
 
@@ -275,18 +278,19 @@ export default function Dashboard() {
 function Card({ title, desc, icon, isHighlight, to }) {
   const navigate = useNavigate();
   return (
-    <motion.div
+    <motion.article
       whileHover={{ scale: 1.03 }}
       onClick={() => to && navigate(to)}
       className={`rounded-xl shadow p-6 flex flex-col items-center text-center cursor-pointer hover:shadow-md transition ${
         isHighlight ? "bg-yellow-600 text-white" : "bg-gray-900 text-white"
       }`}
+      aria-label={title}
     >
       <span className="material-icons text-4xl mb-2">{icon}</span>
       <h3 className="font-semibold text-lg mb-1">{title}</h3>
       <p className={`text-sm ${isHighlight ? "text-white text-xl font-bold mt-1" : "text-gray-300 font-medium"}`}>
         {desc}
       </p>
-    </motion.div>
+    </motion.article>
   );
 }

@@ -5,6 +5,7 @@ import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
 import apiFetch from "../utils/apiFetch.js";
 import { Plus, Edit, Trash2 } from "lucide-react";
+import { Helmet } from "react-helmet-async";
 
 export default function ManageProducts() {
   const [products, setProducts] = useState([]);
@@ -139,223 +140,214 @@ export default function ManageProducts() {
     );
   });
 
-  // ------------------------------------------
-  // ✅ GROUP PRODUCTS BY MONTH USING REAL CREATED_AT
-  // ------------------------------------------
   const months = [
     "January","February","March","April","May","June",
     "July","August","September","October","November","December"
   ];
 
   const productsWithMonth = filteredProducts.map((p) => {
-    const date = new Date(p.created_at); // use actual date
-    const monthName = months[date.getMonth()];
-    return { ...p, monthAdded: monthName, addedDate: date };
+    const date = new Date(p.created_at);
+    return { ...p, month: months[date.getMonth()], addedDate: date };
   });
 
-  const groupedByMonth = months.reduce((acc, month) => {
-    acc[month] = productsWithMonth.filter((p) => p.monthAdded === month);
+  const groupedByMonth = months.reduce((acc, m) => {
+    acc[m] = productsWithMonth.filter((p) => p.month === m);
     return acc;
   }, {});
 
   return (
-    <div className="flex min-h-screen bg-gray-900 text-gray-200">
-      <Sidebar isOpen={menuOpen} setIsOpen={setMenuOpen} />
+    <>
+      <Helmet>
+        <title>Manage Products</title>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
 
-      <div className="flex-1 flex flex-col">
-        <Topbar
-          onMenuClick={() => setMenuOpen(true)}
-          userName={currentUser?.name}
-        />
+      <div className="flex min-h-screen bg-gray-900 text-gray-200">
+        <Sidebar isOpen={menuOpen} setIsOpen={setMenuOpen} />
 
-        <main className="px-2 sm:px-4 md:px-6 py-6 space-y-6">
+        <div className="flex-1 flex flex-col">
+          <Topbar
+            onMenuClick={() => setMenuOpen(true)}
+            userName={currentUser?.name}
+          />
 
-          {/* Search + Add button */}
-          <div className="flex flex-wrap justify-between items-center gap-4">
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 min-w-[180px] px-3 py-2 rounded-lg
-              bg-gray-800 border border-gray-700 text-gray-200 
-              focus:ring-2 focus:ring-blue-500"
-            />
+          <main className="px-2 sm:px-4 md:px-6 py-6 space-y-6">
+            <h1 className="sr-only">Manage Products</h1>
 
-            <button
-              onClick={() => {
-                setEditingId(null);
-                setFormData({ name: "", price: "", stock: "", category: "" });
-                setShowForm(true);
-              }}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 
-              rounded-lg hover:bg-blue-700 transition"
-            >
-              <Plus size={18} /> Add Product
-            </button>
-          </div>
-
-          {/* Add/Edit Modal */}
-          {showForm && (
-            <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-              <motion.form
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                onSubmit={handleSaveProduct}
-                className="bg-gray-800 text-gray-200 p-6 rounded-xl w-full max-w-md space-y-4 shadow-xl"
-              >
-                <h2 className="text-xl font-bold">
-                  {editingId ? "Edit Product" : "Add Product"}
-                </h2>
-
-                {error && (
-                  <p className="text-red-400 text-sm">{error}</p>
-                )}
-
+            {/* Search + Add */}
+            <section aria-label="Product actions">
+              <div className="flex flex-wrap justify-between items-center gap-4">
                 <input
                   type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="Name"
-                  className="w-full p-2 rounded bg-gray-900 border border-gray-700"
-                  required
+                  placeholder="Search products..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="flex-1 min-w-[180px] px-3 py-2 rounded-lg
+                  bg-gray-800 border border-gray-700"
                 />
 
-                <input
-                  type="number"
-                  name="price"
-                  value={formData.price}
-                  onChange={handleChange}
-                  placeholder="Price"
-                  className="w-full p-2 rounded bg-gray-900 border border-gray-700"
-                  required
-                />
-
-                <input
-                  type="number"
-                  name="stock"
-                  value={formData.stock}
-                  onChange={(e) => {
-                    const v = Number(e.target.value);
-                    if (v < 1 || isNaN(v)) {
-                      setError("Stock must be a positive number");
-                      setFormData((prev) => ({ ...prev, stock: "" }));
-                      return;
-                    }
-
-                    setError("");
-                    setFormData((prev) => ({ ...prev, stock: v }));
+                <button
+                  onClick={() => {
+                    setEditingId(null);
+                    setFormData({ name: "", price: "", stock: "", category: "" });
+                    setShowForm(true);
                   }}
-                  placeholder="Stock"
-                  className="w-full p-2 rounded bg-gray-900 border border-gray-700"
-                  required
-                />
-
-                <input
-                  type="text"
-                  name="category"
-                  value={formData.category}
-                  onChange={handleChange}
-                  placeholder="Category"
-                  className="w-full p-2 rounded bg-gray-900 border border-gray-700"
-                />
-
-                <div className="flex justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowForm(false)}
-                    className="px-4 py-2 rounded bg-gray-700 hover:bg-gray-600"
-                  >
-                    Cancel
-                  </button>
-
-                  <button
-                    type="submit"
-                    className="px-4 py-2 rounded bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    {editingId ? "Update" : "Save"}
-                  </button>
-                </div>
-              </motion.form>
-            </div>
-          )}
-
-          {/* Remaining Stock Box */}
-          <div className="flex justify-end mb-3">
-            <div className="bg-gray-900 text-white px-4 py-2 rounded-xl shadow-md text-sm font-semibold">
-              Remaining Stock Available: {products.reduce((total, item) => total + item.units, 0)}
-            </div>
-          </div>
-
-          {/* Month Grouped Tables */}
-          {months.map((month) =>
-            groupedByMonth[month]?.length > 0 ? (
-              <div key={month} className="space-y-2">
-
-                <h2 className="text-xl font-bold text-gray-100 mt-6">
-                  {month}
-                </h2>
-
-                <motion.div
-                  className="overflow-x-auto bg-gray-800 text-gray-200 rounded-xl shadow-lg"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg"
                 >
-                  <table className="min-w-full text-left text-sm sm:text-base">
-                    <thead className="bg-gray-700 text-gray-200">
-                      <tr>
-                        <th className="py-3 px-4">Name</th>
-                        <th className="py-3 px-4">Price</th>
-                        <th className="py-3 px-4">Stock</th>
-                        <th className="py-3 px-4">Category</th>
-                        <th className="py-3 px-4">Date Added</th>
-                        <th className="py-3 px-4 text-center">Actions</th>
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      {groupedByMonth[month].map((p) => (
-                        <motion.tr
-                          key={p.id}
-                          className="border-b border-gray-700 hover:bg-gray-700"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                        >
-                          <td className="py-3 px-4">{toTitleCase(p.name)}</td>
-                          <td className="py-3 px-4">₦{Number(p.price).toFixed(2)}</td>
-                          <td className="py-3 px-4">{p.units}</td>
-                          <td className="py-3 px-4">{toTitleCase(p.category || "")}</td>
-                          <td className="py-3 px-4">
-                            {new Date(p.addedDate).toLocaleDateString()}
-                          </td>
-
-                          <td className="py-3 px-4 flex justify-center gap-3">
-                            <button
-                              onClick={() => handleEdit(p)}
-                              className="text-blue-400 hover:text-blue-300"
-                            >
-                              <Edit size={18} />
-                            </button>
-
-                            <button
-                              onClick={() => handleDelete(p.id)}
-                              className="text-red-500 hover:text-red-400"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          </td>
-                        </motion.tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </motion.div>
+                  <Plus size={18} /> Add Product
+                </button>
               </div>
-            ) : null
-          )}
+            </section>
 
-        </main>
+            {/* Add/Edit Modal */}
+            {showForm && (
+              <section
+                aria-label="Add or edit product"
+                className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+              >
+                <motion.form
+                  onSubmit={handleSaveProduct}
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-gray-800 p-6 rounded-xl w-full max-w-md space-y-4"
+                >
+                  <h2 className="text-xl font-bold">
+                    {editingId ? "Edit Product" : "Add Product"}
+                  </h2>
+
+                  {error && <p className="text-red-400 text-sm">{error}</p>}
+
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    placeholder="Name"
+                    className="w-full p-2 rounded bg-gray-900 border border-gray-700"
+                    required
+                  />
+
+                  <input
+                    type="number"
+                    name="price"
+                    value={formData.price}
+                    onChange={handleChange}
+                    placeholder="Unit Price"
+                    className="w-full p-2 rounded bg-gray-900 border border-gray-700"
+                    required
+                  />
+
+                  <input
+                    type="number"
+                    name="stock"
+                    value={formData.stock}
+                    onChange={handleChange}
+                    placeholder="Stock"
+                    className="w-full p-2 rounded bg-gray-900 border border-gray-700"
+                    required
+                  />
+
+                  <input
+                    type="text"
+                    name="category"
+                    value={formData.category}
+                    onChange={handleChange}
+                    placeholder="Category"
+                    className="w-full p-2 rounded bg-gray-900 border border-gray-700"
+                  />
+
+                  <div className="flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowForm(false)}
+                      className="px-4 py-2 rounded bg-gray-700"
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      type="submit"
+                      className="px-4 py-2 rounded bg-green-600 text-white"
+                    >
+                      {editingId ? "Update" : "Save"}
+                    </button>
+                  </div>
+                </motion.form>
+              </section>
+            )}
+
+            {/* Products Tables */}
+            <section aria-label="Products by month">
+              {months.map(
+                (month) =>
+                  groupedByMonth[month]?.length > 0 && (
+                    <article key={month} className="space-y-2">
+                      <h2 className="text-xl font-bold mt-6">{month}</h2>
+
+                      <motion.div
+                        className="overflow-x-auto bg-gray-800 rounded-xl shadow-lg"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                      >
+                        <table className="min-w-full text-left text-sm sm:text-base">
+                          <thead className="bg-gray-700">
+                            <tr>
+                              <th className="py-3 px-4">Name</th>
+                              <th className="py-3 px-4">Unit Price</th>
+                              <th className="py-3 px-4">Stock</th>
+                              <th className="py-3 px-4">Category</th>
+                              <th className="py-3 px-4">Date Added</th>
+                              <th className="py-3 px-4 text-center">Actions</th>
+                            </tr>
+                          </thead>
+
+                          <tbody>
+                            {groupedByMonth[month].map((p) => (
+                              <motion.tr
+                                key={p.id}
+                                className="border-b border-gray-700 hover:bg-gray-700"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                              >
+                                <td className="py-3 px-4">
+                                  {toTitleCase(p.name)}
+                                </td>
+                                <td className="py-3 px-4">
+                                  ₦{Number(p.price).toFixed(2)}
+                                </td>
+                                <td className="py-3 px-4">{p.units}</td>
+                                <td className="py-3 px-4">
+                                  {toTitleCase(p.category || "")}
+                                </td>
+                                <td className="py-3 px-4">
+                                  {new Date(p.addedDate).toLocaleDateString()}
+                                </td>
+                                <td className="py-3 px-4 flex justify-center gap-3">
+                                  <button
+                                    onClick={() => handleEdit(p)}
+                                    className="text-blue-400 hover:text-blue-300"
+                                  >
+                                    <Edit size={18} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(p.id)}
+                                    className="text-red-500 hover:text-red-400"
+                                  >
+                                    <Trash2 size={18} />
+                                  </button>
+                                </td>
+                              </motion.tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </motion.div>
+                    </article>
+                  )
+              )}
+            </section>
+          </main>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
