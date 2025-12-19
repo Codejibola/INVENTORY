@@ -22,10 +22,10 @@ export default function Dashboard() {
   const [currentUser, setCurrentUser] = useState(null);
   const [monthlySales, setMonthlySales] = useState(0);
   const [displayedSales, setDisplayedSales] = useState(0);
-
   const [latestProduct, setLatestProduct] = useState(null);
   const [latestSale, setLatestSale] = useState(null);
   const [chartData, setChartData] = useState([]);
+  const [monthlyProfitLoss, setMonthlyProfitLoss] = useState(0);
 
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
@@ -79,6 +79,7 @@ export default function Dashboard() {
 
   const fetchData = async () => {
     try {
+      // Fetch sales
       const salesRes = await apiFetch("http://localhost:5000/api/sales", {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -94,11 +95,23 @@ export default function Dashboard() {
         setLatestSale(null);
       }
 
-      const now = new Date();
-      const currentYear = now.getFullYear();
-      const months = [
-        "Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"
-      ];
+      // Profit & Loss
+        // Current date (used for monthly calculations)
+        const now = new Date();
+        const currentYear = now.getFullYear();
+
+        // Profit & Loss for the current month (uses `profit_loss` returned by API)
+        const currentMonthIdx = now.getMonth();
+        const profitLoss = (Array.isArray(salesData) ? salesData : [])
+          .filter((s) => {
+            if (!s.created_at) return false;
+            const date = new Date(s.created_at);
+            return date.getMonth() === currentMonthIdx && date.getFullYear() === currentYear;
+          })
+          .reduce((acc, s) => acc + Number(s.profit_loss ?? s.profit ?? 0), 0);
+
+        setMonthlyProfitLoss(profitLoss);
+      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
       const monthlyTotals = months.map((month, idx) => {
         const total = (Array.isArray(salesData) ? salesData : [])
           .filter((s) => {
@@ -113,6 +126,7 @@ export default function Dashboard() {
       setChartData(monthlyTotals);
       setMonthlySales(monthlyTotals[now.getMonth()]?.sales || 0);
 
+      // Fetch products
       const prodRes = await apiFetch("http://localhost:5000/api/products", {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -135,6 +149,7 @@ export default function Dashboard() {
       setLatestProduct(null);
       setMonthlySales(0);
       setChartData([]);
+      setMonthlyProfitLoss(0);
     }
   };
 
@@ -196,6 +211,27 @@ export default function Dashboard() {
 
               {/* Recent Activities Cards */}
               <section aria-label="Recent Activities" className="flex flex-col gap-4">
+                {/* Profit & Loss Card */}
+                <article
+                  aria-label="Profit & Loss"
+                  className="rounded-xl shadow p-4 cursor-default bg-gray-900 text-white"
+                >
+                  <div>
+                    <h3 className="text-white font-semibold">Profit & Loss</h3>
+                    <p className={`font-bold text-lg mt-1 ${
+                      monthlyProfitLoss > 0
+                        ? "text-green-400"
+                        : monthlyProfitLoss < 0
+                        ? "text-red-400"
+                        : "text-gray-300"
+                    }`}>
+                      {monthlyProfitLoss < 0
+                        ? `-₦${Math.abs(monthlyProfitLoss).toLocaleString()}`
+                        : `₦${monthlyProfitLoss.toLocaleString()}`}
+                    </p>
+                  </div>
+                </article>
+
                 {/* Latest Sale Card */}
                 <article
                   aria-label="Latest Sale"
