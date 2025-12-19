@@ -1,4 +1,4 @@
-// eslint-disable-next-line
+/* eslint-disable-next-line */
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -7,12 +7,15 @@ import bg from "../assets/inventory1.jpg";
 
 export default function Register() {
   const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
+
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -26,6 +29,11 @@ export default function Register() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+
+    if (!acceptedTerms) {
+      setError("You must agree to the Terms and Privacy Policy to continue.");
+      return;
+    }
 
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
@@ -72,13 +80,9 @@ export default function Register() {
         className="flex items-center justify-center min-h-screen bg-black p-4 bg-cover bg-center relative"
         style={{ backgroundImage: `url(${bg})` }}
       >
-        {/* Background overlay */}
         <div className="absolute inset-0 bg-black/70" aria-hidden="true" />
 
-        <section
-          aria-labelledby="register-heading"
-          className="relative z-10 w-full max-w-md"
-        >
+        <section className="relative z-10 w-full max-w-md">
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
@@ -86,7 +90,6 @@ export default function Register() {
             className="p-8 rounded-xl shadow-2xl bg-white/20 backdrop-blur-sm border border-white/20"
           >
             <motion.h1
-              id="register-heading"
               initial={{ scale: 0.8 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
@@ -115,7 +118,7 @@ export default function Register() {
                 value={formData.name}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 rounded-lg border border-blue-400 bg-white/90 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600"
+                className="w-full px-4 py-2 rounded-lg border border-blue-400 bg-white/90 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 initial={{ x: -30, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.1 }}
@@ -129,7 +132,7 @@ export default function Register() {
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 rounded-lg border border-blue-400 bg-white/90 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600"
+                className="w-full px-4 py-2 rounded-lg border border-blue-400 bg-white/90 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 initial={{ x: -30, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.2 }}
@@ -149,32 +152,14 @@ export default function Register() {
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 rounded-lg border border-blue-400 bg-white/90 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600"
+                  className="w-full px-4 py-2 rounded-lg border border-blue-400 bg-white/90 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-
                 <button
                   type="button"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-600"
                 >
-                  {/* icons unchanged */}
-                  {showPassword ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none"
-                      viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                        d="M3 3l18 18M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10
-                        0-1.42.294-2.77.825-4" />
-                    </svg>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none"
-                      viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                        d="M1.5 12s4.5-7.5 10.5-7.5S22.5 12 22.5 12
-                        18 19.5 12 19.5 1.5 12 1.5 12z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                  )}
+                  {showPassword ? "Hide" : "Show"}
                 </button>
               </motion.div>
 
@@ -192,37 +177,67 @@ export default function Register() {
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 rounded-lg border border-blue-400 bg-white/90 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600"
+                  className="w-full px-4 py-2 rounded-lg border border-blue-400 bg-white/90 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-
                 <button
                   type="button"
-                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  onClick={() =>
+                    setShowConfirmPassword(!showConfirmPassword)
+                  }
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-600"
                 >
-                  {showConfirmPassword ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none"
-                      viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                        d="M3 3l18 18" />
-                    </svg>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none"
-                      viewBox="0 0 24 24" stroke="currentColor">
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                  )}
+                  {showConfirmPassword ? "Hide" : "Show"}
                 </button>
               </motion.div>
 
+              {/* Terms Checkbox */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.45 }}
+                className="flex items-start gap-2 text-sm text-gray-200"
+              >
+                <input
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  className="mt-1 accent-blue-500"
+                />
+                <span>
+                  I agree to Quantora’s{" "}
+                  <a
+                    href="/terms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:underline"
+                  >
+                    Terms & Conditions
+                  </a>{" "}
+                  and{" "}
+                  <a
+                    href="/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:underline"
+                  >
+                    Privacy Policy
+                  </a>
+                  .
+                </span>
+              </motion.div>
+
+              {/* Submit */}
               <motion.button
-                whileHover={{ scale: loading ? 1 : 1.05 }}
-                whileTap={{ scale: loading ? 1 : 0.95 }}
+                whileHover={{
+                  scale: loading || !acceptedTerms ? 1 : 1.05,
+                }}
+                whileTap={{
+                  scale: loading || !acceptedTerms ? 1 : 0.95,
+                }}
                 type="submit"
-                disabled={loading}
-                className={`w-full py-2 mt-4 font-semibold text-white rounded-lg shadow-md transition ${
-                  loading
+                disabled={loading || !acceptedTerms}
+                className={`w-full py-2 mt-4 font-semibold text-white rounded-lg transition ${
+                  loading || !acceptedTerms
                     ? "bg-blue-500/60 cursor-not-allowed"
                     : "bg-blue-600 hover:bg-blue-700"
                 }`}

@@ -66,24 +66,12 @@ export default function RecordSales() {
     if (!product) return setError("Invalid product selected.");
 
     if (quantity > product.units) {
-      return setError(`Only ${product.units} units left. You cannot sell ${quantity}.`);
+      return setError(`Only ${product.units} units left.`);
     }
 
     setLoading(true);
 
     try {
-      await apiFetch("http://localhost:5000/api/updateStock", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          productId: Number(selected),
-          quantity: Number(quantity),
-        }),
-      });
-
       await apiFetch("http://localhost:5000/api/sales", {
         method: "POST",
         headers: {
@@ -110,7 +98,10 @@ export default function RecordSales() {
     }
   };
 
-  const totalToday = sales.reduce((acc, s) => acc + s.price * s.quantity, 0);
+  const totalToday = sales.reduce(
+    (acc, s) => acc + s.price * s.quantity,
+    0
+  );
 
   return (
     <>
@@ -123,158 +114,134 @@ export default function RecordSales() {
         <Sidebar isOpen={menuOpen} setIsOpen={setMenuOpen} />
 
         <div className="flex-1 flex flex-col">
-          <header>
-            <Topbar
-              onMenuClick={() => setMenuOpen(true)}
-              userName={currentUser?.name}
-            />
-          </header>
+          <Topbar
+            onMenuClick={() => setMenuOpen(true)}
+            userName={currentUser?.name}
+          />
 
           <main className="p-4 sm:p-6 space-y-6">
-            <h1 className="sr-only">Record Sales</h1>
-
             {error && (
-              <section aria-live="polite">
-                <p className="text-red-400 text-center font-medium">{error}</p>
-              </section>
+              <p className="text-red-400 text-center font-medium">{error}</p>
             )}
 
-            {/* Sales Entry */}
-            <section aria-labelledby="record-sale-heading">
-              <motion.form
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                onSubmit={handleSubmit}
-                className="bg-[#1e293b] border border-gray-700 rounded-xl shadow p-4 sm:p-6 max-w-xl w-full mx-auto space-y-4"
+            {/* Record Sale */}
+            <motion.form
+              onSubmit={handleSubmit}
+              className="bg-[#1e293b] border border-gray-700 rounded-xl p-6 max-w-xl mx-auto space-y-4"
+            >
+              <h2 className="text-lg font-semibold text-white">Record Sale</h2>
+
+              <select
+                value={selected}
+                onChange={(e) => setSelected(e.target.value)}
+                className="w-full border border-gray-600 bg-[#0f172a] rounded px-3 py-2"
               >
-                <h2
-                  id="record-sale-heading"
-                  className="text-lg font-semibold text-white"
-                >
-                  Record Sale
-                </h2>
+                <option value="">-- Select Product --</option>
+                {products.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} (Stock: {p.units})
+                  </option>
+                ))}
+              </select>
 
-                <label className="block">
-                  <span className="text-sm text-gray-300">Product</span>
-                  <select
-                    value={selected}
-                    onChange={(e) => setSelected(e.target.value)}
-                    className="mt-1 w-full border border-gray-600 bg-[#0f172a] text-gray-200 rounded px-3 pr-12 py-2"
-                  >
-
-                    <option value="">-- Select Product --</option>
-                    {products.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name.charAt(0).toUpperCase() + p.name.slice(1)} (Stock:{" "}
-                        {p.units})
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <label className="block">
-                    <span className="text-sm text-gray-300">Quantity</span>
-                    <input
-                      type="number"
-                      min="1"
-                      value={quantity}
-                      onChange={(e) => setQuantity(Number(e.target.value))}
-                      className="mt-1 w-full border border-gray-600 bg-[#0f172a] text-gray-200 rounded px-3 py-2"
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="text-sm text-gray-300">Unit Price (₦)</span>
-                    <input
-                      type="number"
-                      min="1"
-                      step="0.01"
-                      value={price}
-                      onChange={(e) => setPrice(Number(e.target.value))}
-                      className="mt-1 w-full border border-gray-600 bg-[#0f172a] text-gray-200 rounded px-3 py-2"
-                    />
-                  </label>
-                </div>
-
-                <button
-                  disabled={loading}
-                  className={`w-full py-2 rounded font-semibold mt-2 transition-colors ${
-                    loading
-                      ? "bg-gray-600 text-gray-400"
-                      : "bg-blue-600 text-white hover:bg-blue-500"
-                  }`}
-                >
-                  {loading ? "Saving…" : "Add Sale"}
-                </button>
-              </motion.form>
-            </section>
-
-            {/* Daily Total */}
-            <section aria-label="Today's total sales" className="flex justify-end">
-              <div className="bg-[#1e293b] border border-gray-700 rounded-xl px-4 py-2 shadow font-semibold">
-                Today's Total Sales: ₦{totalToday.toLocaleString()}
+              <div className="grid grid-cols-2 gap-4">
+                <input
+                  type="number"
+                  min="1"
+                  value={quantity}
+                  onChange={(e) => setQuantity(Number(e.target.value))}
+                  className="border border-gray-600 bg-[#0f172a] rounded px-3 py-2"
+                />
+                <input
+                  type="number"
+                  min="1"
+                  value={price}
+                  onChange={(e) => setPrice(Number(e.target.value))}
+                  className="border border-gray-600 bg-[#0f172a] rounded px-3 py-2"
+                />
               </div>
-            </section>
+
+              <button
+                disabled={loading}
+                className={`w-full py-2 rounded font-semibold ${
+                  loading
+                    ? "bg-gray-600 text-gray-400"
+                    : "bg-blue-600 hover:bg-blue-500"
+                }`}
+              >
+                {loading ? "Saving…" : "Add Sale"}
+              </button>
+            </motion.form>
 
             {/* Sales Table */}
-            <section aria-labelledby="sales-table-heading">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="overflow-x-auto bg-[#1e293b] border border-gray-700 rounded-xl shadow"
-              >
-                <h2 id="sales-table-heading" className="sr-only">
-                  Today's Sales Table
-                </h2>
+            <div className="overflow-x-auto bg-[#1e293b] border border-gray-700 rounded-xl">
+              <table className="min-w-full text-sm">
+                <thead className="bg-[#0f172a]">
+                  <tr>
+                    <th className="px-4 py-2">#</th>
+                    <th className="px-4 py-2">Product</th>
+                    <th className="px-4 py-2">Qty</th>
+                    <th className="px-4 py-2 text-right">Price</th>
+                    <th className="px-4 py-2 text-right">Total</th>
+                    <th className="px-4 py-2 text-right">Profit / Loss</th>
+                    <th className="px-4 py-2">Date</th>
+                  </tr>
+                </thead>
 
-                <table className="min-w-full table-auto text-sm border-collapse">
-                  <thead className="bg-[#0f172a] border-b border-gray-700">
+                <tbody>
+                  {sales.length === 0 ? (
                     <tr>
-                      <th scope="col" className="py-2 px-4 text-left">S/N</th>
-                      <th scope="col" className="py-2 px-4 text-left">Product</th>
-                      <th scope="col" className="py-2 px-4 text-left">Qty</th>
-                      <th scope="col" className="py-2 px-4 text-right">Price</th>
-                      <th scope="col" className="py-2 px-4 text-right">Total</th>
-                      <th scope="col" className="py-2 px-4 text-left">Date</th>
+                      <td colSpan="7" className="py-6 text-center text-gray-400">
+                        No sales today.
+                      </td>
                     </tr>
-                  </thead>
+                  ) : (
+                    sales.map((s, i) => {
+                      const profitLoss = Number(s.profit_loss || 0);
 
-                  <tbody>
-                    {sales.length === 0 ? (
-                      <tr>
-                        <td colSpan="6" className="py-6 text-center text-gray-400">
-                          No sales recorded today.
-                        </td>
-                      </tr>
-                    ) : (
-                      sales.map((s, i) => (
+                      return (
                         <tr
                           key={s.id}
-                          className="border-b border-gray-700 hover:bg-[#0f172a]"
+                          className="border-t border-gray-700"
                         >
-                          <th scope="row" className="py-2 px-4">{i + 1}</th>
-                          <td className="py-2 px-4">
-                            {s.product_name.charAt(0).toUpperCase() +
-                              s.product_name.slice(1)}
-                          </td>
-                          <td className="py-2 px-4">{s.quantity}</td>
-                          <td className="py-2 px-4 text-right">
+                          <td className="px-4 py-2">{i + 1}</td>
+                          <td className="px-4 py-2">{s.product_name}</td>
+                          <td className="px-4 py-2">{s.quantity}</td>
+                          <td className="px-4 py-2 text-right">
                             ₦{Number(s.price).toLocaleString()}
                           </td>
-                          <td className="py-2 px-4 text-right font-semibold">
+                          <td className="px-4 py-2 text-right font-semibold">
                             ₦{(s.price * s.quantity).toLocaleString()}
                           </td>
-                          <td className="py-2 px-4">
+                          <td
+                            className={`px-4 py-2 text-right font-semibold ${
+                              profitLoss > 0
+                                ? "text-green-400"
+                                : profitLoss < 0
+                                ? "text-red-400"
+                                : "text-gray-300"
+                            }`}
+                          >
+                            {profitLoss < 0
+                              ? `-₦${Math.abs(profitLoss).toLocaleString()}`
+                              : profitLoss > 0
+                              ? `+₦${profitLoss.toLocaleString()}`
+                              : `₦0`}
+                          </td>
+                          <td className="px-4 py-2">
                             {new Date(s.created_at).toLocaleString()}
                           </td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </motion.div>
-            </section>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="text-right font-semibold">
+              Today’s Total Sales: ₦{totalToday.toLocaleString()}
+            </div>
           </main>
         </div>
       </div>

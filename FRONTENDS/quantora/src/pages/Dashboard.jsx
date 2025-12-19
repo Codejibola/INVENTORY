@@ -166,7 +166,7 @@ export default function Dashboard() {
                   desc={`₦${formatShortNumber(displayedSales)}`}
                   isHighlight
                 />
-                <Card title="Manage your Products" icon="inventory_2" to="/Manage_Products" desc="" />
+                <Card title="Manage your Products" icon="inventory_2" to="/Manage_Products" desc="View, add, edit, and delete products" />
                 <Card title="Record your Sales" icon="trending_up" to="/recordSales" desc="Take records of sales made" />
                 <Card title="Invoices" icon="receipt_long" desc="View & manage invoices" to="/invoices" />
               </motion.div>

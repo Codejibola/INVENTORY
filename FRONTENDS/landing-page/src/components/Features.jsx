@@ -40,20 +40,23 @@ const FEATURES = [
 
 export default function Features() {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
 
-  /* Auto-slide */
+  /* Auto slideshow */
   useEffect(() => {
+    if (isPaused) return;
+
     const interval = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % FEATURES.length);
     }, 5000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [isPaused]);
 
   const active = FEATURES[activeIndex];
 
   return (
-    <section className="bg-zinc-950 text-zinc-100 py-28">
+    <section id="features" className="bg-zinc-950 text-zinc-100 py-28">
       <div className="max-w-7xl mx-auto px-6">
 
         {/* Header */}
@@ -62,8 +65,8 @@ export default function Features() {
             Powerful Inventory Management Features
           </h2>
           <p className="text-zinc-400 text-lg">
-            See how Quantora helps you manage inventory, track stock, and make
-            smarter decisions through a clean, modern interface.
+            Experience how Quantora simplifies inventory control through a
+            modern, intuitive interface.
           </p>
         </div>
 
@@ -89,18 +92,40 @@ export default function Features() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
 
           {/* Screenshot Slideshow */}
-          <AnimatePresence mode="wait">
-            <motion.img
-              key={active.image}
-              src={active.image}
-              alt={active.alt}
-              className="rounded-xl border border-zinc-800 shadow-2xl"
-              initial={{ opacity: 0, x: 60 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -60 }}
-              transition={{ duration: 0.5, ease: "easeInOut" }}
-            />
-          </AnimatePresence>
+          <div
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
+            className="relative"
+          >
+            <AnimatePresence mode="wait">
+              <motion.img
+                key={active.image}
+                src={active.image}
+                alt={active.alt}
+                className="rounded-xl border border-zinc-800 shadow-2xl"
+                initial={{ opacity: 0, x: 60 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -60 }}
+                transition={{ duration: 0.5, ease: "easeInOut" }}
+              />
+            </AnimatePresence>
+
+            {/* Progress Dots */}
+            <div className="flex justify-center gap-2 mt-6">
+              {FEATURES.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setActiveIndex(index)}
+                  className={`h-2.5 rounded-full transition-all
+                    ${
+                      index === activeIndex
+                        ? "w-8 bg-blue-500"
+                        : "w-2.5 bg-zinc-700 hover:bg-zinc-500"
+                    }`}
+                />
+              ))}
+            </div>
+          </div>
 
           {/* Text */}
           <AnimatePresence mode="wait">

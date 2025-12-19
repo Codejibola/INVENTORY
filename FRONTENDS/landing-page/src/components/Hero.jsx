@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 
 export default function Hero() {
   return (
-    <section className="bg-zinc-950 text-zinc-100 pt-32 pb-24">
+    <section id="hero" className="bg-zinc-950 text-zinc-100 pt-32 pb-24">
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
 
         <motion.div
@@ -12,7 +12,7 @@ export default function Hero() {
           transition={{ duration: 0.6 }}
         >
           <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-6">
-            Trade, Manage, and Track Inventory with Confidence
+           Quantora — Trade, Manage, and Track Inventory with Confidence
           </h1>
 
           <p className="text-lg text-zinc-400 mb-8">

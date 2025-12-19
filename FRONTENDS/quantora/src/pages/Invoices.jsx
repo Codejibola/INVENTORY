@@ -60,14 +60,19 @@ export default function Invoices() {
   // Filter sales by month
   useEffect(() => {
     let filtered = dailySales;
+
     if (month !== "") {
-      filtered = filtered.filter((item) => new Date(item.date).getMonth() === month);
+      filtered = filtered.filter(
+        (item) => new Date(item.date).getMonth() === month
+      );
     }
+
     setFilteredSales(filtered);
     setCurrentPage(1);
   }, [month, dailySales]);
 
-  const formatDate = (dateStr) => new Date(dateStr).toISOString().split("T")[0];
+  const formatDate = (dateStr) =>
+    new Date(dateStr).toLocaleDateString("en-CA");
 
   // View daily sales
   const handleView = async (date) => {
@@ -141,171 +146,196 @@ export default function Invoices() {
           <main className="px-3 sm:px-4 md:px-6 py-6 space-y-6">
             <h1 className="text-2xl font-semibold text-white mb-4">Invoices</h1>
 
-            {/* Filter */}
-            <section className="flex flex-wrap gap-4 mb-4" aria-label="Filter Sales by Year and Month">
+            {/* Filters */}
+            <section className="flex flex-wrap gap-4 mb-4">
+              {/* Year */}
               <div className="flex flex-col">
                 <label className="mb-1 text-gray-200">Select Year</label>
                 <div className="relative">
                   <select
                     value={year}
                     onChange={(e) => setYear(Number(e.target.value))}
-                    className="px-4 py-3 pr-10 rounded bg-[#161b22] border border-[#30363d] text-gray-300 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-600 w-44"
+                    className="px-4 py-3 pr-12 rounded bg-[#161b22] border border-[#30363d] text-gray-300 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-600 w-44"
                   >
-                    {years.map((y) => <option key={y} value={y} className="bg-[#0d1117]">{y}</option>)}
+                    {years.map((y) => (
+                      <option key={y} value={y} className="bg-[#0d1117]">
+                        {y}
+                      </option>
+                    ))}
                   </select>
-                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">⌄</span>
+                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
+                    ⌄
+                  </span>
                 </div>
               </div>
 
+              {/* Month */}
               <div className="flex flex-col">
                 <label className="mb-1 text-gray-200">Select Month</label>
                 <div className="relative">
                   <select
                     value={month}
-                    onChange={(e) => setMonth(Number(e.target.value))}
-                    className="px-4 py-3 pr-10 rounded bg-[#161b22] border border-[#30363d] text-gray-300 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-600 w-44"
+                    onChange={(e) =>
+                      setMonth(e.target.value === "" ? "" : Number(e.target.value))
+                    }
+                    className="px-4 py-3 pr-12 rounded bg-[#161b22] border border-[#30363d] text-gray-300 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-600 w-44"
                   >
                     <option value="">All Months</option>
-                    {months.map((m, idx) => <option key={m} value={idx} className="bg-[#0d1117]">{m}</option>)}
+                    {months.map((m, idx) => (
+                      <option key={m} value={idx} className="bg-[#0d1117]">
+                        {m}
+                      </option>
+                    ))}
                   </select>
-                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">⌄</span>
+                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
+                    ⌄
+                  </span>
                 </div>
               </div>
             </section>
 
             {/* Table */}
-            <section aria-label="Invoices Table">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="overflow-x-auto bg-[#161b22] rounded-xl shadow-md border border-[#30363d]"
-              >
-                <table className="min-w-full text-sm sm:text-base border-collapse text-gray-300">
-                  <thead>
-                    <tr className="bg-blue-700 text-white text-left">
-                      <th className="py-3 px-4">S/N</th>
-                      <th className="py-3 px-4">Date</th>
-                      <th className="py-3 px-4">Amount</th>
-                      <th className="py-3 px-4 text-center">Actions</th>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="overflow-x-auto bg-[#161b22] rounded-xl shadow-md border border-[#30363d]"
+            >
+              <table className="min-w-full text-sm sm:text-base text-gray-300">
+                <thead>
+                  <tr className="bg-blue-700 text-white text-left">
+                    <th className="py-3 px-4">S/N</th>
+                    <th className="py-3 px-4">Date</th>
+                    <th className="py-3 px-4">Amount</th>
+                    <th className="py-3 px-4 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentData.length === 0 ? (
+                    <tr>
+                      <td colSpan="4" className="py-6 text-center text-gray-400">
+                        No sales found.
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {currentData.length === 0 ? (
-                      <tr><td colSpan="4" className="py-6 text-center text-gray-400">No sales found.</td></tr>
-                    ) : currentData.map((row, index) => (
-                      <tr key={row.date} className="border-b border-[#30363d] hover:bg-[#1e2530] transition">
-                        <td className="py-3 px-4">{indexOfFirst + index + 1}</td>
-                        <td className="py-3 px-4">{new Date(row.date).toLocaleDateString()}</td>
-                        <td className="py-3 px-4 font-semibold text-blue-400">₦{Number(row.total).toLocaleString()}</td>
+                  ) : (
+                    currentData.map((row, index) => (
+                      <tr
+                        key={row.date}
+                        className="border-b border-[#30363d] hover:bg-[#1e2530]"
+                      >
+                        <td className="py-3 px-4">
+                          {indexOfFirst + index + 1}
+                        </td>
+                        <td className="py-3 px-4">
+                          {new Date(row.date).toLocaleDateString()}
+                        </td>
+                        <td className="py-3 px-4 font-semibold text-blue-400">
+                          ₦{Number(row.total_sales ?? 0).toLocaleString()}
+                        </td>
                         <td className="py-3 px-4 text-center">
-                          <div className="flex items-center justify-center gap-3">
+                          <div className="flex justify-center gap-3">
                             <button
+                              disabled={viewLoading}
                               onClick={() => handleView(row.date)}
-                              className="text-blue-400 hover:text-blue-300 flex items-center gap-1"
-                            ><Eye size={16}/> View</button>
+                              className="text-blue-400 hover:text-blue-300 flex items-center gap-1 disabled:opacity-40"
+                            >
+                              <Eye size={16} /> View
+                            </button>
 
                             <button
                               onClick={() => handleDownload(formatDate(row.date))}
                               className="text-blue-400 hover:text-blue-300 flex items-center gap-1"
-                            ><Download size={16}/> PDF</button>
+                            >
+                              <Download size={16} /> PDF
+                            </button>
                           </div>
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </motion.div>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex justify-center gap-3 mt-4">
-                  <button
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage((p) => p - 1)}
-                    className="px-3 py-1 bg-[#161b22] border border-[#30363d] rounded disabled:opacity-40"
-                  >Prev</button>
-                  {[...Array(totalPages)].map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setCurrentPage(i + 1)}
-                      className={`px-3 py-1 rounded border ${currentPage === i + 1 ? "bg-blue-600 text-white border-blue-600" : "bg-[#161b22] border-[#30363d]"}`}
-                    >{i + 1}</button>
-                  ))}
-                  <button
-                    disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage((p) => p + 1)}
-                    className="px-3 py-1 bg-[#161b22] border border-[#30363d] rounded disabled:opacity-40"
-                  >Next</button>
-                </div>
-              )}
-            </section>
-
-            {/* View Modal */}
-            {viewModalOpen && (
-              <section
-                aria-label={`Sales details for ${new Date(selectedDate).toLocaleDateString()}`}
-                className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
-                onClick={() => setViewModalOpen(false)}
-              >
-                <motion.article
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-[#0d1117] text-gray-300 rounded-xl shadow-lg w-full max-w-3xl p-6 overflow-auto max-h-[80vh]"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold">
-                      Sales for {new Date(selectedDate).toLocaleDateString()}
-                    </h2>
-                    <button onClick={() => setViewModalOpen(false)} className="text-gray-400 hover:text-red-600">Close</button>
-                  </div>
-
-                  {viewLoading ? (
-                    <p className="text-center py-6">Loading...</p>
-                  ) : selectedSales.length === 0 ? (
-                    <p className="text-center py-6 text-gray-400">No sales for this date.</p>
-                  ) : (
-                    <>
-                      <table className="w-full text-sm border-collapse">
-                        <thead>
-                          <tr className="bg-blue-700 text-white text-left">
-                            <th className="py-2 px-3">S/N</th>
-                            <th className="py-2 px-3">Product</th>
-                            <th className="py-2 px-3">Quantity</th>
-                            <th className="py-2 px-3">Price</th>
-                            <th className="py-2 px-3">Total</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {selectedSales.map((s, i) => (
-                            <tr key={s.id} className="border-b border-[#30363d] hover:bg-[#1e2530]">
-                              <td className="py-2 px-3">{i + 1}</td>
-                              <td className="py-2 px-3">{s.product_name}</td>
-                              <td className="py-2 px-3">{s.quantity}</td>
-                              <td className="py-2 px-3">₦{Number(s.price).toLocaleString()}</td>
-                              <td className="py-2 px-3 font-semibold">₦{(s.price * s.quantity).toLocaleString()}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-
-                      <div className="mt-4 flex justify-end text-lg font-semibold text-blue-400">
-                        Total: ₦{totalForSelectedDate.toLocaleString()}
-                      </div>
-
-                      <div className="mt-4 flex justify-end">
-                        <button
-                          onClick={() => handleDownload(formatDate(selectedDate))}
-                          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-500"
-                        >
-                          Download PDF
-                        </button>
-                      </div>
-                    </>
+                    ))
                   )}
-                </motion.article>
-              </section>
-            )}
+                </tbody>
+              </table>
+              {/* View Modal */}
+{viewModalOpen && (
+  <section
+    aria-label={`Sales details for ${new Date(selectedDate).toLocaleDateString()}`}
+    className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+    onClick={() => setViewModalOpen(false)}
+  >
+    <motion.article
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-[#0d1117] text-gray-300 rounded-xl shadow-lg w-full max-w-3xl p-6 overflow-auto max-h-[80vh]"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">
+          Sales for {new Date(selectedDate).toLocaleDateString()}
+        </h2>
+        <button
+          onClick={() => setViewModalOpen(false)}
+          className="text-gray-400 hover:text-red-500"
+        >
+          Close
+        </button>
+      </div>
+
+      {viewLoading ? (
+        <p className="text-center py-6">Loading...</p>
+      ) : selectedSales.length === 0 ? (
+        <p className="text-center py-6 text-gray-400">
+          No sales for this date.
+        </p>
+      ) : (
+        <>
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="bg-blue-700 text-white text-left">
+                <th className="py-2 px-3">S/N</th>
+                <th className="py-2 px-3">Product</th>
+                <th className="py-2 px-3">Quantity</th>
+                <th className="py-2 px-3">Price</th>
+                <th className="py-2 px-3">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {selectedSales.map((s, i) => (
+                <tr
+                  key={s.id}
+                  className="border-b border-[#30363d] hover:bg-[#1e2530]"
+                >
+                  <td className="py-2 px-3">{i + 1}</td>
+                  <td className="py-2 px-3">{s.product_name}</td>
+                  <td className="py-2 px-3">{s.quantity}</td>
+                  <td className="py-2 px-3">
+                    ₦{Number(s.price).toLocaleString()}
+                  </td>
+                  <td className="py-2 px-3 font-semibold">
+                    ₦{(s.price * s.quantity).toLocaleString()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <div className="mt-4 flex justify-end text-lg font-semibold text-blue-400">
+            Total: ₦{totalForSelectedDate.toLocaleString()}
+          </div>
+
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={() => handleDownload(formatDate(selectedDate))}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-500"
+            >
+              Download PDF
+            </button>
+          </div>
+        </>
+      )}
+    </motion.article>
+  </section>
+)}
+
+            </motion.div>
           </main>
         </div>
       </div>

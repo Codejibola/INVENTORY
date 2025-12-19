@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 
 export default function CTA() {
   return (
-    <section className="relative bg-zinc-950 py-24 overflow-hidden">
+    <section id="cta" className="relative bg-zinc-950 py-24 overflow-hidden">
       <div className="absolute inset-0 bg-zinc-950" />
 
       <motion.div

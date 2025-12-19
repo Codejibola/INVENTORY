@@ -1,12 +1,17 @@
 import pool from "../config/db.js";
 
+/**
+ * Fetch all sales for a user
+ */
 export const fetchAllSales = (userId) => {
   return pool.query(
-    `SELECT s.id,
-            p.name AS product_name,
-            s.quantity,
-            s.price,
-            s.created_at
+    `SELECT
+        s.id,
+        p.name AS product_name,
+        s.quantity,
+        s.price,
+        s.profit_loss,
+        s.created_at
      FROM sales s
      JOIN products p ON p.id = s.product_id
      WHERE s.user_id = $1
@@ -15,35 +20,88 @@ export const fetchAllSales = (userId) => {
   );
 };
 
-export const insertSale = (userId, productId, quantity, price) => {
-  return pool.query(
-    `INSERT INTO sales (user_id, product_id, quantity, price)
-     VALUES ($1, $2, $3, $4)
-     RETURNING id`,
-    [userId, productId, quantity, price]
+/**
+ * Insert a sale with automatic profit/loss calculation
+ */
+export const insertSale = async (userId, productId, quantity, sellingPrice) => {
+  // 1. Fetch cost price and stock
+  const productRes = await pool.query(
+    `SELECT price, units
+     FROM products
+     WHERE id = $1 AND user_id = $2`,
+    [productId, userId]
   );
+
+  if (!productRes.rows.length) {
+    throw new Error("Product not found");
+  }
+
+  const costPrice = Number(productRes.rows[0].price);
+  const availableUnits = Number(productRes.rows[0].units);
+
+  if (availableUnits < quantity) {
+    throw new Error("Insufficient stock");
+  }
+
+  // 2. Calculate profit / loss
+  const profitLoss =
+    (Number(sellingPrice) - costPrice) * Number(quantity);
+
+  // 3. Insert sale
+  const saleRes = await pool.query(
+    `INSERT INTO sales (
+        user_id,
+        product_id,
+        quantity,
+        price,
+        profit_loss
+     )
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING id, profit_loss`,
+    [userId, productId, quantity, sellingPrice, profitLoss]
+  );
+
+  // 4. Reduce stock
+  await pool.query(
+    `UPDATE products
+     SET units = units - $1
+     WHERE id = $2`,
+    [quantity, productId]
+  );
+
+  return saleRes;
 };
 
+/**
+ * Fetch daily sales totals WITH profit/loss
+ */
 export const fetchDailySales = (userId, year) => {
   return pool.query(
-    `SELECT DATE(created_at) AS date,
-            SUM(quantity * price) AS total
+    `SELECT
+        DATE(created_at) AS date,
+        SUM(quantity * price) AS total_sales,
+        SUM(profit_loss) AS total_profit_loss
      FROM sales
-     WHERE user_id = $1 AND EXTRACT(YEAR FROM created_at) = $2
+     WHERE user_id = $1
+       AND EXTRACT(YEAR FROM created_at) = $2
      GROUP BY DATE(created_at)
      ORDER BY DATE(created_at) DESC`,
     [userId, year]
   );
 };
 
-
+/**
+ * Fetch sales for a specific date
+ */
 export const fetchSalesByDate = (userId, date) => {
   return pool.query(
-    `SELECT s.id,
-            p.name AS product_name,
-            s.quantity,
-            s.price,
-            s.created_at
+    `SELECT
+        s.id,
+        p.name AS product_name,
+        s.quantity,
+        s.price,
+        s.profit_loss,
+        s.created_at
      FROM sales s
      JOIN products p ON p.id = s.product_id
      WHERE s.user_id = $1
@@ -52,4 +110,3 @@ export const fetchSalesByDate = (userId, date) => {
     [userId, date]
   );
 };
-
