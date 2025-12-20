@@ -110,7 +110,7 @@ export default function RecordSales() {
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 
-      <div className="flex min-h-screen bg-[#0f172a] text-gray-200">
+      <div className="flex min-h-screen bg-[#0f172a] text-gray-200 overflow-x-hidden">
         <Sidebar isOpen={menuOpen} setIsOpen={setMenuOpen} />
 
         <div className="flex-1 flex flex-col">
@@ -174,17 +174,17 @@ export default function RecordSales() {
             </motion.form>
 
             {/* Sales Table */}
-            <div className="overflow-x-auto bg-[#1e293b] border border-gray-700 rounded-xl">
-              <table className="min-w-full text-sm">
+            <div className="overflow-x-auto max-w-full bg-[#1e293b] border border-gray-700 rounded-xl">
+              <table className="w-full text-sm">
                 <thead className="bg-[#0f172a]">
                   <tr>
-                    <th className="px-4 py-2">#</th>
-                    <th className="px-4 py-2">Product</th>
-                    <th className="px-4 py-2">Qty</th>
-                    <th className="px-4 py-2 text-right">Price</th>
-                    <th className="px-4 py-2 text-right">Total</th>
-                    <th className="px-4 py-2 text-right">Profit / Loss</th>
-                    <th className="px-4 py-2">Date</th>
+                    <th className="px-2 sm:px-4 py-2">#</th>
+                    <th className="px-2 sm:px-4 py-2">Product</th>
+                    <th className="px-2 sm:px-4 py-2">Qty</th>
+                    <th className="px-2 sm:px-4 py-2 text-right">Price</th>
+                    <th className="px-2 sm:px-4 py-2 text-right">Total</th>
+                    <th className="px-2 sm:px-4 py-2 text-right">Profit / Loss</th>
+                    <th className="px-2 sm:px-4 py-2">Date</th>
                   </tr>
                 </thead>
 
@@ -204,17 +204,17 @@ export default function RecordSales() {
                           key={s.id}
                           className="border-t border-gray-700"
                         >
-                          <td className="px-4 py-2">{i + 1}</td>
-                          <td className="px-4 py-2">{s.product_name}</td>
-                          <td className="px-4 py-2">{s.quantity}</td>
-                          <td className="px-4 py-2 text-right">
+                          <td className="px-2 sm:px-4 py-2">{i + 1}</td>
+                          <td className="px-2 sm:px-4 py-2">{s.product_name}</td>
+                          <td className="px-2 sm:px-4 py-2">{s.quantity}</td>
+                          <td className="px-2 sm:px-4 py-2 text-right">
                             ₦{Number(s.price).toLocaleString()}
                           </td>
-                          <td className="px-4 py-2 text-right font-semibold">
+                          <td className="px-2 sm:px-4 py-2 text-right font-semibold">
                             ₦{(s.price * s.quantity).toLocaleString()}
                           </td>
                           <td
-                            className={`px-4 py-2 text-right font-semibold ${
+                            className={`px-2 sm:px-4 py-2 text-right font-semibold ${
                               profitLoss > 0
                                 ? "text-green-400"
                                 : profitLoss < 0
@@ -228,7 +228,7 @@ export default function RecordSales() {
                               ? `+₦${profitLoss.toLocaleString()}`
                               : `₦0`}
                           </td>
-                          <td className="px-4 py-2">
+                          <td className="px-2 sm:px-4 py-2">
                             {new Date(s.created_at).toLocaleString()}
                           </td>
                         </tr>

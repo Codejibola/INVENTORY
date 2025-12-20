@@ -1,6 +1,6 @@
 //eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 
 const links = [
@@ -11,6 +11,25 @@ const links = [
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const menuRef = useRef(null);
+  const openButtonRef = useRef(null);
+
+  // Close menu when clicking/tapping outside the menu or the open button
+  useEffect(() => {
+    if (!open) return;
+    const handleOutside = (e) => {
+      const target = e.target;
+      if (menuRef.current && menuRef.current.contains(target)) return;
+      if (openButtonRef.current && openButtonRef.current.contains(target)) return;
+      setOpen(false);
+    };
+    document.addEventListener("mousedown", handleOutside);
+    document.addEventListener("touchstart", handleOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("touchstart", handleOutside);
+    };
+  }, [open]);
 
   return (
     <header className="fixed top-0 left-0 w-full z-50 bg-zinc-950/80 backdrop-blur border-b border-zinc-800">
@@ -43,6 +62,7 @@ export default function Navbar() {
 
         {/* Mobile Button */}
         <button
+          ref={openButtonRef}
           onClick={() => setOpen(true)}
           className="md:hidden text-zinc-200"
           aria-label="Open menu"
@@ -53,12 +73,13 @@ export default function Navbar() {
 
       {/* Mobile Menu Panel */}
       <AnimatePresence>
-        {open && (
+          {open && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
+            ref={menuRef}
             className="absolute top-16 right-4 w-64 bg-zinc-900 border border-zinc-800 rounded-xl shadow-xl p-6 md:hidden"
           >
             {/* Close */}
