@@ -102,7 +102,7 @@ export default function Features() {
                 key={active.image}
                 src={active.image}
                 alt={active.alt}
-                className="rounded-xl border border-zinc-800 shadow-2xl"
+               className="w-full max-w-xl lg:max-w-3xl mx-auto rounded-xl border border-zinc-800 shadow-2xl"
                 initial={{ opacity: 0, x: 60 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -60 }}

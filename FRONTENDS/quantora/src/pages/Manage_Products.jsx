@@ -141,8 +141,18 @@ export default function ManageProducts() {
   });
 
   const months = [
-    "January","February","March","April","May","June",
-    "July","August","September","October","November","December"
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
 
   const productsWithMonth = filteredProducts.map((p) => {
@@ -162,7 +172,8 @@ export default function ManageProducts() {
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 
-      <div className="flex min-h-screen bg-gray-900 text-gray-200">
+      {/* ONLY CHANGE: overflow-x-hidden */}
+      <div className="flex min-h-screen bg-gray-900 text-gray-200 overflow-x-hidden">
         <Sidebar isOpen={menuOpen} setIsOpen={setMenuOpen} />
 
         <div className="flex-1 flex flex-col">
@@ -182,14 +193,18 @@ export default function ManageProducts() {
                   placeholder="Search products..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="flex-1 min-w-[180px] px-3 py-2 rounded-lg
-                  bg-gray-800 border border-gray-700"
+                  className="flex-1 min-w-[180px] px-3 py-2 rounded-lg bg-gray-800 border border-gray-700"
                 />
 
                 <button
                   onClick={() => {
                     setEditingId(null);
-                    setFormData({ name: "", price: "", stock: "", category: "" });
+                    setFormData({
+                      name: "",
+                      price: "",
+                      stock: "",
+                      category: "",
+                    });
                     setShowForm(true);
                   }}
                   className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg"
@@ -201,10 +216,7 @@ export default function ManageProducts() {
 
             {/* Add/Edit Modal */}
             {showForm && (
-              <section
-                aria-label="Add or edit product"
-                className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
-              >
+              <section className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
                 <motion.form
                   onSubmit={handleSaveProduct}
                   initial={{ opacity: 0, y: -20 }}
@@ -215,7 +227,9 @@ export default function ManageProducts() {
                     {editingId ? "Edit Product" : "Add Product"}
                   </h2>
 
-                  {error && <p className="text-red-400 text-sm">{error}</p>}
+                  {error && (
+                    <p className="text-red-400 text-sm">{error}</p>
+                  )}
 
                   <input
                     type="text"
@@ -277,18 +291,14 @@ export default function ManageProducts() {
             )}
 
             {/* Products Tables */}
-            <section aria-label="Products by month">
+            <section>
               {months.map(
                 (month) =>
                   groupedByMonth[month]?.length > 0 && (
                     <article key={month} className="space-y-2">
                       <h2 className="text-xl font-bold mt-6">{month}</h2>
 
-                      <motion.div
-                        className="overflow-x-auto bg-gray-800 rounded-xl shadow-lg"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                      >
+                      <motion.div className="overflow-x-auto bg-gray-800 rounded-xl shadow-lg">
                         <table className="min-w-full text-left text-sm sm:text-base">
                           <thead className="bg-gray-700">
                             <tr>
@@ -297,7 +307,9 @@ export default function ManageProducts() {
                               <th className="py-3 px-4">Stock</th>
                               <th className="py-3 px-4">Category</th>
                               <th className="py-3 px-4">Date Added</th>
-                              <th className="py-3 px-4 text-center">Actions</th>
+                              <th className="py-3 px-4 text-center">
+                                Actions
+                              </th>
                             </tr>
                           </thead>
 
@@ -306,8 +318,6 @@ export default function ManageProducts() {
                               <motion.tr
                                 key={p.id}
                                 className="border-b border-gray-700 hover:bg-gray-700"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
                               >
                                 <td className="py-3 px-4">
                                   {toTitleCase(p.name)}
@@ -320,7 +330,9 @@ export default function ManageProducts() {
                                   {toTitleCase(p.category || "")}
                                 </td>
                                 <td className="py-3 px-4">
-                                  {new Date(p.addedDate).toLocaleDateString()}
+                                  {new Date(
+                                    p.addedDate
+                                  ).toLocaleDateString()}
                                 </td>
                                 <td className="py-3 px-4 flex justify-center gap-3">
                                   <button

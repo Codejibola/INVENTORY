@@ -1,3 +1,6 @@
+import React from "react";
+import { Link } from "react-router-dom";
+
 export default function Footer() {
   return (
     <footer className="bg-zinc-950 border-t border-zinc-800 py-16">
@@ -27,13 +30,14 @@ export default function Footer() {
         </div>
 
         {/* Legal */}
-        <div>
-          <h4 className="text-zinc-200 font-semibold mb-4">Legal</h4>
-          <ul className="space-y-3">
-            <li><a href="#" className="hover:text-white">Privacy Policy</a></li>
-            <li><a href="#" className="hover:text-white">Terms of Service</a></li>
-          </ul>
-        </div>
+        <div className="flex gap-6 text-sm text-zinc-400">
+  <Link to="/privacy" className="hover:text-white">
+    Privacy Policy
+  </Link>
+  <Link to="/terms" className="hover:text-white">
+    Terms of Service
+  </Link>
+</div>
       </div>
 
       <div className="text-center text-zinc-500 text-xs mt-12">

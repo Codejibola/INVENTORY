@@ -1,15 +1,15 @@
-import Hero from "./components/Hero.jsx";
-// import Features from "./components/Features.jsx";
-import CTA from "./components/CTA.jsx";
-import Footer from "./components/Footer.jsx";
-import Home from "./pages/Home.jsx";
+import { Routes, Route } from "react-router-dom";
 
-function App() {
+import Home from "./pages/Home";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+
+export default function App() {
   return (
-    <div className="font-sans text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900">
-      <Home />
-    </div>
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/terms" element={<Terms />} />
+    </Routes>
   );
 }
-
-export default App;
