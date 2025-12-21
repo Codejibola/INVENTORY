@@ -50,7 +50,7 @@ export default function Privacy() {
             <h2 className="text-xl font-semibold text-black mb-2">Access & Deletion</h2>
             <p>
               You may request access to or deletion of your data by contacting us
-              at <span className="text-blue-400">bellohabeebullah838@gmail.com</span>.
+              at <span className="text-blue-400">quantora.00@gmail.com</span>.
             </p>
           </div>
         </section>
