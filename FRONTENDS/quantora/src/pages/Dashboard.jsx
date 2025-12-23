@@ -339,7 +339,7 @@ export default function Dashboard() {
                           ? `-₦${Math.abs(
                               monthlyProfitLoss
                             ).toLocaleString()}`
-                          : `₦${monthlyProfitLoss.toLocaleString()}`}
+                          : `+₦${monthlyProfitLoss.toLocaleString()}`}
                       </p>
                     </div>
 

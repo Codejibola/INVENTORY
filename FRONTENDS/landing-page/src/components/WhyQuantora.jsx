@@ -35,24 +35,30 @@ const REASONS = [
 
 export default function WhyQuantora() {
   return (
-    <section className="bg-zinc-950 py-28 text-zinc-100">
+    <section
+      aria-labelledby="why-quantora-heading"
+      className="bg-zinc-950 py-28 text-zinc-100"
+    >
       <div className="max-w-7xl mx-auto px-6">
 
-        {/* Header */}
-        <div className="max-w-3xl mx-auto text-center mb-20">
-          <h2 className="text-4xl font-bold mb-5">
+        {/* Section Header */}
+        <header className="max-w-3xl mx-auto text-center mb-20">
+          <h2
+            id="why-quantora-heading"
+            className="text-4xl font-bold mb-5"
+          >
             Why Choose Quantora?
           </h2>
           <p className="text-zinc-400 text-lg">
             Quantora helps businesses move from guesswork to confidence by
             simplifying inventory and sales management.
           </p>
-        </div>
+        </header>
 
-        {/* Cards */}
+        {/* Reason Articles */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {REASONS.map((item, index) => (
-            <motion.div
+            <motion.article
               key={item.title}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -72,7 +78,7 @@ export default function WhyQuantora() {
               <p className="text-zinc-400 text-sm leading-relaxed">
                 {item.description}
               </p>
-            </motion.div>
+            </motion.article>
           ))}
         </div>
       </div>

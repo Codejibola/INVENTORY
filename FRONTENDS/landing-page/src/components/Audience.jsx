@@ -27,26 +27,30 @@ const AUDIENCES = [
 
 export default function Audience() {
   return (
-    <section id="audience" className="bg-zinc-950 py-28 text-zinc-100">
+    <section
+      id="audience"
+      aria-labelledby="audience-heading"
+      className="bg-zinc-950 py-28 text-zinc-100"
+    >
       <div className="max-w-7xl mx-auto px-6">
 
-        {/* Header */}
-        <div className="max-w-3xl mx-auto text-center mb-20">
-          <h2 className="text-4xl font-bold mb-4">
+        {/* Section Header */}
+        <header className="max-w-3xl mx-auto text-center mb-20">
+          <h2 id="audience-heading" className="text-4xl font-bold mb-4">
             Who Quantora Is Built For
           </h2>
           <p className="text-zinc-400 text-lg">
             Quantora is designed for businesses that need clarity, control,
             and confidence in their inventory management process.
           </p>
-        </div>
+        </header>
 
-        {/* Cards */}
+        {/* Audience Articles */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {AUDIENCES.map((item, i) => {
             const Icon = item.icon;
             return (
-              <motion.div
+              <motion.article
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -61,7 +65,7 @@ export default function Audience() {
                 <p className="text-zinc-400 leading-relaxed">
                   {item.desc}
                 </p>
-              </motion.div>
+              </motion.article>
             );
           })}
         </div>

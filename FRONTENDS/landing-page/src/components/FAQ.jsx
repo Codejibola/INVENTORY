@@ -34,23 +34,31 @@ export default function FAQ() {
   const [openIndex, setOpenIndex] = useState(null);
 
   return (
-    <section id="faq" className="bg-zinc-950 py-28 text-zinc-100">
+    <section
+      id="faq"
+      aria-labelledby="faq-heading"
+      className="bg-zinc-950 py-28 text-zinc-100"
+    >
       <div className="max-w-4xl mx-auto px-6">
 
         {/* Header */}
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold mb-4">
+        <header className="text-center mb-16">
+          <h2
+            id="faq-heading"
+            className="text-4xl font-bold mb-4"
+          >
             Frequently Asked Questions
           </h2>
           <p className="text-zinc-400 text-lg">
             Everything you need to know about using Quantora for inventory management.
           </p>
-        </div>
+        </header>
 
         {/* FAQ Items */}
         <div className="space-y-4">
           {FAQS.map((item, i) => {
             const isOpen = openIndex === i;
+            const answerId = `faq-answer-${i}`;
 
             return (
               <motion.div
@@ -62,6 +70,9 @@ export default function FAQ() {
                 className="border border-zinc-800 rounded-xl overflow-hidden bg-zinc-900"
               >
                 <button
+                  type="button"
+                  aria-expanded={isOpen}
+                  aria-controls={answerId}
                   onClick={() => setOpenIndex(isOpen ? null : i)}
                   className="w-full flex justify-between items-center px-6 py-5 text-left"
                 >
@@ -74,7 +85,10 @@ export default function FAQ() {
                 </button>
 
                 {isOpen && (
-                  <div className="px-6 pb-5 text-zinc-400 leading-relaxed">
+                  <div
+                    id={answerId}
+                    className="px-6 pb-5 text-zinc-400 leading-relaxed"
+                  >
                     {item.a}
                   </div>
                 )}

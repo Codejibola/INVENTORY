@@ -42,13 +42,12 @@ export default function Features() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
-  /* Auto slideshow */
   useEffect(() => {
     if (isPaused) return;
 
     const interval = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % FEATURES.length);
-    }, 5000);
+    }, 3000);
 
     return () => clearInterval(interval);
   }, [isPaused]);
@@ -56,22 +55,32 @@ export default function Features() {
   const active = FEATURES[activeIndex];
 
   return (
-    <section id="features" className="bg-zinc-950 text-zinc-100 py-28">
+    <section
+      id="features"
+      aria-labelledby="features-heading"
+      className="bg-zinc-950 text-zinc-100 py-28"
+    >
       <div className="max-w-7xl mx-auto px-6">
 
-        {/* Header */}
-        <div className="max-w-3xl mx-auto text-center mb-20">
-          <h2 className="text-4xl font-bold mb-5">
+        {/* Section Header */}
+        <header className="max-w-3xl mx-auto text-center mb-20">
+          <h2
+            id="features-heading"
+            className="text-4xl font-bold mb-5"
+          >
             Powerful Inventory Management Features
           </h2>
           <p className="text-zinc-400 text-lg">
             Experience how Quantora simplifies inventory control through a
             modern, intuitive interface.
           </p>
-        </div>
+        </header>
 
         {/* Feature Tabs */}
-        <div className="flex flex-wrap justify-center gap-4 mb-16">
+        <nav
+          aria-label="Feature selector"
+          className="flex flex-wrap justify-center gap-4 mb-16"
+        >
           {FEATURES.map((feature, index) => (
             <button
               key={feature.title}
@@ -86,7 +95,7 @@ export default function Features() {
               {feature.title}
             </button>
           ))}
-        </div>
+        </nav>
 
         {/* Content */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
@@ -102,7 +111,7 @@ export default function Features() {
                 key={active.image}
                 src={active.image}
                 alt={active.alt}
-               className="w-full max-w-xl lg:max-w-3xl mx-auto rounded-xl border border-zinc-800 shadow-2xl"
+                className="w-full max-w-xl lg:max-w-3xl mx-auto rounded-xl border border-zinc-800 shadow-2xl"
                 initial={{ opacity: 0, x: 60 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -60 }}
@@ -110,7 +119,6 @@ export default function Features() {
               />
             </AnimatePresence>
 
-            {/* Progress Dots */}
             <div className="flex justify-center gap-2 mt-6">
               {FEATURES.map((_, index) => (
                 <button
@@ -127,9 +135,9 @@ export default function Features() {
             </div>
           </div>
 
-          {/* Text */}
+          {/* Feature Description */}
           <AnimatePresence mode="wait">
-            <motion.div
+            <motion.article
               key={active.title}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -142,7 +150,7 @@ export default function Features() {
               <p className="text-zinc-400 text-lg leading-relaxed">
                 {active.description}
               </p>
-            </motion.div>
+            </motion.article>
           </AnimatePresence>
 
         </div>

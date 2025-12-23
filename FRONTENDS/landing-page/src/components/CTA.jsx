@@ -3,7 +3,11 @@ import { motion } from "framer-motion";
 
 export default function CTA() {
   return (
-    <section id="cta" className="relative bg-zinc-950 py-24 overflow-hidden">
+    <section
+      id="cta"
+      aria-labelledby="cta-heading"
+      className="relative bg-zinc-950 py-24 overflow-hidden"
+    >
       <div className="absolute inset-0 bg-zinc-950" />
 
       <motion.div
@@ -13,16 +17,25 @@ export default function CTA() {
         viewport={{ once: true }}
         transition={{ duration: 0.6 }}
       >
-        <h2 className="text-4xl font-bold mb-6">
-          Take Control of Your Inventory Today
-        </h2>
+        <header>
+          <h2
+            id="cta-heading"
+            className="text-4xl font-bold mb-6"
+          >
+            Take Control of Your Inventory Today
+          </h2>
 
-        <p className="text-zinc-400 mb-10 text-lg">
-          Start using Quantora to manage products, track stock levels,
-          and make smarter inventory decisions — all from one platform.
-        </p>
+          <p className="text-zinc-400 mb-10 text-lg">
+            Start using Quantora to manage products, track stock levels,
+            and make smarter inventory decisions — all from one platform.
+          </p>
+        </header>
 
-        <button className="bg-blue-600 hover:bg-blue-500 transition px-10 py-4 rounded-md font-semibold text-lg">
+        <button
+          type="button"
+          aria-label="Start free trial of Quantora inventory management software"
+          className="bg-blue-600 hover:bg-blue-500 transition px-10 py-4 rounded-md font-semibold text-lg"
+        >
           Start Free Trial
         </button>
       </motion.div>

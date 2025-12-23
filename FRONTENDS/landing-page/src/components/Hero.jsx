@@ -1,9 +1,10 @@
+//eslint-disable-next-line no-unused-vars 
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 
 export default function Hero() {
   return (
-    <section id="hero" className="bg-zinc-950 text-zinc-100 pt-32 pb-24">
+    <section id="hero"  role="banner" className="bg-zinc-950 text-zinc-100 pt-32 pb-24">
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
         
         <motion.div
@@ -11,8 +12,9 @@ export default function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
+          <header>
           <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-6">
-            Quantora — Trade, Manage, and Track Inventory with Confidence
+           Inventory Management Software for Smart Stock Tracking — <span className="text-blue-500 font-bold"> Q</span>uantora
           </h1>
 
           <p className="text-lg text-zinc-400 mb-8">
@@ -20,6 +22,7 @@ export default function Hero() {
             monitor stock levels, prevent shortages, and make smarter decisions
             in real time.
           </p>
+          </header>
 
           <div className="flex gap-4">
             <Link
