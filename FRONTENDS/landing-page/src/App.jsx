@@ -1,9 +1,9 @@
 import { Routes, Route } from "react-router-dom";
 
-import Home from "./pages/Home";
-import Privacy from "./pages/Privacy";
-import Terms from "./pages/Terms";
-import DemoPage from "./pages/Demo";
+import Home from "./pages/Home.jsx";
+import Privacy from "./pages/Privacy.jsx";
+import Terms from "./pages/Terms.jsx";
+import DemoPage from "./pages/Demo.jsx";
 
 export default function App() {
   return (

@@ -5,10 +5,12 @@ import Dashboard from "./pages/Dashboard";
 import Manage_Products from "./pages/Manage_Products";
 import Invoices from "./pages/Invoices";
 import RecordSales from "./pages/Record_Sales";
-import Maintenance from "./pages/Maintenance";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import PrivateRoute from "./components/PrivateRoute"; 
 import Notification from "./pages/Notification";
 // import NotesPage from "./pages/Notes.jsx"; 
+// import Maintenance from "./pages/Maintenance";
 
 export default function App() {
   return (
@@ -20,6 +22,8 @@ export default function App() {
         {/* Public routes */}
         <Route path="/register" element={<Register />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
 
         {/* Protected routes */}
         <Route
