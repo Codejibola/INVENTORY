@@ -1,7 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 
 import Home from "./pages/Home.jsx";
-import Privacy from "./pages/Privacy.jsx";
+import Privacy from "./pages/privacy.jsx";
 import Terms from "./pages/Terms.jsx";
 import DemoPage from "./pages/Demo.jsx";
 
