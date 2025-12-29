@@ -14,6 +14,7 @@ export default function ManageProducts() {
   const [formData, setFormData] = useState({
     name: "",
     price: "",
+    selling_price: "",
     stock: "",
     category: "",
   });
@@ -70,6 +71,7 @@ export default function ManageProducts() {
     const payload = {
       name: formData.name,
       price: parseFloat(formData.price),
+      selling_price: parseFloat(formData.selling_price),
       stock: Math.max(0, parseInt(formData.stock, 10)),
       category: formData.category,
     };
@@ -96,7 +98,13 @@ export default function ManageProducts() {
 
       await res.json();
       fetchProducts();
-      setFormData({ name: "", price: "", stock: "", category: "" });
+      setFormData({
+        name: "",
+        price: "",
+        selling_price: "",
+        stock: "",
+        category: "",
+      });
       setEditingId(null);
       setShowForm(false);
     } catch (err) {
@@ -126,6 +134,7 @@ export default function ManageProducts() {
     setFormData({
       name: product.name,
       price: product.price,
+      selling_price: product.selling_price,
       stock: product.units,
       category: product.category || "",
     });
@@ -172,7 +181,6 @@ export default function ManageProducts() {
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 
-      {/* ONLY CHANGE: overflow-x-hidden */}
       <div className="flex min-h-screen bg-gray-900 text-gray-200 overflow-x-hidden">
         <Sidebar isOpen={menuOpen} setIsOpen={setMenuOpen} />
 
@@ -202,6 +210,7 @@ export default function ManageProducts() {
                     setFormData({
                       name: "",
                       price: "",
+                      selling_price: "",
                       stock: "",
                       category: "",
                     });
@@ -247,6 +256,16 @@ export default function ManageProducts() {
                     value={formData.price}
                     onChange={handleChange}
                     placeholder="Unit Price"
+                    className="w-full p-2 rounded bg-gray-900 border border-gray-700"
+                    required
+                  />
+
+                  <input
+                    type="number"
+                    name="selling_price"
+                    value={formData.selling_price}
+                    onChange={handleChange}
+                    placeholder="Selling Price"
                     className="w-full p-2 rounded bg-gray-900 border border-gray-700"
                     required
                   />
@@ -304,6 +323,7 @@ export default function ManageProducts() {
                             <tr>
                               <th className="py-3 px-4">Name</th>
                               <th className="py-3 px-4">Unit Price</th>
+                              <th className="py-3 px-4">Selling Price</th>
                               <th className="py-3 px-4">Stock</th>
                               <th className="py-3 px-4">Category</th>
                               <th className="py-3 px-4">Date Added</th>
@@ -319,11 +339,12 @@ export default function ManageProducts() {
                                 key={p.id}
                                 className="border-b border-gray-700 hover:bg-gray-700"
                               >
-                                <td className="py-3 px-4">
-                                  {toTitleCase(p.name)}
-                                </td>
+                                <td className="py-3 px-4">{p.name}</td>
                                 <td className="py-3 px-4">
                                   ₦{Number(p.price).toFixed(2)}
+                                </td>
+                                <td className="py-3 px-4">
+                                  ₦{Number(p.selling_price).toFixed(2)}
                                 </td>
                                 <td className="py-3 px-4">{p.units}</td>
                                 <td className="py-3 px-4">

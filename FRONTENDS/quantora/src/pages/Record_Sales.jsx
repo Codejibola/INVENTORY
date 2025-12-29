@@ -54,6 +54,23 @@ export default function RecordSales() {
     fetchSales();
   }, [token]);
 
+  const getSuggestedPrice = () => {
+    if (!selected) return 0;
+    const product = products.find((p) => p.id === Number(selected));
+    if (!product) return 0;
+    return product.selling_price * quantity;
+  };
+
+  const handleSelectProduct = (productId) => {
+    setSelected(productId);
+    setPrice(""); // clear price input so placeholder shows
+  };
+
+  const handleQuantityChange = (value) => {
+    setQuantity(Number(value));
+    setPrice(""); // reset price input to force user to type if needed
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -103,6 +120,8 @@ export default function RecordSales() {
     0
   );
 
+  const suggestedPrice = getSuggestedPrice();
+
   return (
     <>
       <Helmet>
@@ -133,7 +152,7 @@ export default function RecordSales() {
 
               <select
                 value={selected}
-                onChange={(e) => setSelected(e.target.value)}
+                onChange={(e) => handleSelectProduct(e.target.value)}
                 className="w-full border border-gray-600 bg-[#0f172a] rounded px-3 py-2"
               >
                 <option value="">-- Select Product --</option>
@@ -149,15 +168,20 @@ export default function RecordSales() {
                   type="number"
                   min="1"
                   value={quantity}
-                  onChange={(e) => setQuantity(Number(e.target.value))}
+                  onChange={(e) => handleQuantityChange(e.target.value)}
                   className="border border-gray-600 bg-[#0f172a] rounded px-3 py-2"
+                  placeholder="Quantity"
                 />
+
                 <input
                   type="number"
                   min="1"
                   value={price}
                   onChange={(e) => setPrice(Number(e.target.value))}
                   className="border border-gray-600 bg-[#0f172a] rounded px-3 py-2"
+                  placeholder={
+                    selected ? `Suggested: ₦${Number(suggestedPrice).toLocaleString()}` : ""
+                  }
                 />
               </div>
 
@@ -175,16 +199,16 @@ export default function RecordSales() {
 
             {/* Sales Table */}
             <div className="overflow-x-auto max-w-full bg-[#1e293b] border border-gray-700 rounded-xl">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm table-fixed">
                 <thead className="bg-[#0f172a]">
                   <tr>
-                    <th className="px-2 sm:px-4 py-2">#</th>
-                    <th className="px-2 sm:px-4 py-2">Product</th>
-                    <th className="px-2 sm:px-4 py-2">Qty</th>
-                    <th className="px-2 sm:px-4 py-2 text-right">Price</th>
-                    <th className="px-2 sm:px-4 py-2 text-right">Total</th>
-                    <th className="px-2 sm:px-4 py-2 text-right">Profit / Loss</th>
-                    <th className="px-2 sm:px-4 py-2">Date</th>
+                    <th className="px-3 py-2 text-left">#</th>
+                    <th className="px-3 py-2 text-left">Product</th>
+                    <th className="px-3 py-2 text-right">Qty</th>
+                    <th className="px-3 py-2 text-right">Price</th>
+                    <th className="px-3 py-2 text-right">Total</th>
+                    <th className="px-3 py-2 text-right">Profit / Loss</th>
+                    <th className="px-3 py-2 text-left">Date</th>
                   </tr>
                 </thead>
 
@@ -204,17 +228,17 @@ export default function RecordSales() {
                           key={s.id}
                           className="border-t border-gray-700"
                         >
-                          <td className="px-2 sm:px-4 py-2">{i + 1}</td>
-                          <td className="px-2 sm:px-4 py-2">{s.product_name}</td>
-                          <td className="px-2 sm:px-4 py-2">{s.quantity}</td>
-                          <td className="px-2 sm:px-4 py-2 text-right">
+                          <td className="px-3 py-2 text-left">{i + 1}</td>
+                          <td className="px-3 py-2 text-left">{s.product_name}</td>
+                          <td className="px-3 py-2 text-right">{s.quantity}</td>
+                          <td className="px-3 py-2 text-right">
                             ₦{Number(s.price).toLocaleString()}
                           </td>
-                          <td className="px-2 sm:px-4 py-2 text-right font-semibold">
+                          <td className="px-3 py-2 text-right font-semibold">
                             ₦{(s.price * s.quantity).toLocaleString()}
                           </td>
                           <td
-                            className={`px-2 sm:px-4 py-2 text-right font-semibold ${
+                            className={`px-3 py-2 text-right font-semibold ${
                               profitLoss > 0
                                 ? "text-green-400"
                                 : profitLoss < 0
@@ -228,7 +252,7 @@ export default function RecordSales() {
                               ? `+₦${profitLoss.toLocaleString()}`
                               : `₦0`}
                           </td>
-                          <td className="px-2 sm:px-4 py-2">
+                          <td className="px-3 py-2 text-left">
                             {new Date(s.created_at).toLocaleString()}
                           </td>
                         </tr>
