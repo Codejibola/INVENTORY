@@ -2,8 +2,8 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Helmet } from "react-helmet-async"; // <--- import Helmet
-import bg from "../assets/admin0.jpeg";
+import { Helmet } from "react-helmet-async";
+import bg from "../assets/admin0.png";
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -44,13 +44,11 @@ export default function Admin() {
 
   return (
     <>
-      {/* Helmet SEO Metadata */}
       <Helmet>
         <title>Quantora – Admin Login</title>
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 
-      {/* Semantic HTML */}
       <main
         className="flex items-center justify-center min-h-screen bg-black p-4 relative bg-cover bg-center"
         style={{ backgroundImage: `url(${bg})` }}
@@ -61,14 +59,14 @@ export default function Admin() {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="relative z-10 w-full max-w-md p-8 rounded-xl shadow-2xl bg-white/20 backdrop-blur-sm border border-white/20"
+          className="relative z-10 w-full max-w-lg p-10 rounded-2xl shadow-2xl bg-white/10 backdrop-md border border-white/20 flex flex-col"
           aria-label="Admin Login Form"
         >
           <motion.h1
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="text-3xl font-bold text-center text-blue-400 mb-6"
+            className="text-3xl md:text-4xl font-bold text-center text-blue-400 mb-8"
           >
             Quantora Login
           </motion.h1>
@@ -83,7 +81,7 @@ export default function Admin() {
             </motion.p>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             {/* EMAIL */}
             <motion.input
               type="email"
@@ -92,14 +90,14 @@ export default function Admin() {
               value={formData.email}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 rounded-lg border border-blue-400 bg-white/90 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600"
+              className="w-full px-5 py-3 rounded-xl border border-blue-400 bg-white/90 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600"
               initial={{ x: -30, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 0.1 }}
             />
 
             {/* PASSWORD */}
-            <motion.section
+            <motion.div
               initial={{ x: -30, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 0.2 }}
@@ -113,51 +111,17 @@ export default function Admin() {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 rounded-lg border border-blue-400 bg-white/90 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600"
+                className="w-full px-5 py-3 rounded-xl border border-blue-400 bg-white/90 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-600"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-600"
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
-                {showPassword ? (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="w-5 h-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10
-                      0-1.42.294-2.77.825-4M6.29 6.29A9.956 9.956 0 0112 5c5.523 0 10 4.477 10 10
-                      0 1.61-.38 3.13-1.06 4.47M3 3l18 18"
-                    />
-                  </svg>
-                ) : (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="w-5 h-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M1.5 12s4.5-7.5 10.5-7.5S22.5 12 22.5 12
-                      18 19.5 12 19.5 1.5 12 1.5 12z"
-                    />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                )}
+                {showPassword ? "👁️" : "👁️‍🗨️"}
               </button>
-            </motion.section>
+            </motion.div>
 
             {/* LOGIN BUTTON */}
             <motion.button
@@ -165,7 +129,7 @@ export default function Admin() {
               whileTap={loading ? {} : { scale: 0.97 }}
               type="submit"
               disabled={loading}
-              className={`w-full py-2 mt-4 font-semibold text-white rounded-lg relative overflow-hidden
+              className={`w-full py-3 font-semibold text-white rounded-xl relative overflow-hidden
               transition-all duration-300 ${loading ? "cursor-not-allowed opacity-70" : ""}`}
               style={{
                 background:
@@ -178,11 +142,11 @@ export default function Admin() {
           </form>
 
           {/* REGISTER LINK */}
-          <motion.section
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}
-            className="mt-4 text-center text-gray-200 text-sm"
+            className="mt-6 text-center text-gray-200 text-sm"
             aria-label="Register Link"
           >
             Don’t have an account?{" "}
@@ -192,7 +156,7 @@ export default function Admin() {
             >
               Register
             </button>
-          </motion.section>
+          </motion.div>
         </motion.section>
       </main>
     </>
