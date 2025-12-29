@@ -37,13 +37,18 @@ export default function DemoPage() {
     <>
       <Helmet>
         <title>App Demo | Quantora</title>
-        <meta name="description" content="Demo showing how the app works from signup to usage." />
+        <meta
+          name="description"
+          content="Demo showing how the app works from signup to usage."
+        />
       </Helmet>
 
       <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-white">
-        <h1 className="text-3xl md:text-4xl font-bold mb-8">How Quantora Works</h1>
+        <h1 className="text-3xl md:text-5xl font-bold mb-10 text-center">
+          How Quantora Works
+        </h1>
 
-        <div className="relative w-full max-w-3xl h-[500px] md:h-[600px] overflow-hidden rounded-xl shadow-lg">
+        <div className="relative w-full max-w-5xl h-[600px] md:h-[700px] overflow-hidden rounded-xl shadow-2xl">
           <AnimatePresence>
             <motion.img
               key={currentIndex}
@@ -60,25 +65,25 @@ export default function DemoPage() {
           {/* Navigation Arrows */}
           <button
             onClick={prevSlide}
-            className="absolute top-1/2 left-2 -translate-y-1/2 bg-white/20 hover:bg-white/40 p-2 rounded-full"
+            className="absolute top-1/2 left-3 -translate-y-1/2 bg-white/20 hover:bg-white/50 text-white text-2xl font-bold p-3 rounded-full shadow-lg z-10"
           >
             ‹
           </button>
           <button
             onClick={nextSlide}
-            className="absolute top-1/2 right-2 -translate-y-1/2 bg-white/20 hover:bg-white/40 p-2 rounded-full"
+            className="absolute top-1/2 right-3 -translate-y-1/2 bg-white/20 hover:bg-white/50 text-white text-2xl font-bold p-3 rounded-full shadow-lg z-10"
           >
             ›
           </button>
         </div>
 
         {/* Dots */}
-        <div className="flex gap-2 mt-4">
+        <div className="flex gap-3 mt-6">
           {images.map((_, idx) => (
             <span
               key={idx}
-              className={`w-3 h-3 rounded-full cursor-pointer ${
-                idx === currentIndex ? "bg-white" : "bg-gray-500"
+              className={`w-4 h-4 rounded-full cursor-pointer transition-all ${
+                idx === currentIndex ? "bg-white scale-110" : "bg-gray-500"
               }`}
               onClick={() => setCurrentIndex(idx)}
             />
