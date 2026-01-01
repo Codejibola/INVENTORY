@@ -97,27 +97,36 @@ export default function Invoices() {
     }
   };
 
-  // Download PDF
-  const handleDownload = async (date) => {
-    try {
-      const res = await apiFetch(
-        `http://localhost:5000/api/sales/daily/${date}/pdf`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+  // Download Invoice
+   const handleDownload = async (date) => {
+  try {
+    const res = await fetch(
+      `http://localhost:5000/api/sales/daily/${date}/excel`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
-      if (!res.ok) throw new Error("Download failed");
+    if (!res.ok) throw new Error("Download failed");
 
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `sales-${date}.pdf`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      alert(err.message);
-    }
-  };
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `sales-${date}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    alert(err.message);
+  }
+};
+
 
   // Pagination
   const indexOfLast = currentPage * itemsPerPage;
@@ -245,7 +254,7 @@ export default function Invoices() {
                               onClick={() => handleDownload(formatDate(row.date))}
                               className="text-blue-400 hover:text-blue-300 flex items-center gap-1"
                             >
-                              <Download size={16} /> PDF
+                              <Download size={16} /> Download
                             </button>
                           </div>
                         </td>
@@ -293,7 +302,7 @@ export default function Invoices() {
                 <th className="py-2 px-3">S/N</th>
                 <th className="py-2 px-3">Product</th>
                 <th className="py-2 px-3">Quantity</th>
-                <th className="py-2 px-3">Price</th>
+                <th className="py-2 px-3">Unit Price</th>
                 <th className="py-2 px-3">Total</th>
               </tr>
             </thead>
@@ -307,10 +316,10 @@ export default function Invoices() {
                   <td className="py-2 px-3">{s.product_name}</td>
                   <td className="py-2 px-3">{s.quantity}</td>
                   <td className="py-2 px-3">
-                    ₦{Number(s.price).toLocaleString()}
+                    ₦{(Number(s.price) / s.quantity).toLocaleString()}
                   </td>
                   <td className="py-2 px-3 font-semibold">
-                    ₦{(s.price * s.quantity).toLocaleString()}
+                    ₦{(Number(s.price)).toLocaleString()}
                   </td>
                 </tr>
               ))}
@@ -326,7 +335,7 @@ export default function Invoices() {
               onClick={() => handleDownload(formatDate(selectedDate))}
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-500"
             >
-              Download PDF
+              Download
             </button>
           </div>
         </>

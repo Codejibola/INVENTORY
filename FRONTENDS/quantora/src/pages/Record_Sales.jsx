@@ -12,7 +12,7 @@ export default function RecordSales() {
   const [products, setProducts] = useState([]);
   const [selected, setSelected] = useState("");
   const [quantity, setQuantity] = useState(1);
-  const [price, setPrice] = useState("");
+  const [totalPrice, setTotalPrice] = useState("");
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -61,14 +61,19 @@ export default function RecordSales() {
     return product.selling_price * quantity;
   };
 
+  const unitPrice =
+    quantity > 0 && totalPrice
+      ? Number(totalPrice) / Number(quantity)
+      : 0;
+
   const handleSelectProduct = (productId) => {
     setSelected(productId);
-    setPrice(""); // clear price input so placeholder shows
+    setTotalPrice("");
   };
 
   const handleQuantityChange = (value) => {
     setQuantity(Number(value));
-    setPrice(""); // reset price input to force user to type if needed
+    setTotalPrice("");
   };
 
   const handleSubmit = async (e) => {
@@ -76,8 +81,10 @@ export default function RecordSales() {
     setError("");
 
     if (!selected) return setError("Please select a product.");
-    if (!quantity || quantity < 1) return setError("Quantity must be at least 1.");
-    if (!price || price <= 0) return setError("Price must be greater than 0.");
+    if (!quantity || quantity < 1)
+      return setError("Quantity must be at least 1.");
+    if (!totalPrice || totalPrice <= 0)
+      return setError("Total price must be greater than 0.");
 
     const product = products.find((p) => p.id === Number(selected));
     if (!product) return setError("Invalid product selected.");
@@ -96,10 +103,10 @@ export default function RecordSales() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          productId: Number(selected),
-          quantity: Number(quantity),
-          price: Number(price),
-        }),
+        productId: Number(selected),
+        quantity: Number(quantity),
+        price: Number(totalPrice), // TOTAL price goes to backend
+       }),
       });
 
       fetchProducts();
@@ -107,7 +114,7 @@ export default function RecordSales() {
 
       setSelected("");
       setQuantity(1);
-      setPrice("");
+      setTotalPrice("");
     } catch {
       setError("Error recording sale.");
     } finally {
@@ -116,7 +123,7 @@ export default function RecordSales() {
   };
 
   const totalToday = sales.reduce(
-    (acc, s) => acc + s.price * s.quantity,
+    (acc, s) => acc + Number(s.price),
     0
   );
 
@@ -143,7 +150,6 @@ export default function RecordSales() {
               <p className="text-red-400 text-center font-medium">{error}</p>
             )}
 
-            {/* Record Sale */}
             <motion.form
               onSubmit={handleSubmit}
               className="bg-[#1e293b] border border-gray-700 rounded-xl p-6 max-w-xl mx-auto space-y-4"
@@ -176,11 +182,13 @@ export default function RecordSales() {
                 <input
                   type="number"
                   min="1"
-                  value={price}
-                  onChange={(e) => setPrice(Number(e.target.value))}
+                  value={totalPrice}
+                  onChange={(e) => setTotalPrice(Number(e.target.value))}
                   className="border border-gray-600 bg-[#0f172a] rounded px-3 py-2"
                   placeholder={
-                    selected ? `Suggested: ₦${Number(suggestedPrice).toLocaleString()}` : ""
+                    selected
+                      ? `Total: ₦${Number(suggestedPrice).toLocaleString()}`
+                      : ""
                   }
                 />
               </div>
@@ -197,7 +205,6 @@ export default function RecordSales() {
               </button>
             </motion.form>
 
-            {/* Sales Table */}
             <div className="overflow-x-auto max-w-full bg-[#1e293b] border border-gray-700 rounded-xl">
               <table className="w-full text-sm table-fixed">
                 <thead className="bg-[#0f172a]">
@@ -205,7 +212,7 @@ export default function RecordSales() {
                     <th className="px-3 py-2 text-left">#</th>
                     <th className="px-3 py-2 text-left">Product</th>
                     <th className="px-3 py-2 text-right">Qty</th>
-                    <th className="px-3 py-2 text-right">Price</th>
+                    <th className="px-3 py-2 text-right">Unit Price</th>
                     <th className="px-3 py-2 text-right">Total</th>
                     <th className="px-3 py-2 text-right">Profit / Loss</th>
                     <th className="px-3 py-2 text-left">Date</th>
@@ -224,18 +231,17 @@ export default function RecordSales() {
                       const profitLoss = Number(s.profit_loss || 0);
 
                       return (
-                        <tr
-                          key={s.id}
-                          className="border-t border-gray-700"
-                        >
+                        <tr key={s.id} className="border-t border-gray-700">
                           <td className="px-3 py-2 text-left">{i + 1}</td>
-                          <td className="px-3 py-2 text-left">{s.product_name}</td>
+                          <td className="px-3 py-2 text-left">
+                            {s.product_name}
+                          </td>
                           <td className="px-3 py-2 text-right">{s.quantity}</td>
                           <td className="px-3 py-2 text-right">
-                            ₦{Number(s.price).toLocaleString()}
+                            ₦{(s.price / s.quantity).toLocaleString()}
                           </td>
                           <td className="px-3 py-2 text-right font-semibold">
-                            ₦{(s.price * s.quantity).toLocaleString()}
+                            ₦{Number(s.price).toLocaleString()}
                           </td>
                           <td
                             className={`px-3 py-2 text-right font-semibold ${

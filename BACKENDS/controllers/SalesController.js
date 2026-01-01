@@ -1,5 +1,5 @@
 import * as Sales from "../models/sales_Model.js";
-import PDFDocument from "pdfkit";
+import ExcelJS from "exceljs";
 
 export const getAllSales = async (req, res) => {
   try {
@@ -73,7 +73,7 @@ export const getSalesByDate = async (req, res) => {
   }
 };
 
-export const downloadDailySalesPDF = async (req, res) => {
+export const downloadDailySalesExcel = async (req, res) => {
   try {
     const date = req.params.date;
     const { rows } = await Sales.fetchSalesByDate(req.userId, date);
@@ -82,106 +82,189 @@ export const downloadDailySalesPDF = async (req, res) => {
       return res.status(404).json({ message: "No sales for this date" });
     }
 
-    // Normalize rows to avoid undefined properties and unify profit field
-    const normalized = rows.map((r) => ({
-      id: r.id,
-      product_name: r.product_name || "",
-      quantity: Number(r.quantity) || 0,
-      price: Number(r.price) || 0,
-      profit: Number(r.profit_loss ?? r.profit ?? 0),
-      created_at: r.created_at,
-    }));
+    const sales = rows.map((r) => {
+      const quantity = Number(r.quantity) || 0;
+      const unitPrice = Number(r.price) || 0;
 
-    // Precompute totals safely
+      return {
+        product: r.product_name || "",
+        quantity,
+        unitPrice,
+        total: quantity * unitPrice,
+        profit: Number(r.profit_loss ?? 0),
+      };
+    });
+
     let totalAmount = 0;
     let totalProfit = 0;
-    normalized.forEach((s) => {
-      totalAmount += s.quantity * s.price;
+
+    sales.forEach((s) => {
+      totalAmount += s.total;
       totalProfit += s.profit;
     });
 
-    const doc = new PDFDocument({ margin: 30, size: "A4" });
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Daily Sales");
 
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=sales-${date}.pdf`
-    );
+    /* ================= PRINT SETUP ================= */
+    sheet.pageSetup = {
+      paperSize: 9, // A4
+      orientation: "landscape",
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: false,
+    };
 
-    // Pipe after validation to avoid write-after-end on error
-    doc.pipe(res);
+    /* ================= HEADER ================= */
+    sheet.mergeCells("A1:F1");
+    sheet.getCell("A1").value = "Daily Sales Report";
+    sheet.getCell("A1").font = { size: 16, bold: true };
+    sheet.getCell("A1").alignment = {
+      horizontal: "center",
+      vertical: "middle",
+    };
 
-    // --- Header ---
-    doc
-      .fontSize(20)
-      .fillColor("#1f2937")
-      .text("Sales Report", { align: "center" });
-    doc
-      .fontSize(14)
-      .fillColor("#374151")
-      .text(`Date: ${date}`, { align: "center" });
-    doc.moveDown(2);
+    sheet.mergeCells("A2:F2");
+    sheet.getCell("A2").value = `Date: ${date}`;
+    sheet.getCell("A2").alignment = {
+      horizontal: "center",
+      vertical: "middle",
+    };
 
-    // --- Table Setup ---
-    const tableTop = doc.y;
-    const snX = 50;
-    const productX = 80;
-    const productWidth = 140;
-    const qtyX = productX + productWidth + 10;
-    const priceX = qtyX + 50;
-    const totalX = priceX + 80;
-    const profitX = totalX + 90;
+    sheet.addRow([]); // spacer row
 
-    // Table Header
-    doc
-      .fontSize(12)
-      .fillColor("#111827")
-      .text("S/N", snX, tableTop)
-      .text("Product", productX, tableTop)
-      .text("Qty", qtyX, tableTop)
-      .text("Price", priceX, tableTop)
-      .text("Total", totalX, tableTop)
-      .text("Profit/Loss", profitX, tableTop);
+    /* ================= TABLE HEADER ================= */
+    const headerRow = sheet.addRow([
+      "#",
+      "Product",
+      "Quantity",
+      "Unit Price",
+      "Total",
+      "Profit / Loss",
+    ]);
 
-    doc.moveDown(0.5);
+    headerRow.font = { bold: true };
 
-    // --- Helper: Title Case ---
-    const toTitleCase = (str = "") =>
-      String(str).replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
-
-    let y = doc.y;
-
-    normalized.forEach((sale, index) => {
-      const saleTotal = sale.quantity * sale.price;
-
-      const rowHeight = Math.max(doc.heightOfString(toTitleCase(sale.product_name), { width: productWidth }), 12) + 8;
-
-      doc
-        .fontSize(12)
-        .fillColor("#1f2937")
-        .text(index + 1, snX, y)
-        .text(toTitleCase(sale.product_name), productX, y, { width: productWidth, ellipsis: true })
-        .text(String(sale.quantity), qtyX, y)
-        .text(`₦${sale.price.toLocaleString()}`, priceX, y)
-        .text(`₦${saleTotal.toLocaleString()}`, totalX, y)
-        .text(`₦${sale.profit.toLocaleString()}`, profitX, y);
-
-      y += rowHeight;
+    headerRow.eachCell((cell, colNumber) => {
+      cell.alignment = {
+        vertical: "middle",
+        horizontal:
+          colNumber === 1
+            ? "center"
+            : colNumber === 2
+            ? "left"
+            : "right",
+      };
     });
 
-    doc.moveDown(2);
+    /* Repeat header on every printed page */
+    sheet.pageSetup.printTitlesRow = `${headerRow.number}:${headerRow.number}`;
 
-    // --- Totals ---
-    doc
-      .fontSize(14)
-      .fillColor("#1d4ed8")
-      .text(`Total Amount: ₦${totalAmount.toLocaleString()}`, { align: "right" })
-      .text(`Total Profit/Loss: ₦${totalProfit.toLocaleString()}`, { align: "right" });
+    /* ================= COLUMN DEFINITIONS ================= */
+    sheet.columns = [
+      { key: "index", width: 5 },
+      { key: "product", width: 32 },
+      { key: "quantity", width: 12 },
+      { key: "unitPrice", width: 15 },
+      { key: "total", width: 15 },
+      { key: "profit", width: 18 },
+    ];
 
-    // finalize PDF
-    doc.end();
+    /* ================= TABLE ROWS ================= */
+    sales.forEach((s, i) => {
+      const row = sheet.addRow([
+        i + 1,
+        s.product,
+        s.quantity,
+        s.unitPrice,
+        s.total,
+        s.profit,
+      ]);
+
+      row.eachCell((cell, colNumber) => {
+        cell.alignment = {
+          vertical: "middle",
+          horizontal:
+            colNumber === 1
+              ? "center"
+              : colNumber === 2
+              ? "left"
+              : "right",
+        };
+      });
+
+      row.getCell(4).numFmt = '"₦"#,##0.00';
+      row.getCell(5).numFmt = '"₦"#,##0.00';
+      row.getCell(6).numFmt =
+        '"₦"+#,##0.00;"₦"-#,##0.00;"₦"0.00';
+
+      row.getCell(6).font = {
+        color: {
+          argb: s.profit >= 0 ? "FF16A34A" : "FFDC2626",
+        },
+      };
+    });
+
+    /* ================= TOTAL ROW ================= */
+    sheet.addRow([]);
+
+    const totalRow = sheet.addRow([
+      "",
+      "",
+      "",
+      "TOTAL SALES",
+      totalAmount,
+      totalProfit,
+    ]);
+
+    totalRow.font = { bold: true };
+
+    totalRow.eachCell((cell) => {
+      cell.alignment = {
+        vertical: "middle",
+        horizontal: "right",
+      };
+    });
+
+    totalRow.getCell(5).numFmt = '"₦"#,##0.00';
+    totalRow.getCell(6).numFmt =
+      '"₦"+#,##0.00;"₦"-#,##0.00';
+
+    totalRow.getCell(6).font = {
+      color: {
+        argb: totalProfit >= 0 ? "FF16A34A" : "FFDC2626",
+      },
+    };
+
+    /* ================= BORDERS FOR PRINT ================= */
+    sheet.eachRow((row, rowNumber) => {
+      if (rowNumber >= headerRow.number) {
+        row.eachCell((cell) => {
+          cell.border = {
+            top: { style: "thin" },
+            left: { style: "thin" },
+            bottom: { style: "thin" },
+            right: { style: "thin" },
+          };
+        });
+      }
+    });
+
+    /* ================= RESPONSE ================= */
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=sales-${date}.xlsx`
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Error generating PDF" });
+    res.status(500).json({ message: "Error generating Excel file" });
   }
 };
