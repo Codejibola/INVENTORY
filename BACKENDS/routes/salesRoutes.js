@@ -8,15 +8,16 @@ import {
   getSalesByDate,
    downloadDailySalesExcel
 } from "../controllers/SalesController.js";
+import { userLimiter } from "../middleware/rateLimiter.js";
 
 const router = express.Router();
 
-router.get("/sales", authenticate, getAllSales);
-router.post("/sales", authenticate, recordSale);
-router.get("/sales/daily", authenticate, getDailySales);
-router.get("/sales/daily/:date/view", authenticate, viewDailySales);
-router.get("/daily/:date/view", authenticate, getSalesByDate);
-router.get("/sales/daily/:date/excel", authenticate, downloadDailySalesExcel);
+router.get("/sales", authenticate, userLimiter, getAllSales);
+router.post("/sales", authenticate, userLimiter, recordSale);
+router.get("/sales/daily", authenticate, userLimiter, getDailySales);
+router.get("/sales/daily/:date/view", authenticate, userLimiter, viewDailySales);
+router.get("/daily/:date/view", authenticate, userLimiter, getSalesByDate);
+router.get("/sales/daily/:date/excel", authenticate, userLimiter, downloadDailySalesExcel);
 
 
 

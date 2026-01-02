@@ -1,11 +1,12 @@
 import express from "express";
 import bcrypt from "bcrypt";
 import pool from "./db.js";
+import {authLimiter} from "../middleware/rateLimiter.js";
 
 const router = express.Router();
 
 // POST /api/auth/register
-router.post("/register", async (req, res) => {
+router.post("/register", authLimiter, async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
@@ -13,7 +14,7 @@ router.post("/register", async (req, res) => {
     if (!name || !email || !password) {
       return res.status(400).json({
         message: "All fields (name, email, password) are required",
-      });c
+      });
     }
 
     // Check if email already exists

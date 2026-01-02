@@ -1,7 +1,6 @@
-// server.js
 import dotenv from "dotenv";
 dotenv.config();
-
+import { globalLimiter } from "./middleware/rateLimiter.js";
 import cors from "cors";
 import express from "express";
 import registrationRouter from "./config/Registration.js";
@@ -33,13 +32,13 @@ class WebServer {
 }
 
 const Quantora = new WebServer(5000);
+Quantora.app.use(globalLimiter);
 
 // Routers
 Quantora.app.use("/api/auth", registrationRouter);
 Quantora.app.use("/api/auth", adminRouter);
 Quantora.app.use("/api", productRoutes);
 Quantora.app.use("/api", salesRoutes);
-
 
 // Default
 Quantora.registerDefaultRoutes();
