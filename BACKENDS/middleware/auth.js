@@ -19,3 +19,9 @@ export default function authMiddleware(req, res, next) {
   req.user = { id: token };
   next();
 }
+
+console.log({
+  raw: process.env.DB_HOST,
+  json: JSON.stringify(process.env.DB_HOST),
+  length: process.env.DB_HOST?.length,
+});

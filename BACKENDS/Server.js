@@ -1,5 +1,7 @@
 import dotenv from "dotenv";
-dotenv.config();
+dotenv.config({ path: "./.env" });
+console.log("ENV CHECK:", process.env.DB_HOST);
+import pool from "./config/db.js";
 import { globalLimiter } from "./middleware/rateLimiter.js";
 import cors from "cors";
 import express from "express";
@@ -11,8 +13,8 @@ import salesRoutes from "./routes/salesRoutes.js";
 
 class WebServer {
   #port;
-  constructor(port) {
-    this.#port = process.env.PORT || port;
+  constructor() {
+    this.#port = process.env.PORT ;
     this.app = express();
     this.app.use(cors());
     this.app.use(express.json());
@@ -31,7 +33,7 @@ class WebServer {
   }
 }
 
-const Quantora = new WebServer(5000);
+const Quantora = new WebServer();
 Quantora.app.use(globalLimiter);
 
 // Routers

@@ -20,3 +20,4 @@ router.put("/products/:id", authenticate, userLimiter, updateProduct);
 router.delete("/products/:id", authenticate, userLimiter, deleteProduct);
 
 export default router;
+

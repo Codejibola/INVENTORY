@@ -22,3 +22,4 @@ router.get("/sales/daily/:date/excel", authenticate, userLimiter, downloadDailyS
 
 
 export default router;
+
