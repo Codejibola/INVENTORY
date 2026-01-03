@@ -9,7 +9,7 @@ export const fetchAllSales = (userId) => {
         s.id,
         p.name AS product_name,
         s.quantity,
-        s.price,
+        s.price,          -- TOTAL price
         s.profit_loss,
         s.created_at
      FROM sales s
@@ -21,10 +21,10 @@ export const fetchAllSales = (userId) => {
 };
 
 /**
- * Insert a sale with automatic profit/loss calculation
+ * Insert a sale with correct profit/loss calculation
  */
 export const insertSale = async (userId, productId, quantity, sellingPrice) => {
-  // 1. Fetch cost price and stock
+  // 1. Fetch unit cost and stock
   const productRes = await pool.query(
     `SELECT price, units
      FROM products
@@ -36,16 +36,18 @@ export const insertSale = async (userId, productId, quantity, sellingPrice) => {
     throw new Error("Product not found");
   }
 
-  const costPrice = Number(productRes.rows[0].price);
+  const costPrice = Number(productRes.rows[0].price); // UNIT cost
   const availableUnits = Number(productRes.rows[0].units);
 
   if (availableUnits < quantity) {
     throw new Error("Insufficient stock");
   }
 
-  // 2. Calculate profit / loss
-  const profitLoss =
-    (Number(sellingPrice) - costPrice) * Number(quantity);
+  const totalSellingPrice = Number(sellingPrice); // TOTAL price
+  const totalCost = costPrice * quantity;
+
+  // ✅ CORRECT PROFIT / LOSS
+  const profitLoss = totalSellingPrice - totalCost;
 
   // 3. Insert sale
   const saleRes = await pool.query(
@@ -58,7 +60,7 @@ export const insertSale = async (userId, productId, quantity, sellingPrice) => {
      )
      VALUES ($1, $2, $3, $4, $5)
      RETURNING id, profit_loss`,
-    [userId, productId, quantity, sellingPrice, profitLoss]
+    [userId, productId, quantity, totalSellingPrice, profitLoss]
   );
 
   // 4. Reduce stock
@@ -79,7 +81,7 @@ export const fetchDailySales = (userId, year) => {
   return pool.query(
     `SELECT
         DATE(created_at) AS date,
-        SUM(quantity * price) AS total_sales,
+        SUM(price) AS total_sales,          -- FIXED
         SUM(profit_loss) AS total_profit_loss
      FROM sales
      WHERE user_id = $1
@@ -99,7 +101,7 @@ export const fetchSalesByDate = (userId, date) => {
         s.id,
         p.name AS product_name,
         s.quantity,
-        s.price,
+        s.price,          -- TOTAL price
         s.profit_loss,
         s.created_at
      FROM sales s

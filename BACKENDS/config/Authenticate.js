@@ -14,8 +14,4 @@ export const authenticate = (req, res, next) => {
     next();
   });
 };
- console.log({
-  raw: process.env.DB_HOST,
-  json: JSON.stringify(process.env.DB_HOST),
-  length: process.env.DB_HOST?.length,
-});
+ 

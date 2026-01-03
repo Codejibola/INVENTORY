@@ -15,6 +15,6 @@
   "scripts": {
     "start": "node Server.js",
 
-    "dev": "node -r dotenv/config Server.js"
+    "dev": "nodemon Server.js"
   }
 }
