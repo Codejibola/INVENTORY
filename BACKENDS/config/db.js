@@ -1,15 +1,13 @@
-import pkg from 'pg';
-const { Pool } = pkg;
+import { Pool } from "pg";
+import { LOCAL_ENV } from "./localEnv.js";
 
 const pool = new Pool({
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  database: process.env.DB_NAME,
-
+  host: LOCAL_ENV.DB_HOST,
+  port: LOCAL_ENV.DB_PORT,
+  user: LOCAL_ENV.DB_USER,
+  password: LOCAL_ENV.DB_PASSWORD,
+  database: LOCAL_ENV.DB_NAME,
+  ssl: false, 
 });
-
-
 
 export default pool;

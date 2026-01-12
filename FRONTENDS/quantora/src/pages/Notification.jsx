@@ -22,6 +22,7 @@ export default function Notification() {
     fetchLowStock();
   }, []);
 
+
   async function fetchLowStock() {
     setLoading(true);
     setError("");
@@ -30,7 +31,6 @@ export default function Notification() {
       if (!token) {
         setError("You must be logged in to view notifications.");
         setLowStock([]);
-        setLoading(false);
         return;
       }
 
@@ -72,8 +72,8 @@ export default function Notification() {
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 
+      {/* Notification list (no sound here - sound is handled by Topbar.jsx) */}
       <main className="p-6 bg-black min-h-screen text-white">
-        {/* Back navigation */}
         <nav aria-label="Back navigation" className="mb-6">
           <button
             onClick={() => navigate(-1)}
@@ -100,7 +100,7 @@ export default function Notification() {
           )}
         </section>
 
-        {/* Notifications list in 3-column grid */}
+        {/* Notifications list */}
         {!loading && !error && lowStock.length > 0 && (
           <section
             aria-label="Low stock alerts"
@@ -109,8 +109,8 @@ export default function Notification() {
             {lowStock.map((product) => (
               <article
                 key={product.id}
-                className="flex flex-col p-4 rounded-xl 
-                bg-white/5 border border-white/10 backdrop-blur-md 
+                className="flex flex-col p-4 rounded-xl
+                bg-white/5 border border-white/10 backdrop-blur-md
                 hover:bg-white/10 transition-all duration-200 h-full"
               >
                 <div
@@ -126,7 +126,9 @@ export default function Notification() {
                   </p>
                   <p className="text-sm text-gray-400 mt-1">
                     Low stock alert — only{" "}
-                    <span className="text-red-400 font-bold">{product.units}</span>{" "}
+                    <span className="text-red-400 font-bold">
+                      {product.units}
+                    </span>{" "}
                     units left.
                   </p>
                 </div>

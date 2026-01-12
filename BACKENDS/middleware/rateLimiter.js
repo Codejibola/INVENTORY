@@ -3,7 +3,7 @@ import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 
 export const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 30 minutes
-  max: 300, // 300 requests per IP
+  max: 700, // 700 requests per IP
   standardHeaders: true, // Return rate limit info in headers
   legacyHeaders: false,
   message: {
@@ -14,7 +14,7 @@ export const globalLimiter = rateLimit({
 
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // only 10 attempts per 15 mins
+  max: 30, // only 30 attempts per 15 mins
   message: {
     success: false,
     message: "Too many login attempts. Try again later."
@@ -23,7 +23,7 @@ export const authLimiter = rateLimit({
 
 export const userLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 60,
+  max: 100,
   keyGenerator: (req) => {
     if (req.user?.id) {
       return `user-${req.user.id}`;

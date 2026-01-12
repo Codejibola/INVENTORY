@@ -26,6 +26,7 @@ export default function Dashboard() {
   const [latestSale, setLatestSale] = useState(null);
   const [chartData, setChartData] = useState([]);
   const [monthlyProfitLoss, setMonthlyProfitLoss] = useState(0);
+  const [shopWorth, setShopWorth] = useState(0);
 
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
@@ -177,6 +178,11 @@ export default function Dashboard() {
       );
       const prodData = prodRes.ok ? await prodRes.json() : [];
 
+      // Calculate shop worth (sum of selling price * quantity for all products)
+      const worth = (Array.isArray(prodData) ? prodData : [])
+        .reduce((sum, p) => sum + (Number(p.selling_price || 0) * Number(p.units || 0)), 0);
+      setShopWorth(worth);
+
       if (Array.isArray(prodData) && prodData.length > 0) {
         let max = prodData[0];
 
@@ -248,6 +254,13 @@ export default function Dashboard() {
                   isHighlight
                 />
                 <Card
+                  title="Shop Worth"
+                  icon="store"
+                  desc={`₦${formatShortNumber(
+                    shopWorth
+                  )}`}
+                />
+                <Card
                   title="Manage your Products"
                   icon="inventory_2"
                   to="/Manage_Products"
@@ -258,12 +271,6 @@ export default function Dashboard() {
                   icon="trending_up"
                   to="/recordSales"
                   desc="Take records of sales made"
-                />
-                <Card
-                  title="Invoices"
-                  icon="receipt_long"
-                  desc="View & manage invoices"
-                  to="/invoices"
                 />
               </motion.div>
             </section>

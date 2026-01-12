@@ -339,7 +339,7 @@ export default function ManageProducts() {
                                 key={p.id}
                                 className="border-b border-gray-700 hover:bg-gray-700"
                               >
-                                <td className="py-3 px-4">{p.name}</td>
+                                <td className="py-3 px-4">{toTitleCase(p.name)}</td>
                                 <td className="py-3 px-4">
                                   ₦{Number(p.price).toFixed(2)}
                                 </td>

@@ -135,7 +135,7 @@ export default function Invoices() {
   const totalPages = Math.ceil(filteredSales.length / itemsPerPage);
 
   const totalForSelectedDate = selectedSales.reduce(
-    (acc, s) => acc + s.price * s.quantity,
+    (acc, s) => acc + Number(s.price),
     0
   );
 
