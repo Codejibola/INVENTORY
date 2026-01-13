@@ -1,6 +1,9 @@
 import { Helmet } from "react-helmet-async";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 export default function Privacy() {
+  const navigate = useNavigate()
   return (
     <>
       <Helmet>
@@ -12,6 +15,15 @@ export default function Privacy() {
       </Helmet>
 
       <div className="max-w-4xl mx-auto px-6 py-16 text-gray-800">
+         {/* Back to Sign up */}
+                <button
+                  onClick={() => navigate("/register")}
+                  className="flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-6"
+                  aria-label="Back to login"
+                >
+                  <ArrowLeft size={20} />
+                  <span className="text-sm font-medium">Back to Sign up</span>
+                </button>
         <h1 className="text-4xl font-extrabold text-black mb-8 border-b border-gray-700 pb-4">
           Privacy Policy
         </h1>
