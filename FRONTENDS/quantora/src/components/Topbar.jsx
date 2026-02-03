@@ -101,7 +101,7 @@ export default function Topbar({ onMenuClick, userName }) {
           </Link>
 
           <div className="w-10 h-10 rounded-full bg-teal-600 flex items-center justify-center text-white font-bold">
-            {userName ? userName.charAt(0).toUpperCase() : "U"}
+            {userName ? userName.charAt(0).toUpperCase() : "S"}
           </div>
         </div>
       </motion.header>

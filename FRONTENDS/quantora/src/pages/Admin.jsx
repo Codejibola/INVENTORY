@@ -7,6 +7,7 @@ import bg from "../assets/admin0.png";
 
 export default function Admin() {
   const navigate = useNavigate();
+
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,12 +30,11 @@ export default function Admin() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Invalid email or password");
+      if (!res.ok) throw new Error(data.message || "Invalid credentials");
 
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
-
-      navigate("/dashboard");
+      navigate("/select-mode");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -49,116 +49,180 @@ export default function Admin() {
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 
-      <main
-        className="flex items-center justify-center min-h-screen bg-black p-4 relative bg-cover bg-center"
-        style={{ backgroundImage: `url(${bg})` }}
-      >
-        <div className="absolute inset-0 bg-black/70" />
+      <main className="min-h-screen bg-gray-100 lg:bg-black relative">
+        {/* DESKTOP BACKGROUND */}
+        <div
+          className="hidden lg:block absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${bg})` }}
+        />
+        <div className="hidden lg:block absolute inset-0 bg-black/80" />
 
-        <motion.section
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          className="relative z-10 w-full max-w-lg p-10 rounded-2xl shadow-2xl bg-white/10 backdrop-md border border-white/20 flex flex-col"
-          aria-label="Admin Login Form"
-        >
-          <motion.h1
-            initial={{ scale: 0.8 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="text-3xl md:text-4xl font-bold text-center text-blue-400 mb-8"
-          >
-            Quantora Login
-          </motion.h1>
+        {/* ================= MOBILE LAYOUT ================= */}
+        <div className="lg:hidden">
+          {/* HERO */}
+          <div className="bg-gradient-to-br from-blue-600 to-indigo-700 px-6 pt-14 pb-20 text-white text-center">
+            <div className="mx-auto w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center mb-4">
+              <span className="text-3xl font-extrabold">Q</span>
+            </div>
+            <h1 className="text-2xl font-semibold mb-1">
+             Quantora Login
+            </h1>
+            <p className="text-sm text-white/80">
+              Sign in to manage your store operations.
+            </p>
+          </div>
 
-          {error && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="mb-4 text-sm text-red-400 text-center"
-            >
-              {error}
-            </motion.p>
-          )}
-
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-            {/* EMAIL */}
-            <motion.input
-              type="email"
-              name="email"
-              placeholder="Email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              className="w-full px-5 py-3 rounded-xl border border-blue-400 bg-white/90 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600"
-              initial={{ x: -30, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.1 }}
-            />
-
-            {/* PASSWORD */}
-            <motion.div
-              initial={{ x: -30, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="relative"
-              aria-label="Password Input"
-            >
-              <input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                placeholder="Password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                className="w-full px-5 py-3 rounded-xl border border-blue-400 bg-white/90 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600"
+          {/* FORM CARD */}
+          <div className="-mt-14 px-4 pb-10">
+            <div className="bg-white rounded-2xl shadow-xl p-6">
+              <LoginForm
+                formData={formData}
+                handleChange={handleChange}
+                handleSubmit={handleSubmit}
+                loading={loading}
+                error={error}
+                showPassword={showPassword}
+                setShowPassword={setShowPassword}
+                navigate={navigate}
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-600"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? "👁️" : "👁️‍🗨️"}
-              </button>
-            </motion.div>
+            </div>
+          </div>
+        </div>
 
-            {/* LOGIN BUTTON */}
-            <motion.button
-              whileHover={loading ? {} : { scale: 1.03 }}
-              whileTap={loading ? {} : { scale: 0.97 }}
-              type="submit"
-              disabled={loading}
-              className={`w-full py-3 font-semibold text-white rounded-xl relative overflow-hidden
-              transition-all duration-300 ${loading ? "cursor-not-allowed opacity-70" : ""}`}
-              style={{
-                background:
-                  "linear-gradient(135deg, rgba(0,102,255,0.9), rgba(0,60,180,0.9))",
-                boxShadow: "0 0 10px rgba(0,102,255,0.5), 0 0 25px rgba(0,102,255,0.2)",
-              }}
-            >
-              {loading ? "Connecting…" : "Login"}
-            </motion.button>
-          </form>
+        {/* ================= DESKTOP LAYOUT ================= */}
+        <div className="hidden lg:flex min-h-screen items-center justify-center relative z-10 p-6">
+          <div className="w-full max-w-5xl grid grid-cols-2 rounded-xl overflow-hidden shadow-2xl">
+            {/* LEFT PANEL */}
+            <aside className="p-12 bg-black/40 text-white">
+              <div className="flex items-center gap-3 mb-8">
+                <div className="w-12 h-12 rounded-xl bg-blue-600/20 flex items-center justify-center">
+                  <span className="text-blue-500 text-3xl font-extrabold">Q</span>
+                </div>
+                <span className="text-2xl font-semibold">Quantora</span>
+              </div>
 
-          {/* REGISTER LINK */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            className="mt-6 text-center text-gray-200 text-sm"
-            aria-label="Register Link"
-          >
-            Don’t have an account?{" "}
-            <button
-              onClick={() => navigate("/register")}
-              className="text-blue-400 hover:underline"
-            >
-              Register
-            </button>
-          </motion.div>
-        </motion.section>
+              <h2 className="text-3xl font-semibold mb-4">
+                Secure admin access
+              </h2>
+              <p className="text-white/75 mb-6">
+                Log in to control inventory, staff permissions, and analytics.
+              </p>
+
+              <ul className="space-y-3 text-white/70 text-sm">
+                <li>• Inventory oversight</li>
+                <li>• Staff management</li>
+                <li>• Secure administration</li>
+              </ul>
+            </aside>
+
+            {/* RIGHT PANEL */}
+            <section className="bg-white p-12">
+              <LoginForm
+                formData={formData}
+                handleChange={handleChange}
+                handleSubmit={handleSubmit}
+                loading={loading}
+                error={error}
+                showPassword={showPassword}
+                setShowPassword={setShowPassword}
+                navigate={navigate}
+              />
+            </section>
+          </div>
+        </div>
       </main>
     </>
+  );
+}
+
+/* ================= REUSABLE LOGIN FORM ================= */
+
+function LoginForm({
+  formData,
+  handleChange,
+  handleSubmit,
+  loading,
+  error,
+  showPassword,
+  setShowPassword,
+  navigate,
+}) {
+  return (
+    <>
+      <h2 className="text-xl font-semibold text-gray-900 mb-1">
+        Sign in
+      </h2>
+      <p className="text-sm text-gray-500 mb-6">
+        Enter your admin credentials.
+      </p>
+
+      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Input
+          label="Email address"
+          type="email"
+          name="email"
+          value={formData.email}
+          onChange={handleChange}
+        />
+
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            Password
+          </label>
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-600"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-blue-600"
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          </div>
+        </div>
+
+        <button
+          disabled={loading}
+          className={`w-full rounded-xl py-3 text-sm font-medium text-white transition
+            ${loading ? "bg-blue-400" : "bg-blue-600 hover:bg-blue-700"}`}
+        >
+          {loading ? "Signing in…" : "Login"}
+        </button>
+      </form>
+
+      <p className="mt-6 text-center text-sm text-gray-600">
+        Don’t have an account?{" "}
+        <button
+          onClick={() => navigate("/register")}
+          className="text-blue-600 hover:underline font-medium"
+        >
+          Register
+        </button>
+      </p>
+    </>
+  );
+}
+
+function Input({ label, ...props }) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-gray-600 mb-1">
+        {label}
+      </label>
+      <input
+        {...props}
+        required
+        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-600"
+      />
+    </div>
   );
 }

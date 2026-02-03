@@ -9,12 +9,13 @@ import registrationRouter from "./config/Registration.js";
 import adminRouter from "./routes/Admin.js";
 import productRoutes from "./routes/productRoutes.js";
 import salesRoutes from "./routes/salesRoutes.js";
+import {LOCAL_ENV} from "./config/localEnv.js";
 
 
 class WebServer {
   #port;
   constructor() {
-    this.#port = process.env.PORT ;
+    this.#port = LOCAL_ENV.PORT ; 
     this.app = express();
     this.app.use(cors());
     this.app.use(express.json());
@@ -48,4 +49,7 @@ Quantora.registerDefaultRoutes();
 // Start server
 Quantora.listen();
 
+
 export default WebServer;
+
+
