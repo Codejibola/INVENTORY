@@ -10,7 +10,9 @@ import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Notification from "./pages/Notification";
 import SelectMode from "./pages/SelectMode";
+
 import WorkerDashboard from "./pages/WorkerDashboard";
+import WorkerRecordSales from "./pages/WorkerRecordSales";
 import AvailableProducts from "./pages/AvailableProducts";
 
 import PrivateRoute from "./components/PrivateRoute";
@@ -19,7 +21,7 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        {/* Root redirects to login (Admin) */}
+        {/* Root → Login */}
         <Route path="/" element={<Navigate to="/admin" replace />} />
 
         {/* Public routes */}
@@ -28,7 +30,7 @@ export default function App() {
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
 
-        {/* Protected routes */}
+        {/* Mode selection */}
         <Route
           path="/select-mode"
           element={
@@ -38,7 +40,7 @@ export default function App() {
           }
         />
 
-        {/* Admin Routes */}
+        {/* Admin routes */}
         <Route
           path="/dashboard"
           element={
@@ -80,7 +82,7 @@ export default function App() {
           }
         />
 
-        {/* Worker Routes */}
+        {/* Worker routes */}
         <Route
           path="/worker/*"
           element={
@@ -89,13 +91,15 @@ export default function App() {
             </PrivateRoute>
           }
         >
-          {/* Nested worker pages */}
-          <Route index element={<RecordSales />} /> {/* default */}
-          <Route path="record-sales" element={<RecordSales />} />
+          {/* Default worker page */}
+          <Route index element={<WorkerRecordSales />} />
+
+          {/* Worker pages */}
+          <Route path="record-sales" element={<WorkerRecordSales />} />
           <Route path="available-products" element={<AvailableProducts />} />
         </Route>
 
-        {/* 404 fallback */}
+        {/* 404 */}
         <Route
           path="*"
           element={

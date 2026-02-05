@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import pool from "../config/db.js";
 import {authLimiter} from "../middleware/rateLimiter.js";
+import {authenticate} from "../config/Authenticate.js";
 
 const router = express.Router();
 
@@ -47,6 +48,28 @@ router.post("/admin", authLimiter, async (req, res) => {
     });
   } catch (err) {
     console.error("Admin login error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.get("/me", authenticate, async (req, res) => {
+  try {
+    const userId = req.userId; // ✅ FIX HERE
+
+    const result = await pool.query(
+      `SELECT id, name, email, shop_name
+       FROM users
+       WHERE id = $1`,
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({ user: result.rows[0] });
+  } catch (err) {
+    console.error("ME route error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
