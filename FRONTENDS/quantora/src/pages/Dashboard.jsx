@@ -331,7 +331,7 @@ export default function Dashboard() {
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-white font-semibold">
-                        Profit & Loss
+                       This month's Profit & Loss
                       </h3>
                       <p
                         className={`font-bold text-lg mt-1 ${

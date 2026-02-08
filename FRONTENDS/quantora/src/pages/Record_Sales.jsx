@@ -61,21 +61,6 @@ export default function RecordSales() {
     return product.selling_price * quantity;
   };
 
-  const unitPrice =
-    quantity > 0 && totalPrice
-      ? Number(totalPrice) / Number(quantity)
-      : 0;
-
-  const handleSelectProduct = (productId) => {
-    setSelected(productId);
-    setTotalPrice("");
-  };
-
-  const handleQuantityChange = (value) => {
-    setQuantity(Number(value));
-    setTotalPrice("");
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -103,10 +88,10 @@ export default function RecordSales() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-        productId: Number(selected),
-        quantity: Number(quantity),
-        price: Number(totalPrice), // TOTAL price goes to backend
-       }),
+          productId: Number(selected),
+          quantity: Number(quantity),
+          price: Number(totalPrice),
+        }),
       });
 
       fetchProducts();
@@ -150,15 +135,19 @@ export default function RecordSales() {
               <p className="text-red-400 text-center font-medium">{error}</p>
             )}
 
+            {/* FORM */}
             <motion.form
               onSubmit={handleSubmit}
               className="bg-[#1e293b] border border-gray-700 rounded-xl p-6 max-w-xl mx-auto space-y-4"
             >
-              <h2 className="text-lg font-semibold text-white">Record Sale</h2>
+              <h2 className="text-lg font-semibold">Record Sale</h2>
 
               <select
                 value={selected}
-                onChange={(e) => handleSelectProduct(e.target.value)}
+                onChange={(e) => {
+                  setSelected(e.target.value);
+                  setTotalPrice("");
+                }}
                 className="w-full border border-gray-600 bg-[#0f172a] rounded px-3 py-2"
               >
                 <option value="">-- Select Product --</option>
@@ -174,7 +163,10 @@ export default function RecordSales() {
                   type="number"
                   min="1"
                   value={quantity}
-                  onChange={(e) => handleQuantityChange(e.target.value)}
+                  onChange={(e) => {
+                    setQuantity(Number(e.target.value));
+                    setTotalPrice("");
+                  }}
                   className="border border-gray-600 bg-[#0f172a] rounded px-3 py-2"
                   placeholder="Quantity"
                 />
@@ -187,7 +179,7 @@ export default function RecordSales() {
                   className="border border-gray-600 bg-[#0f172a] rounded px-3 py-2"
                   placeholder={
                     selected
-                      ? `Total: ₦${Number(suggestedPrice).toLocaleString()}`
+                      ? `Suggested: ₦${suggestedPrice.toLocaleString()}`
                       : ""
                   }
                 />
@@ -205,62 +197,104 @@ export default function RecordSales() {
               </button>
             </motion.form>
 
-            <div className="overflow-x-auto max-w-full bg-[#1e293b] border border-gray-700 rounded-xl">
-              <table className="w-full text-sm table-fixed">
-                <thead className="bg-[#0f172a]">
-                  <tr>
-                    <th className="px-3 py-2 text-left">#</th>
-                    <th className="px-3 py-2 text-left">Product</th>
-                    <th className="px-3 py-2 text-right">Qty</th>
-                    <th className="px-3 py-2 text-right">Unit Price</th>
-                    <th className="px-3 py-2 text-right">Total</th>
-                    <th className="px-3 py-2 text-right">Profit / Loss</th>
-                    <th className="px-3 py-2 text-left">Date</th>
+            {/* MOBILE SALES CARDS */}
+            <div className="md:hidden space-y-4">
+              {sales.length === 0 ? (
+                <p className="text-center text-gray-400">No sales today.</p>
+              ) : (
+                sales.map((s, i) => {
+                  const profitLoss = Number(s.profit_loss || 0);
+
+                  return (
+                    <div
+                      key={s.id}
+                      className="bg-[#1e293b] border border-gray-700 rounded-xl p-4 space-y-2"
+                    >
+                      <p className="font-semibold text-lg">
+                        Product: <span className="text-gray-300">{s.product_name}</span>
+                      </p>
+
+                      <p>Quantity: <span className="text-gray-300">{s.quantity}</span></p>
+
+                      <p>
+                        Unit Price:{" "}
+                        <span className="text-gray-300">
+                          ₦{(s.price / s.quantity).toLocaleString()}
+                        </span>
+                      </p>
+
+                      <p>
+                        Total Price:{" "}
+                        <span className="font-semibold">
+                          ₦{Number(s.price).toLocaleString()}
+                        </span>
+                      </p>
+
+                      <p
+                        className={`font-semibold ${
+                          profitLoss > 0
+                            ? "text-green-400"
+                            : profitLoss < 0
+                            ? "text-red-400"
+                            : "text-gray-300"
+                        }`}
+                      >
+                        Profit / Loss:{" "}
+                        {profitLoss < 0
+                          ? `-₦${Math.abs(profitLoss).toLocaleString()}`
+                          : profitLoss > 0
+                          ? `+₦${profitLoss.toLocaleString()}`
+                          : "₦0"}
+                      </p>
+
+                      <p className="text-sm text-gray-400">
+                        Date: {new Date(s.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* DESKTOP TABLE */}
+            <div className="hidden md:block overflow-x-auto bg-[#1e293b] border border-gray-700 rounded-xl">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-[#0f172a] border-b border-gray-700">
+                    <th className="px-4 py-3 text-left">Product</th>
+                    <th className="px-4 py-3 text-left">Quantity</th>
+                    <th className="px-4 py-3 text-left">Unit Price</th>
+                    <th className="px-4 py-3 text-left">Total Price</th>
+                    <th className="px-4 py-3 text-left">Profit / Loss</th>
+                    <th className="px-4 py-3 text-left">Date</th>
                   </tr>
                 </thead>
-
                 <tbody>
                   {sales.length === 0 ? (
                     <tr>
-                      <td colSpan="7" className="py-6 text-center text-gray-400">
+                      <td colSpan={6} className="px-4 py-6 text-center text-gray-400">
                         No sales today.
                       </td>
                     </tr>
                   ) : (
-                    sales.map((s, i) => {
+                    sales.map((s) => {
                       const profitLoss = Number(s.profit_loss || 0);
-
                       return (
-                        <tr key={s.id} className="border-t border-gray-700">
-                          <td className="px-3 py-2 text-left">{i + 1}</td>
-                          <td className="px-3 py-2 text-left">
-                            {s.product_name}
-                          </td>
-                          <td className="px-3 py-2 text-right">{s.quantity}</td>
-                          <td className="px-3 py-2 text-right">
-                            ₦{(s.price / s.quantity).toLocaleString()}
-                          </td>
-                          <td className="px-3 py-2 text-right font-semibold">
-                            ₦{Number(s.price).toLocaleString()}
-                          </td>
-                          <td
-                            className={`px-3 py-2 text-right font-semibold ${
-                              profitLoss > 0
-                                ? "text-green-400"
-                                : profitLoss < 0
-                                ? "text-red-400"
-                                : "text-gray-300"
-                            }`}
-                          >
-                            {profitLoss < 0
+                        <tr key={s.id} className="border-b border-gray-700 hover:bg-[#0f172a]/50">
+                          <td className="px-4 py-3">{s.product_name}</td>
+                          <td className="px-4 py-3">{s.quantity}</td>
+                          <td className="px-4 py-3">₦{(s.price / s.quantity).toLocaleString()}</td>
+                          <td className="px-4 py-3 font-semibold">₦{Number(s.price).toLocaleString()}</td>
+                          <td className={`px-4 py-3 font-semibold ${
+                            profitLoss > 0 ? "text-green-400" : profitLoss < 0 ? "text-red-400" : "text-gray-300"
+                          }`}>{
+                            profitLoss < 0
                               ? `-₦${Math.abs(profitLoss).toLocaleString()}`
                               : profitLoss > 0
                               ? `+₦${profitLoss.toLocaleString()}`
-                              : `₦0`}
-                          </td>
-                          <td className="px-3 py-2 text-left">
-                            {new Date(s.created_at).toLocaleString()}
-                          </td>
+                              : "₦0"
+                          }</td>
+                          <td className="px-4 py-3">{new Date(s.created_at).toLocaleString()}</td>
                         </tr>
                       );
                     })

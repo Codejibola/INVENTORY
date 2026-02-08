@@ -6,6 +6,8 @@ export default function AvailableProducts() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [searchTerm, setSearchTerm] = useState("");
+
   const [showForm, setShowForm] = useState(false);
   const [formError, setFormError] = useState("");
   const [formData, setFormData] = useState({
@@ -101,6 +103,17 @@ export default function AvailableProducts() {
   if (loading) return <p className="text-gray-300">Loading products…</p>;
   if (error) return <p className="text-red-400">{error}</p>;
 
+  const filteredProducts = products.filter((p) => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return true;
+    return (
+      (p.name && p.name.toString().toLowerCase().includes(term)) ||
+      (p.category && p.category.toString().toLowerCase().includes(term))
+    );
+  });
+
+  const displayProducts = searchTerm.trim() ? filteredProducts : products;
+
   return (
     <div className="space-y-6">
       {/* HEADER */}
@@ -114,24 +127,36 @@ export default function AvailableProducts() {
           </p>
         </div>
 
-        <button
-          onClick={() => setShowForm(true)}
-          className="inline-flex items-center justify-center gap-2
-                     bg-green-600 hover:bg-green-500
-                     px-4 py-2 rounded-lg text-white text-sm font-medium"
-        >
-          + Add Product
-        </button>
+        <div className="flex items-center gap-3">
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="px-3 py-2 rounded bg-slate-900 border border-slate-700 text-sm text-gray-200"
+          />
+
+          <button
+            onClick={() => setShowForm(true)}
+            className="inline-flex items-center justify-center gap-2
+                       bg-green-600 hover:bg-green-500
+                       px-4 py-2 rounded-lg text-white text-sm font-medium"
+          >
+            + Add Product
+          </button>
+        </div>
       </div>
 
       {/* MOBILE CARDS */}
       <div className="grid grid-cols-1 gap-4 sm:hidden">
-        {products.length === 0 ? (
+        {displayProducts.length === 0 ? (
           <p className="text-gray-400 text-center py-10">
-            No products yet. Add your first product.
+            {products.length === 0
+              ? "No products yet. Add your first product."
+              : "No products found"}
           </p>
         ) : (
-          products.map((p) => (
+          displayProducts.map((p) => (
             <motion.div
               key={p.id}
               initial={{ opacity: 0, y: 20 }}
@@ -166,19 +191,29 @@ export default function AvailableProducts() {
             </tr>
           </thead>
           <tbody>
-            {products.map((p) => (
-              <tr
-                key={p.id}
-                className="border-t border-slate-700 text-gray-200 hover:bg-slate-700/40"
-              >
-                <td className="px-6 py-3 font-medium">{titleCase(p.name)}</td>
-                <td className="px-6 py-3 text-sm text-gray-400">{titleCase(p.category)}</td>
-                <td className="px-6 py-3 text-right">{p.stock ?? "—"}</td>
-                <td className="px-6 py-3 text-right text-blue-400 font-semibold tabular-nums">
-                  ₦{Number(p.selling_price).toLocaleString()}
+            {displayProducts.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-6 py-8 text-center text-gray-400">
+                  {products.length === 0
+                    ? "No products yet. Add your first product."
+                    : "No products found"}
                 </td>
               </tr>
-            ))}
+            ) : (
+              displayProducts.map((p) => (
+                <tr
+                  key={p.id}
+                  className="border-t border-slate-700 text-gray-200 hover:bg-slate-700/40"
+                >
+                  <td className="px-6 py-3 font-medium">{titleCase(p.name)}</td>
+                  <td className="px-6 py-3 text-sm text-gray-400">{titleCase(p.category)}</td>
+                  <td className="px-6 py-3 text-right">{p.stock ?? "—"}</td>
+                  <td className="px-6 py-3 text-right text-blue-400 font-semibold tabular-nums">
+                    ₦{Number(p.selling_price).toLocaleString()}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

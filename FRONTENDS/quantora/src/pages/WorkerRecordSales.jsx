@@ -109,6 +109,7 @@ export default function WorkerRecordSales() {
         <p className="text-red-400 text-center font-medium mb-4">{error}</p>
       )}
 
+      {/* FORM */}
       <motion.form
         onSubmit={handleSubmit}
         className="bg-[#1e293b] border border-gray-700 rounded-xl p-6 max-w-xl mx-auto space-y-4"
@@ -165,59 +166,96 @@ export default function WorkerRecordSales() {
         </button>
       </motion.form>
 
-  {/* Sales Table */}
-<div className="mt-6 bg-[#1e293b] border border-gray-700 rounded-xl overflow-x-auto">
-  <table className="w-full table-fixed text-sm">
-    <thead className="bg-[#0f172a] border-b border-gray-700">
-      <tr>
-        <th className="w-12 px-3 py-2 text-left">#</th>
-        <th className="px-3 py-2 text-left">Product</th>
-        <th className="w-20 px-3 py-2 text-right">Qty</th>
-        <th className="w-32 px-3 py-2 text-right">Total</th>
-        <th className="w-48 px-3 py-2 text-left">Date</th>
-      </tr>
-    </thead>
+      {/* ================= MOBILE CARDS ================= */}
+      <div className="md:hidden mt-6 space-y-4">
+        {sales.length === 0 ? (
+          <p className="text-center text-gray-400">No sales today</p>
+        ) : (
+          sales.map((s, i) => (
+            <div
+              key={s.id}
+              className="bg-[#1e293b] border border-gray-700 rounded-xl p-4 space-y-2"
+            >
+              <p className="text-sm text-gray-400">
+                <span className="font-semibold">#</span> {i + 1}
+              </p>
 
-    <tbody>
-      {sales.length === 0 ? (
-        <tr>
-          <td
-            colSpan="5"
-            className="py-6 text-center text-gray-400"
-          >
-            No sales today
-          </td>
-        </tr>
-      ) : (
-        sales.map((s, i) => (
-          <tr
-            key={s.id}
-            className="border-t border-gray-700 hover:bg-slate-800/40"
-          >
-            <td className="px-3 py-2 text-left">{i + 1}</td>
+              <p>
+                <span className="text-gray-400">Product:</span>{" "}
+                <span className="font-semibold">
+                  {s.product_name.charAt(0).toUpperCase() +
+                    s.product_name.slice(1)}
+                </span>
+              </p>
 
-            <td className="px-3 py-2 truncate">
-              {s.product_name.charAt(0).toUpperCase() + s.product_name.slice(1)}
-            </td>
+              <p>
+                <span className="text-gray-400">Quantity:</span>{" "}
+                {s.quantity}
+              </p>
 
-            <td className="px-3 py-2 text-right">
-              {s.quantity}
-            </td>
+              <p>
+                <span className="text-gray-400">Total:</span>{" "}
+                <span className="font-semibold">
+                  ₦{Number(s.price).toLocaleString()}
+                </span>
+              </p>
 
-            <td className="px-3 py-2 text-right font-semibold">
-              ₦{Number(s.price).toLocaleString()}
-            </td>
+              <p className="text-sm text-gray-400">
+                <span className="font-semibold">Date:</span>{" "}
+                {new Date(s.created_at).toLocaleString()}
+              </p>
+            </div>
+          ))
+        )}
+      </div>
 
-            <td className="px-3 py-2 whitespace-nowrap">
-              {new Date(s.created_at).toLocaleString()}
-            </td>
-          </tr>
-        ))
-      )}
-    </tbody>
-  </table>
-</div>
+      {/* ================= DESKTOP TABLE (UNCHANGED) ================= */}
+      <div className="hidden md:block mt-6 bg-[#1e293b] border border-gray-700 rounded-xl overflow-x-auto">
+        <table className="w-full table-fixed text-sm">
+          <thead className="bg-[#0f172a] border-b border-gray-700">
+            <tr>
+              <th className="w-12 px-3 py-2 text-left">#</th>
+              <th className="px-3 py-2 text-left">Product</th>
+              <th className="w-20 px-3 py-2 text-right">Qty</th>
+              <th className="w-32 px-3 py-2 text-right">Total</th>
+              <th className="w-48 px-3 py-2 text-left">Date</th>
+            </tr>
+          </thead>
 
+          <tbody>
+            {sales.length === 0 ? (
+              <tr>
+                <td
+                  colSpan="5"
+                  className="py-6 text-center text-gray-400"
+                >
+                  No sales today
+                </td>
+              </tr>
+            ) : (
+              sales.map((s, i) => (
+                <tr
+                  key={s.id}
+                  className="border-t border-gray-700 hover:bg-slate-800/40"
+                >
+                  <td className="px-3 py-2 text-left">{i + 1}</td>
+                  <td className="px-3 py-2 truncate">
+                    {s.product_name.charAt(0).toUpperCase() +
+                      s.product_name.slice(1)}
+                  </td>
+                  <td className="px-3 py-2 text-right">{s.quantity}</td>
+                  <td className="px-3 py-2 text-right font-semibold">
+                    ₦{Number(s.price).toLocaleString()}
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    {new Date(s.created_at).toLocaleString()}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
 
       <div className="text-right font-semibold mt-4">
         Today’s Total: ₦{totalToday.toLocaleString()}

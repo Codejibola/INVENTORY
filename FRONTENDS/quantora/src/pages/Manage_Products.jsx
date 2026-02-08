@@ -80,6 +80,7 @@ export default function ManageProducts() {
       const url = editingId
         ? `http://localhost:5000/api/products/${editingId}`
         : "http://localhost:5000/api/products";
+
       const method = editingId ? "PUT" : "POST";
 
       const res = await fetch(url, {
@@ -98,6 +99,8 @@ export default function ManageProducts() {
 
       await res.json();
       fetchProducts();
+      setShowForm(false);
+      setEditingId(null);
       setFormData({
         name: "",
         price: "",
@@ -105,15 +108,13 @@ export default function ManageProducts() {
         stock: "",
         category: "",
       });
-      setEditingId(null);
-      setShowForm(false);
     } catch (err) {
       setError(err.message);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this product?")) return;
+    if (!window.confirm("Delete this product?")) return;
 
     try {
       const res = await apiFetch(`http://localhost:5000/api/products/${id}`, {
@@ -122,7 +123,6 @@ export default function ManageProducts() {
       });
 
       if (!res.ok) throw new Error("Failed to delete");
-
       setProducts((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
       alert(err.message);
@@ -150,18 +150,8 @@ export default function ManageProducts() {
   });
 
   const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December",
   ];
 
   const productsWithMonth = filteredProducts.map((p) => {
@@ -181,7 +171,7 @@ export default function ManageProducts() {
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 
-      <div className="flex min-h-screen bg-gray-900 text-gray-200 overflow-x-hidden">
+      <div className="flex min-h-screen bg-gray-900 text-gray-200">
         <Sidebar isOpen={menuOpen} setIsOpen={setMenuOpen} />
 
         <div className="flex-1 flex flex-col">
@@ -190,42 +180,38 @@ export default function ManageProducts() {
             userName={currentUser?.name}
           />
 
-          <main className="px-2 sm:px-4 md:px-6 py-6 space-y-6">
-            <h1 className="sr-only">Manage Products</h1>
-
+          <main className="px-4 py-6 space-y-6">
             {/* Search + Add */}
-            <section aria-label="Product actions">
-              <div className="flex flex-wrap justify-between items-center gap-4">
-                <input
-                  type="text"
-                  placeholder="Search products..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="flex-1 min-w-[180px] px-3 py-2 rounded-lg bg-gray-800 border border-gray-700"
-                />
+            <div className="flex flex-wrap gap-4 justify-between">
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-1 px-3 py-2 rounded bg-gray-800 border border-gray-700"
+              />
 
-                <button
-                  onClick={() => {
-                    setEditingId(null);
-                    setFormData({
-                      name: "",
-                      price: "",
-                      selling_price: "",
-                      stock: "",
-                      category: "",
-                    });
-                    setShowForm(true);
-                  }}
-                  className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg"
-                >
-                  <Plus size={18} /> Add Product
-                </button>
-              </div>
-            </section>
+              <button
+                onClick={() => {
+                  setEditingId(null);
+                  setFormData({
+                    name: "",
+                    price: "",
+                    selling_price: "",
+                    stock: "",
+                    category: "",
+                  });
+                  setShowForm(true);
+                }}
+                className="flex items-center gap-2 bg-blue-600 px-4 py-2 rounded text-white"
+              >
+                <Plus size={18} /> Add Product
+              </button>
+            </div>
 
-            {/* Add/Edit Modal */}
+            {/* ADD / EDIT MODAL — RESTORED */}
             {showForm && (
-              <section className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+              <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
                 <motion.form
                   onSubmit={handleSaveProduct}
                   initial={{ opacity: 0, y: -20 }}
@@ -236,148 +222,130 @@ export default function ManageProducts() {
                     {editingId ? "Edit Product" : "Add Product"}
                   </h2>
 
-                  {error && (
-                    <p className="text-red-400 text-sm">{error}</p>
+                  {error && <p className="text-red-400 text-sm">{error}</p>}
+
+                  {["name", "price", "selling_price", "stock", "category"].map(
+                    (field) => (
+                      <input
+                        key={field}
+                        name={field}
+                        type={field.includes("price") || field === "stock" ? "number" : "text"}
+                        placeholder={field.replace("_", " ")}
+                        value={formData[field]}
+                        onChange={handleChange}
+                        className="w-full p-2 rounded bg-gray-900 border border-gray-700"
+                        required={field !== "category"}
+                      />
+                    )
                   )}
-
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    placeholder="Name"
-                    className="w-full p-2 rounded bg-gray-900 border border-gray-700"
-                    required
-                  />
-
-                  <input
-                    type="number"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleChange}
-                    placeholder="Unit Price"
-                    className="w-full p-2 rounded bg-gray-900 border border-gray-700"
-                    required
-                  />
-
-                  <input
-                    type="number"
-                    name="selling_price"
-                    value={formData.selling_price}
-                    onChange={handleChange}
-                    placeholder="Selling Price"
-                    className="w-full p-2 rounded bg-gray-900 border border-gray-700"
-                    required
-                  />
-
-                  <input
-                    type="number"
-                    name="stock"
-                    value={formData.stock}
-                    onChange={handleChange}
-                    placeholder="Stock"
-                    className="w-full p-2 rounded bg-gray-900 border border-gray-700"
-                    required
-                  />
-
-                  <input
-                    type="text"
-                    name="category"
-                    value={formData.category}
-                    onChange={handleChange}
-                    placeholder="Category"
-                    className="w-full p-2 rounded bg-gray-900 border border-gray-700"
-                  />
 
                   <div className="flex justify-end gap-3">
                     <button
                       type="button"
                       onClick={() => setShowForm(false)}
-                      className="px-4 py-2 rounded bg-gray-700"
+                      className="px-4 py-2 bg-gray-700 rounded"
                     >
                       Cancel
                     </button>
-
                     <button
                       type="submit"
-                      className="px-4 py-2 rounded bg-green-600 text-white"
+                      className="px-4 py-2 bg-green-600 rounded text-white"
                     >
-                      {editingId ? "Update" : "Save"}
+                      Save
                     </button>
                   </div>
                 </motion.form>
-              </section>
+              </div>
             )}
 
-            {/* Products Tables */}
-            <section>
-              {months.map(
-                (month) =>
-                  groupedByMonth[month]?.length > 0 && (
-                    <article key={month} className="space-y-2">
-                      <h2 className="text-xl font-bold mt-6">{month}</h2>
+            {/* PRODUCTS — mobile cards + desktop table */}
+            {months.map(
+              (month) =>
+                groupedByMonth[month]?.length > 0 && (
+                  <section key={month} className="space-y-3">
+                    <h2 className="text-xl font-bold">{month}</h2>
 
-                      <motion.div className="overflow-x-auto bg-gray-800 rounded-xl shadow-lg">
-                        <table className="min-w-full text-left text-sm sm:text-base">
-                          <thead className="bg-gray-700">
-                            <tr>
-                              <th className="py-3 px-4">Name</th>
-                              <th className="py-3 px-4">Unit Price</th>
-                              <th className="py-3 px-4">Selling Price</th>
-                              <th className="py-3 px-4">Stock</th>
-                              <th className="py-3 px-4">Category</th>
-                              <th className="py-3 px-4">Date Added</th>
-                              <th className="py-3 px-4 text-center">
-                                Actions
-                              </th>
+                    {/* Mobile cards */}
+                    <div className="md:hidden space-y-3">
+                      {groupedByMonth[month].map((p) => (
+                        <div
+                          key={p.id}
+                          className="bg-gray-800 rounded-xl p-4 border border-gray-700"
+                        >
+                          <div className="flex justify-between">
+                            <h3 className="font-semibold">
+                              {toTitleCase(p.name)}
+                            </h3>
+                            <div className="flex gap-3">
+                              <Edit
+                                size={18}
+                                className="text-blue-400 cursor-pointer"
+                                onClick={() => handleEdit(p)}
+                              />
+                              <Trash2
+                                size={18}
+                                className="text-red-500 cursor-pointer"
+                                onClick={() => handleDelete(p.id)}
+                              />
+                            </div>
+                          </div>
+                          <div className="text-sm mt-2 space-y-1 text-gray-300">
+                            <p>Unit: ₦{p.price}</p>
+                            <p>Selling: ₦{p.selling_price}</p>
+                            <p>Stock: {p.units}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Desktop table */}
+                    <div className="hidden md:block overflow-x-auto bg-gray-800 rounded-xl">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-gray-700 bg-gray-700">
+                            <th className="px-4 py-3 text-left">Product Name</th>
+                            <th className="px-4 py-3 text-left">Unit Price</th>
+                            <th className="px-4 py-3 text-left">Selling Price</th>
+                            <th className="px-4 py-3 text-left">Stock</th>
+                            <th className="px-4 py-3 text-left">Category</th>
+                            <th className="px-4 py-3 text-center">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {groupedByMonth[month].map((p) => (
+                            <tr key={p.id} className="border-b border-gray-700 hover:bg-gray-700/50">
+                              <td className="px-4 py-3">{toTitleCase(p.name)}</td>
+                              <td className="px-4 py-3">₦{p.price}</td>
+                              <td className="px-4 py-3">₦{p.selling_price}</td>
+                              <td className="px-4 py-3">{p.units}</td>
+                              <td className="px-4 py-3">{p.category || "—"}</td>
+                              <td className="px-4 py-3 flex justify-center gap-3">
+                                <Edit
+                                  size={18}
+                                  className="text-blue-400 cursor-pointer hover:text-blue-300"
+                                  onClick={() => handleEdit(p)}
+                                />
+                                <Trash2
+                                  size={18}
+                                  className="text-red-500 cursor-pointer hover:text-red-400"
+                                  onClick={() => handleDelete(p.id)}
+                                />
+                              </td>
                             </tr>
-                          </thead>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+                )
+            )}
 
-                          <tbody>
-                            {groupedByMonth[month].map((p) => (
-                              <motion.tr
-                                key={p.id}
-                                className="border-b border-gray-700 hover:bg-gray-700"
-                              >
-                                <td className="py-3 px-4">{toTitleCase(p.name)}</td>
-                                <td className="py-3 px-4">
-                                  ₦{Number(p.price).toFixed(2)}
-                                </td>
-                                <td className="py-3 px-4">
-                                  ₦{Number(p.selling_price).toFixed(2)}
-                                </td>
-                                <td className="py-3 px-4">{p.units}</td>
-                                <td className="py-3 px-4">
-                                  {toTitleCase(p.category || "")}
-                                </td>
-                                <td className="py-3 px-4">
-                                  {new Date(
-                                    p.addedDate
-                                  ).toLocaleDateString()}
-                                </td>
-                                <td className="py-3 px-4 flex justify-center gap-3">
-                                  <button
-                                    onClick={() => handleEdit(p)}
-                                    className="text-blue-400 hover:text-blue-300"
-                                  >
-                                    <Edit size={18} />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDelete(p.id)}
-                                    className="text-red-500 hover:text-red-400"
-                                  >
-                                    <Trash2 size={18} />
-                                  </button>
-                                </td>
-                              </motion.tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </motion.div>
-                    </article>
-                  )
-              )}
-            </section>
+            {/* NO PRODUCTS FOUND */}
+            {filteredProducts.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-gray-400 text-lg">No products found</p>
+              </div>
+            )}
           </main>
         </div>
       </div>
