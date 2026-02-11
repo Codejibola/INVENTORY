@@ -51,7 +51,7 @@ export default function Register() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Registration failed.");
 
-      navigate("/admin");
+      navigate("/login");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -223,7 +223,7 @@ function FormContent({
       <p className="mt-6 text-center text-sm text-gray-600">
         Already have an account?{" "}
         <button
-          onClick={() => navigate("/admin")}
+          onClick={() => navigate("/login")}
           className="text-blue-600 hover:underline font-medium"
         >
           Log in

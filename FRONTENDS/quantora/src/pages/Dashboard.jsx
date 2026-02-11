@@ -27,6 +27,8 @@ export default function Dashboard() {
   const [chartData, setChartData] = useState([]);
   const [monthlyProfitLoss, setMonthlyProfitLoss] = useState(0);
   const [shopWorth, setShopWorth] = useState(0);
+  const [bestSellingProduct, setBestSellingProduct] = useState(null);
+  const [leastSellingProduct, setLeastSellingProduct] = useState(null);
 
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
@@ -53,7 +55,6 @@ export default function Dashboard() {
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
     if (savedUser) setCurrentUser(JSON.parse(savedUser));
-
     fetchData();
   }, [token]);
 
@@ -82,138 +83,58 @@ export default function Dashboard() {
 
   const fetchData = async () => {
     try {
-      // Fetch sales
-      const salesRes = await apiFetch("http://localhost:5000/api/sales", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const salesData = salesRes.ok ? await salesRes.json() : [];
-
-      if (Array.isArray(salesData) && salesData.length > 0) {
-        const hasDates = salesData.some((s) => s.created_at);
-        const latest = hasDates
-          ? [...salesData].sort(
-              (a, b) =>
-                new Date(b.created_at) - new Date(a.created_at)
-            )[0]
-          : salesData[salesData.length - 1];
-        setLatestSale(latest);
-      } else {
-        setLatestSale(null);
-      }
-
-      // Profit & Loss
-      // Current date (used for monthly calculations)
+      const authHeader = { headers: { Authorization: `Bearer ${token}` } };
       const now = new Date();
       const currentYear = now.getFullYear();
-
-      // Profit & Loss for the current month
       const currentMonthIdx = now.getMonth();
-      const profitLoss = (Array.isArray(salesData) ? salesData : [])
-        .filter((s) => {
-          if (!s.created_at) return false;
-          const date = new Date(s.created_at);
-          return (
-            date.getMonth() === currentMonthIdx &&
-            date.getFullYear() === currentYear
-          );
-        })
-        .reduce(
-          (acc, s) =>
-            acc + Number(s.profit_loss ?? s.profit ?? 0),
-          0
-        );
 
-      setMonthlyProfitLoss(profitLoss);
+      // 1. Fetch Sales (Standard List for Latest Sale)
+      const salesRes = await apiFetch("http://localhost:5000/api/sales", authHeader);
+      const salesData = salesRes.ok ? await salesRes.json() : [];
+      if (salesData.length > 0) setLatestSale(salesData[0]);
 
-      const months = [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
-      ];
+      // 2. Fetch Daily Sales for Chart & Monthly Stats
+      const dailyRes = await apiFetch(`http://localhost:5000/api/sales/daily?year=${currentYear}`, authHeader);
+      const dailyData = dailyRes.ok ? await dailyRes.json() : [];
 
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
       const monthlyTotals = months.map((month, idx) => {
-        const total = (Array.isArray(salesData) ? salesData : [])
-          .filter((s) => {
-            if (!s.created_at) return false;
-            const date = new Date(s.created_at);
-            return (
-              date.getMonth() === idx &&
-              date.getFullYear() === currentYear
-            );
-          })
-          .reduce(
-            (sum, s) =>
-              sum +
-              Number(s.price || 0) *
-                Number(s.quantity || 0),
-            0
-          );
-
-        return {
-          month,
-          sales: isNaN(total) ? 0 : Number(total),
-        };
+        const total = dailyData
+          .filter(d => new Date(d.date).getMonth() === idx)
+          .reduce((sum, d) => sum + Number(d.total_sales || 0), 0);
+        return { month, sales: total };
       });
 
       setChartData(monthlyTotals);
-      setMonthlySales(
-        monthlyTotals[now.getMonth()]?.sales || 0
-      );
+      setMonthlySales(monthlyTotals[currentMonthIdx]?.sales || 0);
 
-      // Fetch products
-      const prodRes = await apiFetch(
-        "http://localhost:5000/api/products",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const profitTotal = dailyData
+        .filter(d => new Date(d.date).getMonth() === currentMonthIdx)
+        .reduce((sum, d) => sum + Number(d.total_profit_loss || 0), 0);
+      setMonthlyProfitLoss(profitTotal);
+
+      // 3. Fetch Products (Worth & Latest Product)
+      const prodRes = await apiFetch("http://localhost:5000/api/products", authHeader);
       const prodData = prodRes.ok ? await prodRes.json() : [];
-
-      // Calculate shop worth (sum of selling price * quantity for all products)
-      const worth = (Array.isArray(prodData) ? prodData : [])
-        .reduce((sum, p) => sum + (Number(p.selling_price || 0) * Number(p.units || 0)), 0);
-      setShopWorth(worth);
-
-      if (Array.isArray(prodData) && prodData.length > 0) {
-        let max = prodData[0];
-
-        for (let i = 1; i < prodData.length; i++) {
-          const item = prodData[i];
-          const idA = Number(
-            item.id ?? item.product_id ?? item._id ?? NaN
-          );
-          const idMax = Number(
-            max.id ?? max.product_id ?? max._id ?? NaN
-          );
-
-          if (
-            !isNaN(idA) &&
-            idA > (isNaN(idMax) ? -Infinity : idMax)
-          ) {
-            max = item;
-          }
-        }
-
-        setLatestProduct(max);
-      } else {
-        setLatestProduct(null);
+      setShopWorth(prodData.reduce((sum, p) => sum + Number(p.selling_price || 0) * Number(p.units || 0), 0));
+      
+      // Find the latest product based on highest ID
+      if (prodData.length > 0) {
+        const sortedProds = [...prodData].sort((a, b) => (b.id || 0) - (a.id || 0));
+        setLatestProduct(sortedProds[0]);
       }
+
+      // 4. Fetch Best/Least Selling from specific endpoints
+      const [bestRes, leastRes] = await Promise.all([
+        apiFetch("http://localhost:5000/api/sales/best-selling", authHeader),
+        apiFetch("http://localhost:5000/api/sales/least-selling", authHeader)
+      ]);
+
+      if (bestRes.ok) setBestSellingProduct(await bestRes.json());
+      if (leastRes.ok) setLeastSellingProduct(await leastRes.json());
+
     } catch (err) {
-      console.error("fetchData:", err);
-      setLatestSale(null);
-      setLatestProduct(null);
-      setMonthlySales(0);
-      setChartData([]);
-      setMonthlyProfitLoss(0);
+      console.error("fetchData Error:", err);
     }
   };
 
@@ -221,267 +142,102 @@ export default function Dashboard() {
     <HelmetProvider>
       <Helmet>
         <title>Dashboard | Quantora</title>
-        <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 
       <div className="min-h-screen bg-black flex relative">
         <Sidebar isOpen={menuOpen} setIsOpen={setMenuOpen} />
 
         <div className="flex-1 flex flex-col">
-          <Topbar
-            onMenuClick={() => setMenuOpen(true)}
-            userName={currentUser?.name}
-          />
+          <Topbar onMenuClick={() => setMenuOpen(true)} userName={currentUser?.name} />
 
-          <main
-            className="flex-1 p-8 space-y-8 text-white"
-            aria-label="Dashboard Main Content"
-          >
-            {/* MAIN CARDS */}
-            <section aria-label="Quick Action Cards">
+          <main className="flex-1 p-8 space-y-8 text-white">
+            {/* TOP ACTION CARDS */}
+            <section>
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
                 className="grid grid-cols-1 md:grid-cols-4 gap-6"
               >
-                <Card
-                  title="Monthly Sales"
-                  icon="₦"
-                  desc={`₦${formatShortNumber(
-                    displayedSales
-                  )}`}
-                  isHighlight
-                />
-                <Card
-                  title="Shop Worth"
-                  icon="store"
-                  desc={`₦${formatShortNumber(
-                    shopWorth
-                  )}`}
-                />
-                <Card
-                  title="Manage your Products"
-                  icon="inventory_2"
-                  to="/Manage_Products"
-                  desc="View, add, edit, and delete products"
-                />
-                <Card
-                  title="Record your Sales"
-                  icon="trending_up"
-                  to="/recordSales"
-                  desc="Take records of sales made"
-                />
+                <Card title="Monthly Sales" icon="₦" desc={`₦${formatShortNumber(displayedSales)}`} isHighlight />
+                <Card title="Shop Worth" icon="store" desc={`₦${formatShortNumber(shopWorth)}`} />
+                <Card title="Manage Products" icon="inventory_2" to="/Manage_Products" desc="Add/Edit Inventory" />
+                <Card title="Record Sales" icon="trending_up" to="/recordSales" desc="Log New Sales" />
               </motion.div>
             </section>
 
-            {/* CHART + RECENT ACTIVITIES */}
-            <section
-              aria-label="Sales Overview and Recent Activities"
-              className="grid grid-cols-1 lg:grid-cols-3 gap-6"
-            >
-              {/* Sales Chart */}
-              <article
-                aria-label="Monthly Sales Chart"
-                className="bg-gray-900 rounded-xl shadow p-6 lg:col-span-2 text-white"
-              >
-                <h2 className="text-lg font-semibold mb-4">
-                  Sales Overview
-                </h2>
-                <ResponsiveContainer width="100%" height={250}>
-                  {chartData.length > 0 ? (
-                    <BarChart data={chartData}>
-                      <XAxis dataKey="month" stroke="white" />
-                      <YAxis
-                        stroke="white"
-                        domain={[0, "dataMax"]}
-                        tickFormatter={(v) =>
-                          formatShortNumber(v)
-                        }
-                      />
-                      <Tooltip
-                        formatter={(value) =>
-                          `₦${formatShortNumber(value)}`
-                        }
-                      />
-                      <Bar
-                        dataKey="sales"
-                        fill="#3b82f6"
-                        radius={[8, 8, 0, 0]}
-                      />
-                    </BarChart>
-                  ) : (
-                    <p className="text-white text-center">
-                      Loading chart...
-                    </p>
-                  )}
+            <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Chart */}
+              <article className="bg-gray-900 rounded-xl shadow p-6 lg:col-span-2">
+                <h2 className="text-lg font-semibold mb-4">Sales Overview</h2>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={chartData}>
+                    <XAxis dataKey="month" stroke="#94a3b8" />
+                    <YAxis stroke="#94a3b8" tickFormatter={(v) => formatShortNumber(v)} />
+                    <Tooltip contentStyle={{ backgroundColor: "#111827", border: "none" }} />
+                    <Bar dataKey="sales" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+                  </BarChart>
                 </ResponsiveContainer>
               </article>
 
-              {/* Recent Activities Cards */}
-              <section
-                aria-label="Recent Activities"
-                className="flex flex-col gap-4"
-              >
-                {/* Profit & Loss Card */}
-                <article
-                  aria-label="Profit & Loss"
-                  className="rounded-xl shadow p-4 cursor-default bg-gray-900 text-white"
-                >
-                  <div className="flex items-center justify-between">
+              {/* Insights Sidebar */}
+              <div className="flex flex-col gap-4">
+                {/* Profit/Loss */}
+                <article className="bg-gray-900 p-4 rounded-xl border border-gray-800">
+                  <div className="flex justify-between items-center">
                     <div>
-                      <h3 className="text-white font-semibold">
-                       This month's Profit & Loss
-                      </h3>
-                      <p
-                        className={`font-bold text-lg mt-1 ${
-                          monthlyProfitLoss > 0
-                            ? "text-green-400"
-                            : monthlyProfitLoss < 0
-                            ? "text-red-400"
-                            : "text-gray-300"
-                        }`}
-                      >
-                        {monthlyProfitLoss < 0
-                          ? `-₦${Math.abs(
-                              monthlyProfitLoss
-                            ).toLocaleString()}`
-                          : `+₦${monthlyProfitLoss.toLocaleString()}`}
+                      <p className="text-gray-400 text-sm">Monthly Profit/Loss</p>
+                      <p className={`text-xl font-bold ${monthlyProfitLoss >= 0 ? "text-green-400" : "text-red-400"}`}>
+                        {monthlyProfitLoss >= 0 ? "+" : "-"}₦{Math.abs(monthlyProfitLoss).toLocaleString()}
                       </p>
                     </div>
-
-                    <div
-                      className={`p-2 rounded-lg ${
-                        monthlyProfitLoss > 0
-                          ? "bg-green-500/10 text-green-400"
-                          : monthlyProfitLoss < 0
-                          ? "bg-red-500/10 text-red-400"
-                          : "bg-gray-500/10 text-gray-300"
-                      }`}
-                    >
-                      {monthlyProfitLoss > 0 ? (
-                        <TrendingUp size={22} />
-                      ) : monthlyProfitLoss < 0 ? (
-                        <TrendingDown size={22} />
-                      ) : null}
-                    </div>
+                    {monthlyProfitLoss >= 0 ? <TrendingUp className="text-green-400" /> : <TrendingDown className="text-red-400" />}
                   </div>
                 </article>
 
-                {/* Latest Sale Card */}
-                <article
-                  aria-label="Latest Sale"
-                  className="bg-gradient-to-r from-green-600 to-green-800 rounded-xl shadow p-4 cursor-default"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-white font-semibold">
-                        Latest Sale
-                      </h3>
-                      {latestSale ? (
-                        <>
-                          <p className="text-white font-bold text-lg mt-1">
-                            {toTitle(
-                              latestSale.product_name
-                            )}
-                          </p>
-                          <div className="mt-2 text-gray-100 text-sm">
-                            <span className="inline-block mr-3">
-                              Qty: {latestSale.quantity}
-                            </span>
-                            <span className="inline-block">
-                              Unit: ₦
-                              {Number(
-                                latestSale.price || 0
-                              ).toLocaleString()}
-                            </span>
-                          </div>
-                          <p className="mt-2 text-gray-200 font-semibold">
-                            Total: ₦
-                            {(
-                              Number(
-                                latestSale.price || 0
-                              ) *
-                              Number(
-                                latestSale.quantity || 0
-                              )
-                            ).toLocaleString()}
-                          </p>
-                        </>
-                      ) : (
-                        <p className="text-gray-200 mt-1">
-                          No sales recorded yet.
-                        </p>
-                      )}
+                {/* Latest Sale */}
+                <article className="bg-gradient-to-r from-green-600 to-green-800 p-4 rounded-xl shadow">
+                  <h3 className="text-sm font-semibold opacity-90 text-white">Latest Sale</h3>
+                  {latestSale ? (
+                    <div className="mt-1">
+                      <p className="text-lg font-bold">{toTitle(latestSale.product_name)}</p>
+                      <p className="text-xs opacity-80">Qty: {latestSale.quantity} | Total: ₦{Number(latestSale.price).toLocaleString()}</p>
                     </div>
-                    <div className="text-right">
-                      <button
-                        onClick={() =>
-                          navigate("/recordSales")
-                        }
-                        className="bg-white/10 hover:bg-white/20 text-white px-3 py-1 rounded"
-                      >
-                        View
-                      </button>
-                    </div>
-                  </div>
+                  ) : <p className="text-sm">No sales yet.</p>}
                 </article>
 
-                {/* Latest Product Card */}
-                <article
-                  aria-label="Latest Product"
-                  className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-xl shadow p-4 cursor-default"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-white font-semibold">
-                        Latest Product
-                      </h3>
-                      {latestProduct ? (
-                        <>
-                          <p className="text-white font-bold text-lg mt-1">
-                            {toTitle(
-                              latestProduct.name
-                            )}
-                          </p>
-                          <div className="mt-2 text-gray-100 text-sm">
-                            <span className="inline-block mr-3">
-                              Stock: {latestProduct.units}
-                            </span>
-                            <span className="inline-block">
-                              Price: ₦
-                              {Number(
-                                latestProduct.price || 0
-                              ).toLocaleString()}
-                            </span>
-                          </div>
-                          <p className="mt-2 text-gray-200 text-sm">
-                            {latestProduct.category
-                              ? toTitle(
-                                  latestProduct.category
-                                )
-                              : ""}
-                          </p>
-                        </>
-                      ) : (
-                        <p className="text-gray-200 mt-1">
-                          No products added yet.
-                        </p>
-                      )}
+                {/* Latest Product Added (THE MISSING CARD) */}
+                <article className="bg-gradient-to-r from-purple-600 to-purple-800 p-4 rounded-xl shadow">
+                  <h3 className="text-sm font-semibold opacity-90 text-white">Latest Product Added</h3>
+                  {latestProduct ? (
+                    <div className="mt-1">
+                      <p className="text-lg font-bold">{toTitle(latestProduct.name)}</p>
+                      <p className="text-xs opacity-80">Stock: {latestProduct.units} | Price: ₦{Number(latestProduct.price).toLocaleString()}</p>
                     </div>
-                    <div className="text-right">
-                      <button
-                        onClick={() =>
-                          navigate("/Manage_Products")
-                        }
-                        className="bg-white/10 hover:bg-white/20 text-white px-3 py-1 rounded"
-                      >
-                        Manage
-                      </button>
-                    </div>
-                  </div>
+                  ) : <p className="text-sm">No products found.</p>}
                 </article>
-              </section>
+
+                {/* Best Selling */}
+                <article className="bg-gradient-to-r from-yellow-600 to-orange-700 p-4 rounded-xl shadow">
+                  <h3 className="text-sm font-semibold opacity-90 text-white">Best Selling Product</h3>
+                  {bestSellingProduct ? (
+                    <div className="mt-1">
+                      <p className="text-lg font-bold">{toTitle(bestSellingProduct.productName)}</p>
+                      <p className="text-xs opacity-80">Sold: {bestSellingProduct.totalQuantitySold} units</p>
+                    </div>
+                  ) : <p className="text-sm">No data.</p>}
+                </article>
+
+                {/* Least Selling */}
+                <article className="bg-gradient-to-r from-red-600 to-red-800 p-4 rounded-xl shadow">
+                  <h3 className="text-sm font-semibold opacity-90 text-white">Least Selling Product</h3>
+                  {leastSellingProduct ? (
+                    <div className="mt-1">
+                      <p className="text-lg font-bold">{toTitle(leastSellingProduct.productName)}</p>
+                      <p className="text-xs opacity-80">Sold: {leastSellingProduct.totalQuantitySold} units</p>
+                    </div>
+                  ) : <p className="text-sm">No data.</p>}
+                </article>
+              </div>
             </section>
           </main>
         </div>
@@ -490,36 +246,21 @@ export default function Dashboard() {
   );
 }
 
-// Recent activities card
 function Card({ title, desc, icon, isHighlight, to }) {
   const navigate = useNavigate();
-
   return (
     <motion.article
       whileHover={{ scale: 1.03 }}
       onClick={() => to && navigate(to)}
-      className={`rounded-xl shadow p-6 flex flex-col items-center text-center cursor-pointer hover:shadow-md transition ${
-        isHighlight
-          ? "bg-yellow-600 text-white"
-          : "bg-gray-900 text-white"
+      className={`p-6 rounded-xl cursor-pointer transition ${
+        isHighlight ? "bg-blue-600 text-white shadow-lg" : "bg-gray-900 border border-gray-800"
       }`}
-      aria-label={title}
     >
-      <span className="material-icons text-4xl mb-2">
-        {icon}
-      </span>
-      <h3 className="font-semibold text-lg mb-1">
-        {title}
-      </h3>
-      <p
-        className={`text-sm ${
-          isHighlight
-            ? "text-white text-xl font-bold mt-1"
-            : "text-gray-300 font-medium"
-        }`}
-      >
-        {desc}
-      </p>
+      <div className="flex flex-col items-center">
+        <span className="material-icons text-4xl mb-2">{icon}</span>
+        <h3 className="text-sm font-medium opacity-70">{title}</h3>
+        <p className="text-xl font-bold mt-1 text-center">{desc}</p>
+      </div>
     </motion.article>
   );
 }

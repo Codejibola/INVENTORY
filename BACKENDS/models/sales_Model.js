@@ -112,3 +112,23 @@ export const fetchSalesByDate = (userId, date) => {
     [userId, date]
   );
 };
+
+/**
+ * Fetch aggregated quantity sold per product for a user
+ * (Used for best / least selling products)
+ */
+export const fetchProductSalesSummary = (userId) => {
+  return pool.query(
+    `
+    SELECT
+      p.id AS product_id,
+      p.name AS product_name,
+      SUM(s.quantity) AS total_quantity_sold
+    FROM sales s
+    INNER JOIN products p ON p.id = s.product_id
+    WHERE s.user_id = $1
+    GROUP BY p.id, p.name
+    `,
+    [userId]
+  );
+};

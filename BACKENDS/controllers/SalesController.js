@@ -268,3 +268,75 @@ export const downloadDailySalesExcel = async (req, res) => {
     res.status(500).json({ message: "Error generating Excel file" });
   }
 };
+
+
+export const getBestSellingProduct = async (req, res) => {
+  try {
+    const { rows } = await Sales.fetchProductSalesSummary(req.userId);
+
+    if (!rows.length) {
+      return res.status(404).json({
+        message: "No sales data available",
+      });
+    }
+
+    // Find product with highest total_quantity_sold
+    let bestProduct = rows[0];
+
+    for (const product of rows) {
+      if (
+        Number(product.total_quantity_sold) >
+        Number(bestProduct.total_quantity_sold)
+      ) {
+        bestProduct = product;
+      }
+    }
+
+    res.json({
+      productId: bestProduct.product_id,
+      productName: bestProduct.product_name,
+      totalQuantitySold: Number(bestProduct.total_quantity_sold),
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      message: "Server error fetching best selling product",
+    });
+  }
+};
+
+
+export const getLeastSellingProduct = async (req, res) => {
+  try {
+    const { rows } = await Sales.fetchProductSalesSummary(req.userId);
+
+    if (!rows.length) {
+      return res.status(404).json({
+        message: "No sales data available",
+      });
+    }
+
+    // Find product with lowest total_quantity_sold
+    let leastProduct = rows[0];
+
+    for (const product of rows) {
+      if (
+        Number(product.total_quantity_sold) <
+        Number(leastProduct.total_quantity_sold)
+      ) {
+        leastProduct = product;
+      }
+    }
+
+    res.json({
+      productId: leastProduct.product_id,
+      productName: leastProduct.product_name,
+      totalQuantitySold: Number(leastProduct.total_quantity_sold),
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      message: "Server error fetching least selling product",
+    });
+  }
+};

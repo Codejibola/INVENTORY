@@ -1,7 +1,18 @@
-import { NavLink } from "react-router-dom";
-import { X } from "lucide-react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { X, LogOut } from "lucide-react";
 
 export default function WorkerSidebar({ isOpen, onClose }) {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    // Clear user session
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
+    // Redirect to login
+    navigate("/login");
+  };
+
   return (
     <>
       {/* Mobile overlay */}
@@ -21,8 +32,8 @@ export default function WorkerSidebar({ isOpen, onClose }) {
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
           md:translate-x-0
           md:rounded-none
+          h-auto
         `}
-        style={{ height: "auto" }}
       >
         {/* Mobile close button */}
         <div className="flex justify-between items-center md:hidden mb-4">
@@ -63,6 +74,14 @@ export default function WorkerSidebar({ isOpen, onClose }) {
         >
           Available Products
         </NavLink>
+
+        {/* Logout button */}
+        <button
+          onClick={handleLogout}
+          className="mt-auto flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white"
+        >
+          <LogOut size={18} /> Logout
+        </button>
       </aside>
     </>
   );

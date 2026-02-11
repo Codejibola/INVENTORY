@@ -22,11 +22,11 @@ export default function App() {
     <Router>
       <Routes>
         {/* Root → Login */}
-        <Route path="/" element={<Navigate to="/admin" replace />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
 
         {/* Public routes */}
         <Route path="/register" element={<Register />} />
-        <Route path="/admin" element={<Admin />} />
+        <Route path="/login" element={<Admin />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
 

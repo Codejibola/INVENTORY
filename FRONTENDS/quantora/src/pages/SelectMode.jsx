@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShieldCheck, Briefcase } from "lucide-react";
+import { ShieldCheck, Briefcase, Eye, EyeOff } from "lucide-react";
 import logo from "../assets/Logo.png";
 
 export default function SelectMode() {
@@ -10,6 +10,7 @@ export default function SelectMode() {
   const [showModal, setShowModal] = useState(false);
   const [selectedRole, setSelectedRole] = useState(null);
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
@@ -43,6 +44,7 @@ export default function SelectMode() {
   const handleSelect = (role) => {
     setSelectedRole(role);
     setPassword("");
+    setShowPassword(false);
     setError("");
     setShowModal(true);
   };
@@ -175,14 +177,23 @@ export default function SelectMode() {
                 This action is restricted for security reasons
               </p>
 
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                className="w-full rounded-xl px-4 py-3 bg-slate-950 border border-slate-700
-                           focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
-              />
+              <div className="relative mb-3">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password"
+                  className="w-full rounded-xl px-4 py-3 pr-12 bg-slate-950 border border-slate-700
+                             focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300 transition"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
 
               {error && (
                 <motion.p
