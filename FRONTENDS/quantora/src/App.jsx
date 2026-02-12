@@ -2,6 +2,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 
 import Register from "./pages/Registration";
 import Admin from "./pages/Admin";
+import SelectMode from "./pages/SelectMode";
+
+// Admin pages
 import Dashboard from "./pages/Dashboard";
 import Manage_Products from "./pages/Manage_Products";
 import Invoices from "./pages/Invoices";
@@ -9,8 +12,9 @@ import RecordSales from "./pages/Record_Sales";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Notification from "./pages/Notification";
-import SelectMode from "./pages/SelectMode";
+import Settings from "./pages/Settings";
 
+// Worker pages
 import WorkerDashboard from "./pages/WorkerDashboard";
 import WorkerRecordSales from "./pages/WorkerRecordSales";
 import AvailableProducts from "./pages/AvailableProducts";
@@ -57,6 +61,18 @@ export default function App() {
             </PrivateRoute>
           }
         />
+
+        <Route
+          path="/Settings"
+          element={
+            <PrivateRoute>
+              <Settings />
+            </PrivateRoute>
+          }
+        />
+
+       
+
         <Route
           path="/invoices"
           element={
