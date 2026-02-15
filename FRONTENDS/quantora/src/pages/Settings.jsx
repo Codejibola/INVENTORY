@@ -32,23 +32,44 @@ export default function Settings() {
     setLoading(true);
     setMessage({ type: "", text: "" });
 
+    // Get token right before sending the request
+    const token = localStorage.getItem("token");
+
     try {
-      const res = await apiFetch("http://localhost:5000/api/auth/settings", {
+      const res = await fetch("http://localhost:5000/api/auth/settings", {
         method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`, // Explicitly passing the token
+        },
         body: JSON.stringify(formData),
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to update");
+      
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to update settings");
+      }
 
-      // Update local storage if shop name changed
-      const user = JSON.parse(localStorage.getItem("user"));
-      localStorage.setItem("user", JSON.stringify({ ...user, shopName: data.shopName }));
+      // 1. Update local storage with the new shop name from backend
+      const currentUser = JSON.parse(localStorage.getItem("user"));
+      localStorage.setItem("user", JSON.stringify({ 
+        ...currentUser, 
+        shopName: data.shopName 
+      }));
       
       setMessage({ type: "success", text: "Settings updated successfully!" });
-      // Clear password fields after success
-      setFormData(prev => ({ ...prev, shopPassword: "", adminPassword: "", workerPassword: "" }));
+      
+      // 2. Clear sensitive password fields from the form state
+      setFormData(prev => ({ 
+        ...prev, 
+        shopPassword: "", 
+        adminPassword: "", 
+        workerPassword: "" 
+      }));
+
     } catch (err) {
+      console.error("Settings Error:", err);
       setMessage({ type: "error", text: err.message });
     } finally {
       setLoading(false);

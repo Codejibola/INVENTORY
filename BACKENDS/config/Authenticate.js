@@ -10,7 +10,10 @@ export const authenticate = (req, res, next) => {
       console.warn('Auth middleware: token verification failed:', err.message);
       return res.status(403).json({ message: 'Invalid or expired token' });
     }
-    req.userId = decoded.id;    
+    // Attach both a convenient userId and the full decoded user object
+    // so downstream handlers can use either `req.userId` or `req.user.id`.
+    req.userId = decoded.id;
+    req.user = decoded;
     next();
   });
 };

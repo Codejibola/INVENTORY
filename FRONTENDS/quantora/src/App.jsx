@@ -13,6 +13,7 @@ import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Notification from "./pages/Notification";
 import Settings from "./pages/Settings";
+import Feedback from "./pages/Feedback";
 
 // Worker pages
 import WorkerDashboard from "./pages/WorkerDashboard";
@@ -94,6 +95,15 @@ export default function App() {
           element={
             <PrivateRoute>
               <Notification />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/feedback"
+          element={
+            <PrivateRoute>
+              <Feedback />
             </PrivateRoute>
           }
         />

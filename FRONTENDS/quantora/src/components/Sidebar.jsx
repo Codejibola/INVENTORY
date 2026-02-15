@@ -7,6 +7,7 @@ import {
   Edit3, 
   Receipt, 
   Settings as SettingsIcon, 
+  MessageSquare, // Added for Feedback
   LogOut, 
   X 
 } from "lucide-react";
@@ -20,7 +21,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     { name: "Manage Products", icon: <Package size={20} />, to: "/Manage_Products" },
     { name: "Record Sales", icon: <Edit3 size={20} />, to: "/recordSales" },
     { name: "Invoices", icon: <Receipt size={20} />, to: "/invoices" },
-    { name: "Settings", icon: <SettingsIcon size={20} />, to: "/settings" }, // New Settings Route
+    { name: "Feedback", icon: <MessageSquare size={20} />, to: "/feedback" }, // Integrated Feedback
+    { name: "Settings", icon: <SettingsIcon size={20} />, to: "/settings" },
   ];
 
   const handleLogout = () => {

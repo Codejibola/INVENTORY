@@ -56,7 +56,8 @@ router.post("/register", authLimiter, async (req, res) => {
 
 router.put("/settings", authenticate, async (req, res) => {
   try {
-    const userId = req.user.id; // From your JWT middleware
+    // Support both `req.user.id` and `req.userId` depending on middleware implementation
+    const userId = req.user?.id || req.userId;
     const { shopName, shopPassword, adminPassword, workerPassword } = req.body;
 
     // 1. Fetch current user to verify existence
