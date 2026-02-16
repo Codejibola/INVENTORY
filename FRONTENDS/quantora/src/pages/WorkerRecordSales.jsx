@@ -1,8 +1,9 @@
 /* eslint-disable */
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import apiFetch from "../utils/apiFetch";
 import { Helmet } from "react-helmet-async";
+import { FiPlus, FiShoppingBag, FiHash, FiCalendar, FiBox } from "react-icons/fi";
 
 export default function WorkerRecordSales() {
   const token = localStorage.getItem("token");
@@ -14,8 +15,6 @@ export default function WorkerRecordSales() {
   const [totalPrice, setTotalPrice] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  /* ================= FETCH ================= */
 
   const fetchProducts = async () => {
     try {
@@ -48,26 +47,29 @@ export default function WorkerRecordSales() {
     fetchSales();
   }, []);
 
-  /* ================= HELPERS ================= */
-
   const suggestedPrice = (() => {
     const product = products.find((p) => p.id === Number(selected));
     return product ? product.selling_price * quantity : 0;
   })();
 
-  /* ================= SUBMIT ================= */
+  // Helper: convert strings to Title Case
+  const toTitle = (str) => {
+    if (!str) return "";
+    return String(str)
+      .toLowerCase()
+      .split(" ")
+      .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : ""))
+      .join(" ");
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-
     if (!selected) return setError("Select a product");
     if (quantity < 1) return setError("Quantity must be at least 1");
-    if (!totalPrice || totalPrice <= 0)
-      return setError("Enter a valid total price");
+    if (!totalPrice || totalPrice <= 0) return setError("Enter a valid total price");
 
     setLoading(true);
-
     try {
       await apiFetch("http://localhost:5000/api/sales", {
         method: "POST",
@@ -81,7 +83,6 @@ export default function WorkerRecordSales() {
           price: Number(totalPrice),
         }),
       });
-
       fetchProducts();
       fetchSales();
       setSelected("");
@@ -96,170 +97,150 @@ export default function WorkerRecordSales() {
 
   const totalToday = sales.reduce((a, s) => a + Number(s.price), 0);
 
-  /* ================= UI ================= */
-
   return (
-    <>
+    <div className="min-h-screen bg-[#0A0A0B] text-slate-200 pb-10">
       <Helmet>
-        <title>Worker | Record Sales</title>
-        <meta name="robots" content="noindex,nofollow" />
+        <title>Quantora | Terminal</title>
       </Helmet>
 
-      {error && (
-        <p className="text-red-400 text-center font-medium mb-4">{error}</p>
-      )}
-
-      {/* FORM */}
-      <motion.form
-        onSubmit={handleSubmit}
-        className="bg-[#1e293b] border border-gray-700 rounded-xl p-6 max-w-xl mx-auto space-y-4"
-      >
-        <h2 className="text-lg font-semibold">Record Sale</h2>
-
-        <select
-          value={selected}
-          onChange={(e) => {
-            setSelected(e.target.value);
-            setTotalPrice("");
-          }}
-          className="w-full border border-gray-600 bg-[#0f172a] rounded px-3 py-2"
-        >
-          <option value="">-- Select Product --</option>
-          {products.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name} (Stock: {p.units})
-            </option>
-          ))}
-        </select>
-
-        <div className="grid grid-cols-2 gap-4">
-          <input
-            type="number"
-            min="1"
-            value={quantity}
-            onChange={(e) => {
-              setQuantity(Number(e.target.value));
-              setTotalPrice("");
-            }}
-            className="border border-gray-600 bg-[#0f172a] rounded px-3 py-2"
-            placeholder="Quantity"
-          />
-
-          <input
-            type="number"
-            value={totalPrice}
-            onChange={(e) => setTotalPrice(e.target.value)}
-            className="border border-gray-600 bg-[#0f172a] rounded px-3 py-2"
-            placeholder={`Suggested ₦${suggestedPrice.toLocaleString()}`}
-          />
+      <div className="max-w-6xl mx-auto px-4 pt-6">
+        {/* HEADER STAT */}
+        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-white tracking-tight">Sales Terminal</h1>
+            <p className="text-slate-500 text-sm">Record transactions for {new Date().toLocaleDateString()}</p>
+          </div>
+          <div className="bg-blue-600/10 border border-blue-500/20 px-6 py-3 rounded-2xl text-center">
+            <p className="text-xs uppercase tracking-widest text-blue-400 font-bold">Today's Revenue</p>
+            <p className="text-2xl font-black text-white">₦{totalToday.toLocaleString()}</p>
+          </div>
         </div>
 
-        <button
-          disabled={loading}
-          className={`w-full py-2 rounded font-semibold ${
-            loading
-              ? "bg-gray-600 text-gray-400"
-              : "bg-blue-600 hover:bg-blue-500"
-          }`}
-        >
-          {loading ? "Saving…" : "Add Sale"}
-        </button>
-      </motion.form>
+        <AnimatePresence>
+          {error && (
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="bg-red-500/10 border border-red-500/50 text-red-400 p-4 rounded-xl mb-6 text-center text-sm font-medium">
+              {error}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      {/* ================= MOBILE CARDS ================= */}
-      <div className="md:hidden mt-6 space-y-4">
-        {sales.length === 0 ? (
-          <p className="text-center text-gray-400">No sales today</p>
-        ) : (
-          sales.map((s, i) => (
-            <div
-              key={s.id}
-              className="bg-[#1e293b] border border-gray-700 rounded-xl p-4 space-y-2"
-            >
-              <p className="text-sm text-gray-400">
-                <span className="font-semibold">#</span> {i + 1}
-              </p>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* FORM SECTION */}
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-5">
+            <form onSubmit={handleSubmit} className="bg-slate-900/50 border border-slate-800 backdrop-blur-xl p-8 rounded-[32px] sticky top-6 shadow-2xl">
+              <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                <FiPlus className="text-blue-500" /> New Transaction
+              </h2>
 
-              <p>
-                <span className="text-gray-400">Product:</span>{" "}
-                <span className="font-semibold">
-                  {s.product_name.charAt(0).toUpperCase() +
-                    s.product_name.slice(1)}
-                </span>
-              </p>
+              <div className="space-y-5">
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1 mb-2 block">Product Selection</label>
+                  <div className="relative">
+                    <FiShoppingBag className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <select
+                      value={selected}
+                      onChange={(e) => { setSelected(e.target.value); setTotalPrice(""); }}
+                      className="w-full pl-11 pr-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm focus:border-blue-500/50 outline-none transition-all appearance-none"
+                    >
+                      <option value="">Select Item</option>
+                      {products.map((p) => (
+                        <option key={p.id} value={p.id}>{toTitle(p.name)} ({p.units} in stock)</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
 
-              <p>
-                <span className="text-gray-400">Quantity:</span>{" "}
-                {s.quantity}
-              </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1 mb-2 block">Quantity</label>
+                    <div className="relative">
+                      <FiHash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+                      <input
+                        type="number" min="1" value={quantity}
+                        onChange={(e) => { setQuantity(Number(e.target.value)); setTotalPrice(""); }}
+                        className="w-full pl-11 pr-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm focus:border-blue-500/50 outline-none transition-all"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1 mb-2 block">Sale Price (₦)</label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 -translate-y-1/2 text-slate-500">₦</span>
+                      <input
+                        type="number" value={totalPrice}
+                        onChange={(e) => setTotalPrice(e.target.value)}
+                        placeholder={suggestedPrice > 0 ? suggestedPrice : "0.00"}
+                        className="w-full pl-11 pr-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm focus:border-blue-500/50 outline-none transition-all placeholder:text-slate-700"
+                      />
+                    </div>
+                  </div>
+                </div>
 
-              <p>
-                <span className="text-gray-400">Total:</span>{" "}
-                <span className="font-semibold">
-                  ₦{Number(s.price).toLocaleString()}
-                </span>
-              </p>
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  disabled={loading}
+                  className={`w-full py-4 rounded-2xl font-bold text-white shadow-lg flex items-center justify-center gap-2 transition-all mt-4
+                    ${loading ? "bg-slate-800 cursor-not-allowed" : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-blue-500/20"}`}
+                >
+                  {loading ? "Processing..." : "Complete Sale"}
+                </motion.button>
+              </div>
+            </form>
+          </motion.div>
 
-              <p className="text-sm text-gray-400">
-                <span className="font-semibold">Date:</span>{" "}
-                {new Date(s.created_at).toLocaleString()}
-              </p>
+          {/* RECENT SALES TABLE/LIST */}
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-7">
+            <div className="bg-slate-900/50 border border-slate-800 rounded-[32px] overflow-hidden backdrop-blur-xl">
+              <div className="p-6 border-b border-slate-800 flex justify-between items-center">
+                <h3 className="font-bold text-white flex items-center gap-2">
+                  <FiBox className="text-indigo-400" /> Recent Activity
+                </h3>
+              </div>
+
+              {/* DESKTOP TABLE */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-950/50 text-slate-500 uppercase text-[10px] tracking-widest">
+                    <tr>
+                      <th className="px-6 py-4 text-left">Product</th>
+                      <th className="px-6 py-4 text-center">Qty</th>
+                      <th className="px-6 py-4 text-right">Amount</th>
+                      <th className="px-6 py-4 text-right text-xs"><FiCalendar className="inline mr-1"/> Time</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800">
+                    {sales.length === 0 ? (
+                      <tr><td colSpan="4" className="py-20 text-center text-slate-600">No transactions recorded yet today.</td></tr>
+                    ) : (
+                      sales.map((s) => (
+                        <tr key={s.id} className="hover:bg-blue-500/5 transition-colors">
+                          <td className="px-6 py-4 font-medium text-white">{toTitle(s.product_name)}</td>
+                          <td className="px-6 py-4 text-center text-slate-400">{s.quantity}</td>
+                          <td className="px-6 py-4 text-right font-bold text-blue-400">₦{Number(s.price).toLocaleString()}</td>
+                          <td className="px-6 py-4 text-right text-slate-500 text-xs">{new Date(s.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* MOBILE CARDS */}
+              <div className="md:hidden divide-y divide-slate-800">
+                {sales.map((s) => (
+                  <div key={s.id} className="p-4 flex justify-between items-center">
+                    <div>
+                      <p className="font-bold text-white text-sm">{toTitle(s.product_name)}</p>
+                      <p className="text-xs text-slate-500">{new Date(s.created_at).toLocaleTimeString()} • {s.quantity} units</p>
+                    </div>
+                    <p className="font-bold text-blue-400">₦{Number(s.price).toLocaleString()}</p>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))
-        )}
+          </motion.div>
+        </div>
       </div>
-
-      {/* ================= DESKTOP TABLE (UNCHANGED) ================= */}
-      <div className="hidden md:block mt-6 bg-[#1e293b] border border-gray-700 rounded-xl overflow-x-auto">
-        <table className="w-full table-fixed text-sm">
-          <thead className="bg-[#0f172a] border-b border-gray-700">
-            <tr>
-              <th className="w-12 px-3 py-2 text-left">#</th>
-              <th className="px-3 py-2 text-left">Product</th>
-              <th className="w-20 px-3 py-2 text-right">Qty</th>
-              <th className="w-32 px-3 py-2 text-right">Total</th>
-              <th className="w-48 px-3 py-2 text-left">Date</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {sales.length === 0 ? (
-              <tr>
-                <td
-                  colSpan="5"
-                  className="py-6 text-center text-gray-400"
-                >
-                  No sales today
-                </td>
-              </tr>
-            ) : (
-              sales.map((s, i) => (
-                <tr
-                  key={s.id}
-                  className="border-t border-gray-700 hover:bg-slate-800/40"
-                >
-                  <td className="px-3 py-2 text-left">{i + 1}</td>
-                  <td className="px-3 py-2 truncate">
-                    {s.product_name.charAt(0).toUpperCase() +
-                      s.product_name.slice(1)}
-                  </td>
-                  <td className="px-3 py-2 text-right">{s.quantity}</td>
-                  <td className="px-3 py-2 text-right font-semibold">
-                    ₦{Number(s.price).toLocaleString()}
-                  </td>
-                  <td className="px-3 py-2 whitespace-nowrap">
-                    {new Date(s.created_at).toLocaleString()}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="text-right font-semibold mt-4">
-        Today’s Total: ₦{totalToday.toLocaleString()}
-      </div>
-    </>
+    </div>
   );
 }
