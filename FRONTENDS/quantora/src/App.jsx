@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import Register from "./pages/Registration";
 import Admin from "./pages/Admin";
 import SelectMode from "./pages/SelectMode";
+import ForgotPassword from "./pages/Forgot-Password";
+import ResetPassword from "./pages/ResetPassword"; // The professional reset page we created
 
 // Admin pages
 import Dashboard from "./pages/Dashboard";
@@ -34,6 +36,10 @@ export default function App() {
         <Route path="/login" element={<Admin />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
+        
+        {/* The Reset Password Route (Handles the secure token from email) */}
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
         {/* Mode selection */}
         <Route
@@ -71,8 +77,6 @@ export default function App() {
             </PrivateRoute>
           }
         />
-
-       
 
         <Route
           path="/invoices"
