@@ -1,10 +1,9 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-
 import Register from "./pages/Registration";
 import Admin from "./pages/Admin";
 import SelectMode from "./pages/SelectMode";
 import ForgotPassword from "./pages/Forgot-Password";
-import ResetPassword from "./pages/ResetPassword"; // The professional reset page we created
+import ResetPassword from "./pages/ResetPassword";
 
 // Admin pages
 import Dashboard from "./pages/Dashboard";
@@ -28,7 +27,6 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        {/* Root → Login */}
         <Route path="/" element={<Navigate to="/login" replace />} />
 
         {/* Public routes */}
@@ -36,108 +34,29 @@ export default function App() {
         <Route path="/login" element={<Admin />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
-        
-        {/* The Reset Password Route (Handles the secure token from email) */}
         <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        {/* Mode selection */}
-        <Route
-          path="/select-mode"
-          element={
-            <PrivateRoute>
-              <SelectMode />
-            </PrivateRoute>
-          }
-        />
+        {/* Mode selection (Requires login, but no specific mode yet) */}
+        <Route path="/select-mode" element={<PrivateRoute><SelectMode /></PrivateRoute>} />
 
-        {/* Admin routes */}
-        <Route
-          path="/dashboard"
-          element={
-            <PrivateRoute>
-              <Dashboard />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/manage_products"
-          element={
-            <PrivateRoute>
-              <Manage_Products />
-            </PrivateRoute>
-          }
-        />
+        {/* Admin routes - SECURED by allowedRole="admin" */}
+        <Route path="/dashboard" element={<PrivateRoute allowedRole="admin"><Dashboard /></PrivateRoute>} />
+        <Route path="/manage_products" element={<PrivateRoute allowedRole="admin"><Manage_Products /></PrivateRoute>} />
+        <Route path="/Settings" element={<PrivateRoute allowedRole="admin"><Settings /></PrivateRoute>} />
+        <Route path="/invoices" element={<PrivateRoute allowedRole="admin"><Invoices /></PrivateRoute>} />
+        <Route path="/recordSales" element={<PrivateRoute allowedRole="admin"><RecordSales /></PrivateRoute>} />
+        <Route path="/notifications" element={<PrivateRoute allowedRole="admin"><Notification /></PrivateRoute>} />
+        <Route path="/feedback" element={<PrivateRoute allowedRole="admin"><Feedback /></PrivateRoute>} />
 
-        <Route
-          path="/Settings"
-          element={
-            <PrivateRoute>
-              <Settings />
-            </PrivateRoute>
-          }
-        />
-
-        <Route
-          path="/invoices"
-          element={
-            <PrivateRoute>
-              <Invoices />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/recordSales"
-          element={
-            <PrivateRoute>
-              <RecordSales />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/notifications"
-          element={
-            <PrivateRoute>
-              <Notification />
-            </PrivateRoute>
-          }
-        />
-
-        <Route
-          path="/feedback"
-          element={
-            <PrivateRoute>
-              <Feedback />
-            </PrivateRoute>
-          }
-        />
-
-        {/* Worker routes */}
-        <Route
-          path="/worker/*"
-          element={
-            <PrivateRoute>
-              <WorkerDashboard />
-            </PrivateRoute>
-          }
-        >
-          {/* Default worker page */}
+        {/* Worker routes - SECURED by allowedRole="worker" */}
+        <Route path="/worker/*" element={<PrivateRoute allowedRole="worker"><WorkerDashboard /></PrivateRoute>}>
           <Route index element={<WorkerRecordSales />} />
-
-          {/* Worker pages */}
           <Route path="record-sales" element={<WorkerRecordSales />} />
           <Route path="available-products" element={<AvailableProducts />} />
         </Route>
 
-        {/* 404 */}
-        <Route
-          path="*"
-          element={
-            <h1 className="text-center text-white mt-20">
-              404 – Page Not Found
-            </h1>
-          }
-        />
+        <Route path="*" element={<h1 className="text-center text-white mt-20">404 – Page Not Found</h1>} />
       </Routes>
     </Router>
   );

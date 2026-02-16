@@ -14,7 +14,7 @@
   },
   "type": "module",
   "scripts": {
-    "start": "node Server.js",
+    "start": "nodemon --delay 2 Server.js",
     "dev": "nodemon Server.js"
   }
 }

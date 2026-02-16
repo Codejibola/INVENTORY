@@ -1,37 +1,33 @@
 /* eslint-disable */
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import { FiMail, FiLock, FiEye, FiEyeOff, FiArrowRight, FiCheckCircle } from "react-icons/fi";
 import bg from "../assets/admin0.png";
+import logo from "../assets/logo.png";
 
 export default function Admin() {
   const navigate = useNavigate();
-
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  function handleChange(e) {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  }
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
     setLoading(true);
-
     try {
       const res = await fetch("http://localhost:5000/api/auth/admin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Invalid credentials");
-
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
       navigate("/select-mode");
@@ -46,35 +42,43 @@ export default function Admin() {
     <>
       <Helmet>
         <title>Quantora – Admin Login</title>
-        <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 
-      <main className="min-h-screen bg-gray-100 lg:bg-black relative">
-        {/* DESKTOP BACKGROUND */}
-        <div
-          className="hidden lg:block absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${bg})` }}
+      <main className="min-h-screen bg-slate-50 lg:bg-[#0A0A0B] relative overflow-x-hidden">
+        {/* DESKTOP BACKGROUND IMAGE */}
+        <div 
+          className="hidden lg:block absolute inset-0 bg-cover bg-center opacity-40" 
+          style={{ backgroundImage: `url(${bg})` }} 
         />
-        <div className="hidden lg:block absolute inset-0 bg-black/80" />
 
         {/* ================= MOBILE LAYOUT ================= */}
-        <div className="lg:hidden">
-          {/* HERO */}
-          <div className="bg-gradient-to-br from-blue-600 to-indigo-700 px-6 pt-14 pb-20 text-white text-center">
-            <div className="mx-auto w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center mb-4">
-              <span className="text-3xl font-extrabold text-white">Q</span>
-            </div>
-            <h1 className="text-2xl font-semibold mb-1 text-white">
-              Quantora Login
-            </h1>
-            <p className="text-sm text-white/80">
-              Sign in to manage your store operations.
-            </p>
+        <div className="lg:hidden flex flex-col min-h-screen">
+          <div className="relative overflow-hidden bg-[#0A0A0B] pt-20 pb-24 px-8">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-blue-600/20 blur-[100px] rounded-full" />
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="relative z-10 text-center"
+            >
+              <motion.img
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                src={logo}
+                alt="Quantora Logo"
+                className="h-16 w-auto mb-6 mx-auto"
+              />
+              <h1 className="text-3xl font-bold text-white tracking-tight">Welcome Back</h1>
+              <p className="text-slate-400 mt-2 text-sm">Quantora Administration Portal</p>
+            </motion.div>
           </div>
 
-          {/* FORM CARD */}
-          <div className="-mt-14 px-4 pb-10">
-            <div className="bg-white rounded-2xl shadow-xl p-6">
+          <motion.div 
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="-mt-12 px-5 pb-10 flex-1 relative z-20"
+          >
+            <div className="bg-white rounded-[32px] shadow-2xl p-8 border border-slate-100">
               <LoginForm
                 formData={formData}
                 handleChange={handleChange}
@@ -86,18 +90,24 @@ export default function Admin() {
                 navigate={navigate}
               />
             </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* ================= DESKTOP LAYOUT ================= */}
         <div className="hidden lg:flex min-h-screen items-center justify-center relative z-10 p-6">
-          <div className="w-full max-w-5xl grid grid-cols-2 rounded-xl overflow-hidden shadow-2xl">
-            {/* LEFT PANEL */}
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-5xl grid grid-cols-2 rounded-xl overflow-hidden shadow-2xl"
+          >
+            {/* LEFT PANEL: DARK THEME WITH INFO */}
             <aside className="p-12 bg-black/40 text-white flex flex-col justify-center">
               <div className="flex items-center gap-3 mb-8">
-                <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/30">
-                  <span className="text-white text-2xl font-extrabold">Q</span>
-                </div>
+                <img 
+                  src={logo}
+                  alt="Quantora Logo"
+                  className="h-12 w-auto"
+                />
                 <span className="text-2xl font-semibold text-white">Quantora</span>
               </div>
 
@@ -124,8 +134,8 @@ export default function Admin() {
               </ul>
             </aside>
 
-            {/* RIGHT PANEL */}
-            <section className="bg-white p-12">
+            {/* RIGHT PANEL: WHITE FORM */}
+            <section className="bg-white p-12 flex flex-col justify-center">
               <LoginForm
                 formData={formData}
                 handleChange={handleChange}
@@ -137,33 +147,26 @@ export default function Admin() {
                 navigate={navigate}
               />
             </section>
-          </div>
+          </motion.div>
         </div>
       </main>
     </>
   );
 }
 
-/* ================= REUSABLE LOGIN FORM ================= */
+/* ================= REUSABLE LOGIN FORM COMPONENT ================= */
 
-function LoginForm({
-  formData,
-  handleChange,
-  handleSubmit,
-  loading,
-  error,
-  showPassword,
-  setShowPassword,
-  navigate,
-}) {
+function LoginForm({ formData, handleChange, handleSubmit, loading, error, showPassword, setShowPassword, navigate }) {
   return (
-    <>
-      <h2 className="text-xl font-semibold text-gray-900 mb-1">
-        Sign in
-      </h2>
-      <p className="text-sm text-gray-500 mb-6">
-        Enter your admin credentials.
-      </p>
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <div>
+        <h2 className="text-xl font-semibold text-gray-900 mb-1">
+          Sign in
+        </h2>
+        <p className="text-sm text-gray-500 mb-6">
+          Enter your admin credentials.
+        </p>
+      </div>
 
       {error && (
         <motion.div 
@@ -175,70 +178,75 @@ function LoginForm({
         </motion.div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <Input
-          label="Email address"
+      <div>
+        <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+          Email address
+        </label>
+        <input
           type="email"
           name="email"
-          placeholder="admin@quantora.com"
           value={formData.email}
           onChange={handleChange}
+          required
+          placeholder="admin@quantora.com"
+          className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm transition-all focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-600/5 outline-none"
         />
+      </div>
 
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label className="block text-xs font-semibold text-gray-700">
-              Password
-            </label>
-            <button
-              type="button"
-              onClick={() => navigate("/forgot-password")}
-              className="text-[11px] text-blue-600 hover:text-blue-700 font-bold uppercase tracking-tight transition-colors"
-            >
-              Forgot password?
-            </button>
-          </div>
-          
-          <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              placeholder="••••••••"
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm transition-all focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-600/5 outline-none"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-blue-600"
-            >
-              {showPassword ? "Hide" : "Show"}
-            </button>
-          </div>
+      <div>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="block text-xs font-semibold text-gray-700">
+            Password
+          </label>
+          <button
+            type="button"
+            onClick={() => navigate("/forgot-password")}
+            className="text-[11px] text-blue-600 hover:text-blue-700 font-bold uppercase tracking-tight transition-colors"
+          >
+            Forgot password?
+          </button>
         </div>
+        
+        <div className="relative">
+          <input
+            type={showPassword ? "text" : "password"}
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            required
+            placeholder="••••••••"
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm transition-all focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-600/5 outline-none"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-blue-600"
+          >
+            {showPassword ? "Hide" : "Show"}
+          </button>
+        </div>
+      </div>
 
-        <button
-          disabled={loading}
-          className={`w-full rounded-xl py-3.5 text-sm font-bold text-white transition-all shadow-lg
-            ${loading 
-              ? "bg-blue-400 cursor-not-allowed shadow-none" 
-              : "bg-blue-600 hover:bg-blue-700 shadow-blue-600/20 active:scale-[0.98]"}`}
-        >
-          {loading ? (
-             <div className="flex items-center justify-center gap-2">
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Signing in…
-             </div>
-          ) : "Login to Dashboard"}
-        </button>
-      </form>
+      <button
+        disabled={loading}
+        className={`w-full rounded-xl py-3.5 text-sm font-bold text-white transition-all shadow-lg
+          ${loading 
+            ? "bg-blue-400 cursor-not-allowed shadow-none" 
+            : "bg-blue-600 hover:bg-blue-700 shadow-blue-600/20 active:scale-[0.98]"}`}
+      >
+        {loading ? (
+           <div className="flex items-center justify-center gap-2">
+              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Signing in…
+           </div>
+        ) : "Login to Dashboard"}
+      </button>
 
       <div className="mt-8 pt-6 border-t border-gray-100 text-center">
         <p className="text-sm text-gray-500">
           New to the platform?{" "}
           <button
+            type="button"
             onClick={() => navigate("/register")}
             className="text-blue-600 hover:underline font-bold"
           >
@@ -246,21 +254,6 @@ function LoginForm({
           </button>
         </p>
       </div>
-    </>
-  );
-}
-
-function Input({ label, ...props }) {
-  return (
-    <div>
-      <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-        {label}
-      </label>
-      <input
-        {...props}
-        required
-        className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm transition-all focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-600/5 outline-none"
-      />
-    </div>
+    </form>
   );
 }

@@ -50,6 +50,20 @@ Quantora.registerDefaultRoutes();
 Quantora.listen();
 
 
+
+// Catch unhandled promise rejections (like DB connection drops)
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Application specific logging, throwing an error, or other logic here
+});
+
+// Catch uncaught exceptions (the "random" crashes)
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception thrown:', err);
+  // There might be a need for a graceful shutdown here
+  // process.exit(1); 
+});
+
 export default WebServer;
 
 
