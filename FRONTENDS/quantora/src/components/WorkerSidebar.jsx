@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { X, LogOut, ShoppingCart, Box, RefreshCw } from "lucide-react";
+import logo from "../assets/logo.png";
 
 export default function WorkerSidebar({ isOpen, onClose }) {
   const navigate = useNavigate();
@@ -52,7 +53,7 @@ export default function WorkerSidebar({ isOpen, onClose }) {
         {/* Logo / Brand Area */}
         <div className="flex justify-between items-center mb-10">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-white">Q</div>
+            <img src={logo} alt="Quantora Logo" className="w-8 h-8" />
             <h2 className="text-xl font-bold tracking-tight text-white">
               Quantora<span className="text-blue-500">.</span>
             </h2>

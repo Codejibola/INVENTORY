@@ -76,15 +76,7 @@ export default function Topbar({ onMenuClick }) {
             <Menu size={22} />
           </button>
           
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <img src={logo} alt="Logo" className="w-9 h-9 object-contain" />
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-[#0A0A0B] shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
-            </div>
-            <h2 className="hidden sm:block text-xl font-black text-white tracking-tighter italic">
-              Q<span className="text-blue-500 font-bold not-italic">UANTORA</span>
-            </h2>
-          </div>
+         
         </div>
 
         {/* Center: Welcome Badge */}

@@ -1,6 +1,7 @@
 /* eslint-disable */
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import logo from "../assets/logo.png";
 import { 
   LayoutDashboard, 
   Package, 
@@ -77,8 +78,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       {/* DESKTOP SIDEBAR */}
       <aside className="hidden md:flex flex-col w-64 bg-[#050505] border-r border-white/5 p-6 shadow-2xl relative z-20">
         <div className="flex items-center gap-3 mb-10 px-2">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-black text-white text-sm shadow-lg shadow-blue-600/20">Q</div>
-          <h1 className="text-xl font-black tracking-tighter text-white uppercase">Quantora</h1>
+          <img src={logo} alt="Quantora Logo" className="w-8 h-8" />
+          <h2 className="hidden sm:block text-xl font-black text-white tracking-tighter italic">
+              Q<span className="text-blue-500 font-bold not-italic">UANTORA</span>
+            </h2>
         </div>
 
         <nav className="flex-1 space-y-1">
@@ -121,7 +124,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-10">
-                 <h1 className="text-2xl font-black text-white uppercase tracking-tighter italic underline decoration-blue-600 underline-offset-8">Quantora</h1>
+                <img src={logo} alt="Quantora Logo" className="w-8 h-8" />
+                 <h2 className="text-2xl font-black text-white uppercase tracking-tighter italic  decoration-blue-600 underline-offset-8 italic">Q<span className="text-blue-500 font-bold not-italic">UANTORA</span></h2>
                  <button onClick={() => setIsOpen(false)} className="p-2 bg-white/5 rounded-full text-gray-400 hover:text-white transition-colors">
                   <X size={20} />
                 </button>

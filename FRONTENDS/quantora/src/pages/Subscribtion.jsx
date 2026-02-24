@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Check, Zap, Crown, Loader2, ShieldCheck, ArrowLeft } from 'lucide-react';
+import { Check, Zap, Crown, Loader2, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext'; // Using our context
-import { useNavigate } from 'react-router-dom';
 import LOCAL_ENV from '../../ENV.js';
 
 const plans = [
@@ -30,7 +29,6 @@ const plans = [
 
 const Subscription = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [loadingPlan, setLoadingPlan] = useState(null);
 
   const handlePayment = async (plan) => {
@@ -62,15 +60,7 @@ const Subscription = () => {
   };
 
   return (
-    <div className="min-h-screen relative bg-[#0A0A0B] text-slate-200 py-16 px-4">
-      <button
-        onClick={() => navigate('/dashboard')}
-        className="absolute left-4 top-6 p-2 rounded-md bg-slate-800 hover:bg-slate-700 flex items-center gap-2"
-        aria-label="Back to dashboard"
-      >
-        <ArrowLeft size={18} />
-        <span className="text-sm">Back</span>
-      </button>
+    <div className="min-h-screen bg-[#0A0A0B] text-slate-200 py-16 px-4">
       <div className="max-w-5xl mx-auto text-center mb-16">
         <h1 className="text-5xl font-black text-white tracking-tighter mb-4 italic">
           QUANTORA <span className="text-blue-600">PREMIUM</span>
