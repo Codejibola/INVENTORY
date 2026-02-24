@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShieldCheck, Briefcase, Eye, EyeOff } from "lucide-react";
-import logo from "../assets/Logo.png";
+import logo from "../assets/logo.png";
 
 export default function SelectMode() {
   const navigate = useNavigate();
