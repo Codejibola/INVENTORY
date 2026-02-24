@@ -1,37 +1,11 @@
 /* eslint-disable */
-import { useEffect, useState } from "react";
 import { Menu, Store, Activity, UserCircle } from "lucide-react";
 import { motion } from "framer-motion";
+import { useAuth } from "../context/AuthContext";
 
 export default function WorkerTopbar({ onMenuClick }) {
-  const [shopName, setShopName] = useState("Quantora");
-  const [isOnline, setIsOnline] = useState(true);
-
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
-
-    const fetchUser = async () => {
-      try {
-        const res = await fetch("http://localhost:5000/api/auth/me", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!res.ok) return;
-
-        const data = await res.json();
-        // Updated to use both local storage and state for reliability
-        localStorage.setItem("user", JSON.stringify(data.user));
-        setShopName(data.user?.shop_name || "Quantora Store");
-      } catch {
-        setIsOnline(false); // Visual feedback if connection drops
-      }
-    };
-
-    fetchUser();
-  }, []);
+  const { user } = useAuth();
+  const shopName = user?.shop_name || "Quantora Store";
 
   return (
     <header className="w-full bg-[#0A0A0B]/80 backdrop-blur-xl px-6 py-4 flex items-center justify-between border-b border-slate-800/50 sticky top-0 z-40">
@@ -56,8 +30,8 @@ export default function WorkerTopbar({ onMenuClick }) {
             </h1>
             <div className="flex items-center gap-1.5">
               <span className="relative flex h-2 w-2">
-                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isOnline ? 'bg-emerald-400' : 'bg-red-400'}`}></span>
-                <span className={`relative inline-flex rounded-full h-2 w-2 ${isOnline ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-emerald-400"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                 Terminal Active

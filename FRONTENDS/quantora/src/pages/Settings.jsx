@@ -4,8 +4,10 @@ import { Save, Store, ShieldCheck, UserCog, Eye, EyeOff } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
 import apiFetch from "../utils/apiFetch.js";
+import { useAuth } from "../context/AuthContext";
 
 export default function Settings() {
+  const { user, updateUser } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
@@ -19,9 +21,8 @@ export default function Settings() {
   });
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    if (user) setFormData((prev) => ({ ...prev, shopName: user.shopName || user.shop_name }));
-  }, []);
+    if (user) setFormData((prev) => ({ ...prev, shopName: user.shop_name || user.shopName }));
+  }, [user]);
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
@@ -51,12 +52,12 @@ export default function Settings() {
         throw new Error(data.message || "Failed to update settings");
       }
 
-      // 1. Update local storage with the new shop name from backend
-      const currentUser = JSON.parse(localStorage.getItem("user"));
-      localStorage.setItem("user", JSON.stringify({ 
-        ...currentUser, 
-        shopName: data.shopName 
-      }));
+      // Update context with new user data
+      updateUser({ 
+        ...user, 
+        shop_name: data.shopName || data.shop_name,
+        shopName: data.shopName || data.shop_name
+      });
       
       setMessage({ type: "success", text: "Settings updated successfully!" });
       

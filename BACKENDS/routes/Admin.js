@@ -144,10 +144,17 @@ router.post("/admin", authLimiter, async (req, res) => {
 
 router.get("/me", authenticate, async (req, res) => {
   try {
-    const userId = req.userId; // ✅ FIX HERE
+    const userId = req.userId;
 
     const result = await pool.query(
-      `SELECT id, name, email, shop_name
+      `SELECT 
+        id, 
+        name, 
+        email, 
+        shop_name, 
+        subscription_status, 
+        subscription_plan, 
+        subscription_expiry
        FROM users
        WHERE id = $1`,
       [userId]
@@ -157,11 +164,11 @@ router.get("/me", authenticate, async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    // This now sends the "Active" status and "Expiry" date to your React app
     res.json({ user: result.rows[0] });
   } catch (err) {
     console.error("ME route error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
-
 export default router;

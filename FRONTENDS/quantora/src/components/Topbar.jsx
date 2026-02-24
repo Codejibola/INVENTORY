@@ -6,13 +6,16 @@ import { useEffect, useRef, useState } from "react";
 import logo from "../assets/Logo.png";
 import { Menu, Bell, User, Zap } from "lucide-react";
 import notificationSound from "../sounds/notification.wav";
+import { useAuth } from "../context/AuthContext";
 
-export default function Topbar({ onMenuClick, userName }) {
+export default function Topbar({ onMenuClick }) {
+  const { user } = useAuth();
   const [lowStockProducts, setLowStockProducts] = useState([]);
   const prevLowStockCountRef = useRef(0);
   const isFirstFetchRef = useRef(true);
   const audioRef = useRef(null);
   const token = localStorage.getItem("token");
+  const userName = user?.name || "STAFF";
 
   useEffect(() => {
     if (!token) return;

@@ -8,26 +8,29 @@ import {
   Receipt, 
   Settings as SettingsIcon, 
   MessageSquare, // Added for Feedback
+  Crown, // Added for Subscription
   LogOut, 
   X 
 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 export default function Sidebar({ isOpen, setIsOpen }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { logout } = useAuth();
 
   const links = [
     { name: "Dashboard", icon: <LayoutDashboard size={20} />, to: "/dashboard" },
     { name: "Manage Products", icon: <Package size={20} />, to: "/Manage_Products" },
     { name: "Record Sales", icon: <Edit3 size={20} />, to: "/recordSales" },
     { name: "Invoices", icon: <Receipt size={20} />, to: "/invoices" },
+    { name: "Subscription", icon: <Crown size={20} />, to: "/subscription" }, // Integrated Subscription
     { name: "Feedback", icon: <MessageSquare size={20} />, to: "/feedback" }, // Integrated Feedback
     { name: "Settings", icon: <SettingsIcon size={20} />, to: "/settings" },
   ];
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    logout();
     navigate("/login");
   };
 

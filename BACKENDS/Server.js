@@ -1,6 +1,8 @@
+/* eslint-disable */
 import dotenv from "dotenv";
 dotenv.config({ path: "./.env" });
 console.log("ENV CHECK:", process.env.DB_HOST);
+
 import pool from "./config/db.js";
 import { globalLimiter } from "./middleware/rateLimiter.js";
 import cors from "cors";
@@ -9,13 +11,14 @@ import registrationRouter from "./config/Registration.js";
 import adminRouter from "./routes/Admin.js";
 import productRoutes from "./routes/productRoutes.js";
 import salesRoutes from "./routes/salesRoutes.js";
-import {LOCAL_ENV} from "./config/localEnv.js";
-
+import paystackRoutes from "./routes/Paystack.js";
+// --- NEW IMPORT --- 
+import { LOCAL_ENV } from "./config/localEnv.js";
 
 class WebServer {
   #port;
   constructor() {
-    this.#port = LOCAL_ENV.PORT ; 
+    this.#port = LOCAL_ENV.PORT;
     this.app = express();
     this.app.use(cors());
     this.app.use(express.json());
@@ -23,7 +26,7 @@ class WebServer {
 
   registerDefaultRoutes() {
     this.app.get("/", (req, res) => {
-      res.send("API is running");
+      res.send("Quantora API is running");
     });
   }
 
@@ -35,13 +38,17 @@ class WebServer {
 }
 
 const Quantora = new WebServer();
+
+// Global Middleware
 Quantora.app.use(globalLimiter);
 
-// Routers
+// --- ROUTERS ---
 Quantora.app.use("/api/auth", registrationRouter);
 Quantora.app.use("/api/auth", adminRouter);
 Quantora.app.use("/api", productRoutes);
 Quantora.app.use("/api", salesRoutes);
+Quantora.app.use("/api/paystack", paystackRoutes);
+
 
 // Default
 Quantora.registerDefaultRoutes();
@@ -49,21 +56,13 @@ Quantora.registerDefaultRoutes();
 // Start server
 Quantora.listen();
 
-
-
-// Catch unhandled promise rejections (like DB connection drops)
+// Error Handling
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  // Application specific logging, throwing an error, or other logic here
 });
 
-// Catch uncaught exceptions (the "random" crashes)
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception thrown:', err);
-  // There might be a need for a graceful shutdown here
-  // process.exit(1); 
 });
 
 export default WebServer;
-
-
