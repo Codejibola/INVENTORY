@@ -23,5 +23,3 @@ dist-ssr
 *.sln
 *.sw?
 
-# secrets files
-config/localEnv.js
