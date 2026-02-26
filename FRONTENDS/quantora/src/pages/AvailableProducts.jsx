@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Plus, Package, Tag, Layers, ArrowUpRight, X, AlertCircle } from "lucide-react";
-// import { API_URL } from "../utils/apiFetch";
+import LOCAL_ENV from "../../ENV.js"; 
 
 export default function AvailableProducts() {
   const [products, setProducts] = useState([]);
@@ -21,9 +21,10 @@ export default function AvailableProducts() {
 
   const token = localStorage.getItem("token");
 
+  // 2. Updated to use LOCAL_ENV.API_URL
   const fetchProducts = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/products`, {
+      const res = await fetch(`${LOCAL_ENV.API_URL}/api/products`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -51,7 +52,9 @@ export default function AvailableProducts() {
     try {
       const stockNum = Number(formData.stock);
       if (Number.isNaN(stockNum)) throw new Error("Stock must be a number");
-      const res = await fetch(`${API_URL}/api/products`, {
+      
+      // 3. Updated this fetch call to use LOCAL_ENV.API_URL as well
+      const res = await fetch(`${LOCAL_ENV.API_URL}/api/products`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

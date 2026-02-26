@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
 import apiFetch from "../utils/apiFetch.js";
+import LOCAL_ENV from "../../ENV.js";
 import { Plus, Edit, Trash2, Search, Package, Tag, Layers } from "lucide-react";
 import { Helmet, HelmetProvider } from "react-helmet-async";
 
@@ -39,7 +40,7 @@ export default function ManageProducts() {
 
   const fetchProducts = () => {
     if (!token) return;
-    apiFetch(`http://localhost:5000/api/products`, {
+    apiFetch(`${LOCAL_ENV.API_URL}/api/products`, {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
@@ -71,8 +72,8 @@ export default function ManageProducts() {
 
     try {
       const url = editingId
-        ? `http://localhost:5000/api/products/${editingId}`
-        : `http://localhost:5000/api/products`;
+        ? `${LOCAL_ENV.API_URL}/api/products/${editingId}`
+        : `${LOCAL_ENV.API_URL}/api/products`;
       const method = editingId ? "PUT" : "POST";
 
       const res = await fetch(url, {
@@ -97,7 +98,7 @@ export default function ManageProducts() {
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this product?")) return;
     try {
-      const res = await apiFetch(`http://localhost:5000/api/products/${id}`, {
+      const res = await apiFetch(`${LOCAL_ENV.API_URL}/api/products/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });

@@ -5,7 +5,7 @@ import { Helmet } from "react-helmet-async";
 import { FiUser, FiShoppingBag, FiMail, FiLock, FiShield, FiBriefcase, FiArrowRight, FiCheckCircle } from "react-icons/fi";
 import bg from "../assets/inventory1.jpg";
 import logo from "../assets/logo.png";
-// import { API_URL } from "../utils/apiFetch";
+import LOCAL_ENV from "../../ENV";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -44,7 +44,7 @@ export default function Register() {
 
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/auth/register`, {
+      const res = await fetch(`${LOCAL_ENV.API_URL}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

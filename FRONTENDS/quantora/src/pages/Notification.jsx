@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, AlertTriangle } from "lucide-react";
 import apiFetch from "../utils/apiFetch";
+import LOCAL_ENV from "../../ENV";
 import { Helmet } from "react-helmet-async";
 
 export default function Notification() {
@@ -34,7 +35,7 @@ export default function Notification() {
         return;
       }
 
-      const res = await apiFetch(`http://localhost:5000/api/products`, {
+      const res = await apiFetch(`${LOCAL_ENV.API_URL}/api/products`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",

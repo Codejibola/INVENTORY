@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import axios from "axios";
-// import { API_URL } from "../utils/apiFetch";
+import LOCAL_ENV from "../../ENV";
 
 export default function ResetPassword() {
   const { token } = useParams();
@@ -16,7 +16,7 @@ export default function ResetPassword() {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post(`http://localhost:5000/api/auth/reset-password/${token}`, {
+      await axios.post(`${LOCAL_ENV.API_URL}/api/auth/reset-password/${token}`, {
         newPassword,
         type
       });

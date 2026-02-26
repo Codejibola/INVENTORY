@@ -1,7 +1,7 @@
 /* eslint-disable */
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
-// import apiFetch, { API_URL } from "../utils/apiFetch";
+import LOCAL_ENV from "../../ENV";
 import { Helmet } from "react-helmet-async";
 import { FiPlus, FiShoppingBag, FiHash, FiCalendar, FiBox } from "react-icons/fi";
 
@@ -18,7 +18,7 @@ export default function WorkerRecordSales() {
 
   const fetchProducts = async () => {
     try {
-      const res = await apiFetch(`http://localhost:5000/api/products`, {
+      const res = await apiFetch(`${LOCAL_ENV.API_URL}/api/products`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -30,7 +30,7 @@ export default function WorkerRecordSales() {
 
   const fetchSales = async () => {
     try {
-      const res = await apiFetch(`http://localhost:5000/api/sales`, {
+      const res = await apiFetch(`${LOCAL_ENV.API_URL}/api/sales`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -71,7 +71,7 @@ export default function WorkerRecordSales() {
 
     setLoading(true);
     try {
-      await apiFetch(`http://localhost:5000/api/sales`, {
+      await apiFetch(`${LOCAL_ENV.API_URL}/api/sales`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

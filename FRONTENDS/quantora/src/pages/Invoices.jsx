@@ -5,6 +5,7 @@ import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
 import { Download, Eye, Calendar, FileText, X } from "lucide-react";
 import apiFetch from "../utils/apiFetch.js";
+import LOCAL_ENV from "../../ENV.js";
 import { Helmet, HelmetProvider } from "react-helmet-async";
 
 export default function Invoices() {
@@ -38,7 +39,7 @@ export default function Invoices() {
 
   useEffect(() => {
     if (!token) return;
-    apiFetch(`http://localhost:5000/api/sales/daily?year=${year}`, {
+    apiFetch(`${LOCAL_ENV.API_URL}/api/sales/daily?year=${year}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -61,7 +62,7 @@ export default function Invoices() {
     setViewLoading(true);
     setSelectedDate(date);
     try {
-      const res = await apiFetch(`http://localhost:5000/api/sales/daily/${formatDate(date)}/view`, {
+      const res = await apiFetch(`${LOCAL_ENV.API_URL}/api/sales/daily/${formatDate(date)}/view`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -76,7 +77,7 @@ export default function Invoices() {
 
   const handleDownload = async (date) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/sales/daily/${date}/excel`, {
+      const res = await fetch(`${LOCAL_ENV.API_URL}/api/sales/daily/${date}/excel`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const blob = await res.blob();

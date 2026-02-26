@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
+// 1. Import your environment configuration
+import LOCAL_ENV from "../../ENV.js"; 
 import {
   BarChart,
   Bar,
@@ -96,11 +98,12 @@ export default function Dashboard() {
       const currentYear = now.getFullYear();
       const currentMonthIdx = now.getMonth();
 
-      const salesRes = await apiFetch(`http://localhost:5000/api/sales`, authHeader);
+      // 2. Swapped all localhost/hardcoded URLs for LOCAL_ENV.API_URL
+      const salesRes = await apiFetch(`${LOCAL_ENV.API_URL}/api/sales`, authHeader);
       const salesData = salesRes.ok ? await salesRes.json() : [];
       if (salesData.length > 0) setLatestSale(salesData[0]);
 
-      const dailyRes = await apiFetch(`http://localhost:5000/api/sales/daily?year=${currentYear}`, authHeader);
+      const dailyRes = await apiFetch(`${LOCAL_ENV.API_URL}/api/sales/daily?year=${currentYear}`, authHeader);
       const dailyData = dailyRes.ok ? await dailyRes.json() : [];
 
       const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -119,7 +122,7 @@ export default function Dashboard() {
         .reduce((sum, d) => sum + Number(d.total_profit_loss || 0), 0);
       setMonthlyProfitLoss(profitTotal);
 
-      const prodRes = await apiFetch(`http://localhost:5000/api/products`, authHeader);
+      const prodRes = await apiFetch(`${LOCAL_ENV.API_URL}/api/products`, authHeader);
       const prodData = prodRes.ok ? await prodRes.json() : [];
       setShopWorth(prodData.reduce((sum, p) => sum + Number(p.selling_price || 0) * Number(p.units || 0), 0));
       
@@ -129,8 +132,8 @@ export default function Dashboard() {
       }
 
       const [bestRes, leastRes] = await Promise.all([
-        apiFetch(`https://quantora-4xrl.onrender.com/api/sales/best-selling`, authHeader),
-        apiFetch(`http://localhost:5000/api/sales/least-selling`, authHeader)
+        apiFetch(`${LOCAL_ENV.API_URL}/api/sales/best-selling`, authHeader),
+        apiFetch(`${LOCAL_ENV.API_URL}/api/sales/least-selling`, authHeader)
       ]);
 
       if (bestRes.ok) setBestSellingProduct(await bestRes.json());

@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShieldCheck, Briefcase, Eye, EyeOff } from "lucide-react";
 import logo from "../assets/logo.png";
-// import { API_URL } from "../utils/apiFetch";
+// 1. Import your environment configuration
+import LOCAL_ENV from "../../ENV.js"; 
 
 export default function SelectMode() {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ export default function SelectMode() {
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (!storedUser) {
-      navigate("/login"); // Fixed: redirected to login if no user session
+      navigate("/login"); 
     } else {
       setUser(JSON.parse(storedUser));
     }
@@ -59,7 +60,8 @@ export default function SelectMode() {
     setError("");
 
     try {
-      const res = await fetch(`http://localhost:5000/api/auth/verify-role`, {
+      // 2. Swapped localhost for LOCAL_ENV.API_URL
+      const res = await fetch(`${LOCAL_ENV.API_URL}/api/auth/verify-role`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -74,7 +76,6 @@ export default function SelectMode() {
       if (!res.ok || !data.valid) {
         setError(data.error || "Invalid password");
       } else {
-        // SUCCESS: PERSIST THE ROLE
         const updatedUser = { ...user, activeRole: selectedRole.id };
         localStorage.setItem("user", JSON.stringify(updatedUser));
         
@@ -133,7 +134,7 @@ export default function SelectMode() {
         {showModal && (
           <motion.div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="w-full max-w-sm rounded-2xl bg-slate-900 border border-white/10 p-6 shadow-2xl">
-              <h3 className="text-xl font-semibold mb-2">Enter {selectedRole.title} Password</h3>
+              <h3 className="text-xl font-semibold mb-2">Enter {selectedRole?.title} Password</h3>
               <div className="relative mb-3 mt-4">
                 <input
                   type={showPassword ? "text" : "password"}

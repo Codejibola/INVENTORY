@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
 import apiFetch from "../utils/apiFetch.js";
+import LOCAL_ENV from "../../ENV.js";
 import { Helmet, HelmetProvider } from "react-helmet-async";
 import { ShoppingCart, Package, DollarSign, TrendingUp, History } from "lucide-react";
 
@@ -33,7 +34,7 @@ export default function RecordSales() {
   }, []);
 
   const fetchProducts = () => {
-    apiFetch(`http://localhost:5000/api/products`, {
+    apiFetch(`${LOCAL_ENV.API_URL}/api/products`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
@@ -45,7 +46,7 @@ export default function RecordSales() {
   };
 
   const fetchSales = () => {
-    apiFetch(`http://localhost:5000/api/sales`, {
+    apiFetch(`${LOCAL_ENV.API_URL}/api/sales`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
@@ -83,7 +84,7 @@ export default function RecordSales() {
 
     setLoading(true);
     try {
-      await apiFetch(`http://localhost:5000/api/sales`, {
+      await apiFetch(`${LOCAL_ENV.API_URL}/api/sales`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

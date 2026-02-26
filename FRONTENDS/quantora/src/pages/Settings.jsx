@@ -4,7 +4,7 @@ import { Save, Store, ShieldCheck, UserCog, Eye, EyeOff } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
 import apiFetch from "../utils/apiFetch.js";
-// import { API_URL } from "../utils/apiFetch";
+import LOCAL_ENV from "../../ENV.js";
 import { useAuth } from "../context/AuthContext";
 
 export default function Settings() {
@@ -38,7 +38,7 @@ export default function Settings() {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch(`http://localhost:5000/api/auth/settings`, {
+      const res = await fetch(`${LOCAL_ENV.API_URL}/api/auth/settings`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
