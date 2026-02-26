@@ -96,7 +96,7 @@ export default function Dashboard() {
       const currentYear = now.getFullYear();
       const currentMonthIdx = now.getMonth();
 
-      const salesRes = await apiFetch("http://localhost:5000/api/sales", authHeader);
+      const salesRes = await apiFetch(`http://localhost:5000/api/sales`, authHeader);
       const salesData = salesRes.ok ? await salesRes.json() : [];
       if (salesData.length > 0) setLatestSale(salesData[0]);
 
@@ -119,7 +119,7 @@ export default function Dashboard() {
         .reduce((sum, d) => sum + Number(d.total_profit_loss || 0), 0);
       setMonthlyProfitLoss(profitTotal);
 
-      const prodRes = await apiFetch("http://localhost:5000/api/products", authHeader);
+      const prodRes = await apiFetch(`http://localhost:5000/api/products`, authHeader);
       const prodData = prodRes.ok ? await prodRes.json() : [];
       setShopWorth(prodData.reduce((sum, p) => sum + Number(p.selling_price || 0) * Number(p.units || 0), 0));
       
@@ -129,8 +129,8 @@ export default function Dashboard() {
       }
 
       const [bestRes, leastRes] = await Promise.all([
-        apiFetch("http://localhost:5000/api/sales/best-selling", authHeader),
-        apiFetch("http://localhost:5000/api/sales/least-selling", authHeader)
+        apiFetch(`https://quantora-4xrl.onrender.com/api/sales/best-selling`, authHeader),
+        apiFetch(`http://localhost:5000/api/sales/least-selling`, authHeader)
       ]);
 
       if (bestRes.ok) setBestSellingProduct(await bestRes.json());

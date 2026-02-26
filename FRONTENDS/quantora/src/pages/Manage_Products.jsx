@@ -39,7 +39,7 @@ export default function ManageProducts() {
 
   const fetchProducts = () => {
     if (!token) return;
-    apiFetch("http://localhost:5000/api/products", {
+    apiFetch(`http://localhost:5000/api/products`, {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
@@ -72,7 +72,7 @@ export default function ManageProducts() {
     try {
       const url = editingId
         ? `http://localhost:5000/api/products/${editingId}`
-        : "http://localhost:5000/api/products";
+        : `http://localhost:5000/api/products`;
       const method = editingId ? "PUT" : "POST";
 
       const res = await fetch(url, {

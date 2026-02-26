@@ -6,6 +6,8 @@ import { Helmet } from "react-helmet-async";
 import { FiMail, FiLock, FiEye, FiEyeOff, FiArrowRight, FiCheckCircle } from "react-icons/fi";
 import bg from "../assets/admin0.png";
 import logo from "../assets/logo.png";
+// import LOCAL_ENV from "../../ENV";
+// import { API_URL } from "../utils/apiFetch";
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -21,7 +23,7 @@ export default function Admin() {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/auth/admin", {
+      const res = await fetch(`http://localhost:5000/api/auth/admin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

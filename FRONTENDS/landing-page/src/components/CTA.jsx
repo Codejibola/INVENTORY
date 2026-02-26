@@ -35,6 +35,7 @@ export default function CTA() {
           type="button"
           aria-label="Start free trial of Quantora inventory management software"
           className="bg-blue-600 hover:bg-blue-500 transition px-10 py-4 rounded-md font-semibold text-lg"
+          to="https://quantora-app.vercel.app/"
         >
           Start Free Trial
         </button>

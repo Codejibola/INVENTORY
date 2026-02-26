@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Plus, Package, Tag, Layers, ArrowUpRight, X, AlertCircle } from "lucide-react";
+// import { API_URL } from "../utils/apiFetch";
 
 export default function AvailableProducts() {
   const [products, setProducts] = useState([]);
@@ -22,7 +23,7 @@ export default function AvailableProducts() {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/products", {
+      const res = await fetch(`http://localhost:5000/api/products`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -50,7 +51,7 @@ export default function AvailableProducts() {
     try {
       const stockNum = Number(formData.stock);
       if (Number.isNaN(stockNum)) throw new Error("Stock must be a number");
-      const res = await fetch("http://localhost:5000/api/products", {
+      const res = await fetch(`${API_URL}/api/products`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

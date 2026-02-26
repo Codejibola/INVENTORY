@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Check, Zap, Crown, Loader2, ShieldCheck } from 'lucide-react';
-import { useAuth } from '../context/AuthContext'; // Using our context
+import { Check, Zap, Crown, Loader2, ShieldCheck, ArrowLeft } from 'lucide-react'; // 1. Added ArrowLeft
+import { useNavigate } from 'react-router-dom'; // 2. Added useNavigate
+import { useAuth } from '../context/AuthContext'; 
 import LOCAL_ENV from '../../ENV.js';
 
 const plans = [
@@ -29,6 +30,7 @@ const plans = [
 
 const Subscription = () => {
   const { user } = useAuth();
+  const navigate = useNavigate(); // 3. Initialized Navigation
   const [loadingPlan, setLoadingPlan] = useState(null);
 
   const handlePayment = async (plan) => {
@@ -42,9 +44,9 @@ const Subscription = () => {
 
     try {
       const response = await axios.post(`${LOCAL_ENV.API_URL}/api/paystack/pay`, {
-        email: user?.email, // Pull email automatically from AuthContext
-        amount: plan.price * 100, // Convert to kobo
-        planType: plan.id // Pass the plan type to metadata
+        email: user?.email, 
+        amount: plan.price * 100, 
+        planType: plan.id 
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -61,6 +63,20 @@ const Subscription = () => {
 
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-slate-200 py-16 px-4">
+      
+      {/* --- 4. THE BACK BUTTON --- */}
+      <div className="max-w-4xl mx-auto mb-12">
+        <button 
+          onClick={() => navigate('/dashboard')}
+          className="group flex items-center gap-3 text-slate-500 hover:text-white transition-all duration-300"
+        >
+          <div className="p-2 rounded-full bg-slate-900 border border-slate-800 group-hover:border-blue-500 group-hover:bg-blue-500/10 transition-all">
+            <ArrowLeft size={18} />
+          </div>
+          <span className="text-[10px] uppercase font-black tracking-[0.3em]">Return to Dashboard</span>
+        </button>
+      </div>
+
       <div className="max-w-5xl mx-auto text-center mb-16">
         <h1 className="text-5xl font-black text-white tracking-tighter mb-4 italic">
           QUANTORA <span className="text-blue-600">PREMIUM</span>

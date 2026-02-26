@@ -4,6 +4,7 @@ import { Save, Store, ShieldCheck, UserCog, Eye, EyeOff } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
 import apiFetch from "../utils/apiFetch.js";
+// import { API_URL } from "../utils/apiFetch";
 import { useAuth } from "../context/AuthContext";
 
 export default function Settings() {
@@ -37,7 +38,7 @@ export default function Settings() {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/settings", {
+      const res = await fetch(`http://localhost:5000/api/auth/settings`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -107,7 +108,7 @@ export default function Settings() {
                   <label className="text-[10px] uppercase font-black text-gray-500 tracking-widest block mb-2">Shop Name</label>
                   <input
                     name="shopName"
-                    value={formData.shopName}
+                    value="Enter your shop name "
                     onChange={handleChange}
                     className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-all text-white"
                   />

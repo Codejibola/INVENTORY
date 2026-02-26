@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import axios from "axios";
+// import { API_URL } from "../utils/apiFetch";
 
 export default function ResetPassword() {
   const { token } = useParams();

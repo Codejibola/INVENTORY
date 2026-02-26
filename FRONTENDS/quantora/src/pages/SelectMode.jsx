@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShieldCheck, Briefcase, Eye, EyeOff } from "lucide-react";
 import logo from "../assets/logo.png";
+// import { API_URL } from "../utils/apiFetch";
 
 export default function SelectMode() {
   const navigate = useNavigate();
@@ -58,7 +59,7 @@ export default function SelectMode() {
     setError("");
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/verify-role", {
+      const res = await fetch(`http://localhost:5000/api/auth/verify-role`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

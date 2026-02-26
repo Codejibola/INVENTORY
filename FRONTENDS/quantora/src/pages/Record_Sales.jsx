@@ -33,7 +33,7 @@ export default function RecordSales() {
   }, []);
 
   const fetchProducts = () => {
-    apiFetch("http://localhost:5000/api/products", {
+    apiFetch(`http://localhost:5000/api/products`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
@@ -45,7 +45,7 @@ export default function RecordSales() {
   };
 
   const fetchSales = () => {
-    apiFetch("http://localhost:5000/api/sales", {
+    apiFetch(`http://localhost:5000/api/sales`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
@@ -83,7 +83,7 @@ export default function RecordSales() {
 
     setLoading(true);
     try {
-      await apiFetch("http://localhost:5000/api/sales", {
+      await apiFetch(`http://localhost:5000/api/sales`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

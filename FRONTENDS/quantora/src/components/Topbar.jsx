@@ -21,7 +21,7 @@ export default function Topbar({ onMenuClick }) {
 
     const fetchLowStock = async () => {
       try {
-        const res = await apiFetch(`${LOCAL_ENV.API_URL}/api/products`, {
+        const res = await apiFetch(`http://localhost:5000/api/products`, {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,

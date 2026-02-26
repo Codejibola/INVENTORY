@@ -34,7 +34,7 @@ export default function Notification() {
         return;
       }
 
-      const res = await apiFetch("http://localhost:5000/api/products", {
+      const res = await apiFetch(`http://localhost:5000/api/products`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
