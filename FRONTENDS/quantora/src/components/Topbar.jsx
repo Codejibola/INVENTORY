@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import apiFetch from "../utils/apiFetch";
 import { useEffect, useRef, useState } from "react";
-import logo from "../assets/Logo.png";
 import { Menu, Bell, User, Zap } from "lucide-react";
 import notificationSound from "../sounds/notification.wav";
 import { useAuth } from "../context/AuthContext";
@@ -22,7 +21,7 @@ export default function Topbar({ onMenuClick }) {
 
     const fetchLowStock = async () => {
       try {
-        const res = await apiFetch("http://localhost:5000/api/products", {
+        const res = await apiFetch(`${LOCAL_ENV.API_URL}/api/products`, {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
