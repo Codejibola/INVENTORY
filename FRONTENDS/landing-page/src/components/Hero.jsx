@@ -26,7 +26,7 @@ export default function Hero() {
 
           <div className="flex gap-4">
             <Link
-              to="/"
+              to="https://quantora-app.vercel.app/"
               className="bg-blue-600 hover:bg-blue-500 transition px-7 py-3 rounded-md font-semibold"
             >
               Start Free Trial
