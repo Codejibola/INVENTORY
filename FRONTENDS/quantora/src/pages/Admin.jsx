@@ -6,8 +6,8 @@ import { Helmet } from "react-helmet-async";
 import { FiMail, FiLock, FiEye, FiEyeOff, FiArrowRight, FiCheckCircle } from "react-icons/fi";
 import bg from "../assets/admin0.png";
 import logo from "../assets/logo.png";
-// import LOCAL_ENV from "../../ENV";
-// import { API_URL } from "../utils/apiFetch";
+// 1. Import your environment configuration
+import LOCAL_ENV from "../../ENV.js"; 
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -23,13 +23,16 @@ export default function Admin() {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch(`https://quantora-4xrl.onrender.com/api/auth/admin`, {
+      // 2. Use the dynamic API_URL from your ENV file
+      const res = await fetch(`${LOCAL_ENV.API_URL}/api/auth/admin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
+      
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Invalid credentials");
+      
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
       navigate("/select-mode");
@@ -47,13 +50,12 @@ export default function Admin() {
       </Helmet>
 
       <main className="min-h-screen bg-slate-50 lg:bg-[#0A0A0B] relative overflow-x-hidden">
-        {/* DESKTOP BACKGROUND IMAGE */}
         <div 
           className="hidden lg:block absolute inset-0 bg-cover bg-center opacity-40" 
           style={{ backgroundImage: `url(${bg})` }} 
         />
 
-        {/* ================= MOBILE LAYOUT ================= */}
+        {/* MOBILE LAYOUT */}
         <div className="lg:hidden flex flex-col min-h-screen">
           <div className="relative overflow-hidden bg-[#0A0A0B] pt-20 pb-24 px-8">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-blue-600/20 blur-[100px] rounded-full" />
@@ -95,14 +97,13 @@ export default function Admin() {
           </motion.div>
         </div>
 
-        {/* ================= DESKTOP LAYOUT ================= */}
+        {/* DESKTOP LAYOUT */}
         <div className="hidden lg:flex min-h-screen items-center justify-center relative z-10 p-6">
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="w-full max-w-5xl grid grid-cols-2 rounded-xl overflow-hidden shadow-2xl"
           >
-            {/* LEFT PANEL: DARK THEME WITH INFO */}
             <aside className="p-12 bg-black/40 text-white flex flex-col justify-center">
               <div className="flex items-center gap-3 mb-8">
                 <img 
@@ -136,7 +137,6 @@ export default function Admin() {
               </ul>
             </aside>
 
-            {/* RIGHT PANEL: WHITE FORM */}
             <section className="bg-white p-12 flex flex-col justify-center">
               <LoginForm
                 formData={formData}
