@@ -65,7 +65,7 @@ const Quantora = new WebServer();
 // Global Middleware
 Quantora.app.use(globalLimiter);
 
-// --- ROUTERS ---
+// -- ROUTERS --
 Quantora.app.use("/api/auth", registrationRouter);
 Quantora.app.use("/api/auth", adminRouter);
 Quantora.app.use("/api", productRoutes);
