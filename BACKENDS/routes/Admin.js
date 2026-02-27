@@ -107,7 +107,7 @@ router.post("/admin", authLimiter, async (req, res) => {
 
     // Check if user exists 
     const { rows } = await pool.query(
-      "SELECT id, name, email, password FROM users WHERE email = $1",
+      "SELECT id, name, email, shop_name password FROM users WHERE email = $1",
       [email]
     );
 
@@ -134,7 +134,7 @@ router.post("/admin", authLimiter, async (req, res) => {
     res.json({
       message: "Login successful",
       token,                          
-      user: { id: user.id, name: user.name, email: user.email },
+      user: { id: user.id, name: user.name, shop_name: user.shop_name, email: user.email },
     });
   } catch (err) {
     console.error("Admin login error:", err);
