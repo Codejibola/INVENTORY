@@ -105,9 +105,8 @@ router.post("/admin", authLimiter, async (req, res) => {
       return res.status(400).json({ message: "Email and password are required" });
     }
 
-    // Check if user exists 
     const { rows } = await pool.query(
-      "SELECT id, name, email, shop_name password FROM users WHERE email = $1",
+      "SELECT id, name, email, shop_name, password FROM users WHERE email = $1",
       [email]
     );
 
@@ -117,24 +116,26 @@ router.post("/admin", authLimiter, async (req, res) => {
 
     const user = rows[0];
 
-    // Compare password with stored hash
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-
     const token = jwt.sign(
-      { id: user.id },                
-      LOCAL_ENV.JWT_SECRET,         
-      { expiresIn: "1w" }             
+      { id: user.id },
+      LOCAL_ENV.JWT_SECRET,
+      { expiresIn: "1w" }
     );
 
-    // Successful login response
     res.json({
       message: "Login successful",
-      token,                          
-      user: { id: user.id, name: user.name, shop_name: user.shop_name, email: user.email },
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        shop_name: user.shop_name,
+      },
     });
   } catch (err) {
     console.error("Admin login error:", err);
