@@ -1,7 +1,7 @@
 /* eslint-disable */
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
-import LOCAL_ENV from "../../ENV";
+import LOCAL_ENV from "../../ENV.js";
 import { Helmet } from "react-helmet-async";
 import { FiPlus, FiShoppingBag, FiHash, FiCalendar, FiBox } from "react-icons/fi";
 

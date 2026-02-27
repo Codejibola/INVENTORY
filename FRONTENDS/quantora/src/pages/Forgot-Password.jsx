@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import LOCAL_ENV from "../../ENV";
+import LOCAL_ENV from "../../ENV.js";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");

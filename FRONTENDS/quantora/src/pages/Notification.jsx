@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, AlertTriangle } from "lucide-react";
 import apiFetch from "../utils/apiFetch";
-import LOCAL_ENV from "../../ENV";
+import LOCAL_ENV from "../../ENV.js";
 import { Helmet } from "react-helmet-async";
 
 export default function Notification() {

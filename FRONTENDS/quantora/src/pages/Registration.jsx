@@ -5,7 +5,7 @@ import { Helmet } from "react-helmet-async";
 import { FiUser, FiShoppingBag, FiMail, FiLock, FiShield, FiBriefcase, FiArrowRight, FiCheckCircle } from "react-icons/fi";
 import bg from "../assets/inventory1.jpg";
 import logo from "../assets/logo.png";
-import LOCAL_ENV from "../../ENV";
+import LOCAL_ENV from "../../ENV.js";
 
 export default function Register() {
   const navigate = useNavigate();
