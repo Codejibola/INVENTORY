@@ -249,7 +249,7 @@ export default function Invoices() {
                     onClick={() => handleDownload(formatDate(selectedDate))}
                     className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black text-xs uppercase tracking-widest transition-all"
                   >
-                    Export XLSX
+                    Download PDF
                   </button>
                 </div>
               </motion.div>

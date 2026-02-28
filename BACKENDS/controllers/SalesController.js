@@ -1,6 +1,5 @@
 import * as Sales from "../models/sales_Model.js";
 import ExcelJS from "exceljs";
-import html_to_pdf from "html-pdf-node";
 
 export const getAllSales = async (req, res) => {
   try {
@@ -74,7 +73,7 @@ export const getSalesByDate = async (req, res) => {
   }
 };
 
-
+import html_to_pdf from "html-pdf-node";
 
 export const downloadDailySalesExcel = async (req, res) => {
   try {

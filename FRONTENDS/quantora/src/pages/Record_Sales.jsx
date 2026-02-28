@@ -33,6 +33,22 @@ export default function RecordSales() {
     if (savedUser) setCurrentUser(JSON.parse(savedUser));
   }, []);
 
+  // --- MIDNIGHT AUTO-RENEWAL LOGIC ---
+  useEffect(() => {
+    const now = new Date();
+    const midnight = new Date();
+    midnight.setHours(24, 0, 0, 0); // Target next 12:00:00 AM
+
+    const msUntilMidnight = midnight.getTime() - now.getTime();
+
+    const midnightTimer = setTimeout(() => {
+      console.log("Midnight reached! Resetting sales view for the new day.");
+      fetchSales(); 
+    }, msUntilMidnight);
+
+    return () => clearTimeout(midnightTimer);
+  }, [sales]); // Re-syncs timer whenever sales update
+
   const fetchProducts = () => {
     apiFetch(`${LOCAL_ENV.API_URL}/api/products`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -52,8 +68,17 @@ export default function RecordSales() {
       .then((r) => r.json())
       .then((data) => {
         const all = Array.isArray(data) ? data : data.sales || data || [];
-        const today = new Date().toISOString().split("T")[0];
-        setSales(all.filter((s) => s.created_at?.startsWith(today)));
+        
+        // Robust "Today" check using local date strings (YYYY-MM-DD)
+        const todayStr = new Date().toLocaleDateString('en-CA'); 
+        
+        const filtered = all.filter((s) => {
+           if (!s.created_at) return false;
+           const saleDate = new Date(s.created_at).toLocaleDateString('en-CA');
+           return saleDate === todayStr;
+        });
+
+        setSales(filtered);
       })
       .catch(() => setError("Failed to load sales"));
   };
@@ -122,11 +147,10 @@ export default function RecordSales() {
           <Topbar onMenuClick={() => setMenuOpen(true)} userName={currentUser?.name} />
 
           <main className="p-6 lg:p-10 space-y-8 max-w-[1200px] mx-auto w-full">
-            {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <h1 className="text-3xl font-black text-white tracking-tight">Record Sales</h1>
-                <p className="text-gray-500 text-sm mt-1">Transaction date: {new Date().toLocaleDateString()}</p>
+                <p className="text-gray-500 text-sm mt-1">Date: {new Date().toLocaleDateString(undefined, { dateStyle: 'full' })}</p>
               </div>
               <div className="bg-blue-600/10 border border-blue-500/20 px-6 py-3 rounded-2xl flex items-center gap-4">
                 <TrendingUp className="text-blue-400" size={24} />
@@ -138,7 +162,6 @@ export default function RecordSales() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-              {/* SALE FORM */}
               <motion.div 
                 initial={{ opacity: 0, x: -20 }} 
                 animate={{ opacity: 1, x: 0 }}
@@ -205,7 +228,6 @@ export default function RecordSales() {
                 </form>
               </motion.div>
 
-              {/* SALES HISTORY (Today) */}
               <div className="lg:col-span-7 space-y-4">
                 <div className="flex items-center gap-2 mb-2">
                     <History size={18} className="text-gray-500" />
@@ -224,28 +246,42 @@ export default function RecordSales() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-white/5">
-                        {sales.length === 0 ? (
-                          <tr><td colSpan={4} className="px-6 py-12 text-center text-gray-600 italic">No transactions recorded yet today.</td></tr>
-                        ) : (
-                          sales.map((s) => {
-                            const profitLoss = Number(s.profit_loss || 0);
-                            return (
-                              <tr key={s.id} className="hover:bg-white/[0.01] transition-colors group">
-                                <td className="px-6 py-4">
-                                    <p className="font-bold text-white">{toTitleCase(s.product_name)}</p>
-                                    <p className="text-[10px] text-gray-600 uppercase font-bold">{new Date(s.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
-                                </td>
-                                <td className="px-6 py-4 text-gray-400">×{s.quantity}</td>
-                                <td className="px-6 py-4 font-bold text-white">₦{Number(s.price).toLocaleString()}</td>
-                                <td className={`px-6 py-4 text-right font-black ${
-                                  profitLoss >= 0 ? "text-green-500 drop-shadow-[0_0_8px_rgba(34,197,94,0.3)]" : "text-red-500"
-                                }`}>
-                                  {profitLoss >= 0 ? "+" : "-"}₦{Math.abs(profitLoss).toLocaleString()}
-                                </td>
-                              </tr>
-                            );
-                          })
-                        )}
+                        <AnimatePresence mode="popLayout">
+                          {sales.length === 0 ? (
+                            <motion.tr 
+                              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                              key="empty"
+                            >
+                              <td colSpan={4} className="px-6 py-12 text-center text-gray-600 italic">No transactions recorded yet today.</td>
+                            </motion.tr>
+                          ) : (
+                            sales.map((s) => {
+                              const profitLoss = Number(s.profit_loss || 0);
+                              return (
+                                <motion.tr 
+                                  layout
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, x: -20 }}
+                                  key={s.id} 
+                                  className="hover:bg-white/[0.01] transition-colors group"
+                                >
+                                  <td className="px-6 py-4">
+                                      <p className="font-bold text-white">{toTitleCase(s.product_name)}</p>
+                                      <p className="text-[10px] text-gray-600 uppercase font-bold">{new Date(s.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                                  </td>
+                                  <td className="px-6 py-4 text-gray-400">×{s.quantity}</td>
+                                  <td className="px-6 py-4 font-bold text-white">₦{Number(s.price).toLocaleString()}</td>
+                                  <td className={`px-6 py-4 text-right font-black ${
+                                    profitLoss >= 0 ? "text-green-500 drop-shadow-[0_0_8px_rgba(34,197,94,0.3)]" : "text-red-500"
+                                  }`}>
+                                    {profitLoss >= 0 ? "+" : "-"}₦{Math.abs(profitLoss).toLocaleString()}
+                                  </td>
+                                </motion.tr>
+                              );
+                            })
+                          )}
+                        </AnimatePresence>
                       </tbody>
                     </table>
                   </div>
