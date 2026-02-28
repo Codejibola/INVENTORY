@@ -196,7 +196,7 @@ export const downloadDailySalesExcel = async (req, res) => {
       row.getCell(4).numFmt = '"₦"#,##0.00';
       row.getCell(5).numFmt = '"₦"#,##0.00';
       row.getCell(6).numFmt =
-        '"₦"+#,##0.00;"₦"-#,##0.00;"₦"0.00';
+        '"+"₦"#,##0.00; "-"₦"#,##0.00;"₦"0.00';
 
       row.getCell(6).font = {
         color: {
