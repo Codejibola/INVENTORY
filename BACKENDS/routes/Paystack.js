@@ -36,7 +36,7 @@ router.post('/pay', async (req, res) => {
       email,
       amount,
       metadata: { planType, userId },
-      callback_url: `${LOCAL_ENV.FRONTEND_URL}/dashboard`
+      callback_url: `https://quantora-app.vercel.app//dashboard`
     };
 
     const response = await axios.post('https://api.paystack.co/transaction/initialize', payload, {
