@@ -7,6 +7,7 @@
     "exceljs": "^4.4.0",
     "express": "^5.1.0",
     "express-rate-limit": "^8.2.1",
+    "html-pdf-node": "^1.0.8",
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.14.5",
     "ngrok": "^5.0.0-beta.2",
