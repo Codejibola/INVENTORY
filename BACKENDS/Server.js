@@ -1,6 +1,5 @@
 /* eslint-disable */
 import dotenv from "dotenv";
-// 1. Load env immediately at the absolute top
 dotenv.config(); 
 
 import express from "express";

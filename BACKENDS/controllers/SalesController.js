@@ -84,7 +84,7 @@ export const downloadDailySalesExcel = async (req, res) => {
 
     const sales = rows.map((r) => {
       const quantity = Number(r.quantity) || 0;
-      const unitPrice = Number(r.price) || 0;
+      const unitPrice = Number(r.price)/quantity || 0;
 
       return {
         product: r.product_name || "",
@@ -228,7 +228,7 @@ export const downloadDailySalesExcel = async (req, res) => {
 
     totalRow.getCell(5).numFmt = '"₦"#,##0.00';
     totalRow.getCell(6).numFmt =
-      '"₦"+#,##0.00;"₦"-#,##0.00';
+      '"+""₦"#,##0.00;"-"₦"#,##0.00';
 
     totalRow.getCell(6).font = {
       color: {
