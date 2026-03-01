@@ -1,9 +1,13 @@
 import * as Sales from "../models/sales_Model.js";
 import html_to_pdf from "html-pdf-node";
 
+// HELPER: Get today's date in YYYY-MM-DD format based on server time
+const getTodayDate = () => new Date().toLocaleDateString('en-CA');
+
 export const getAllSales = async (req, res) => {
   try {
     const { rows } = await Sales.fetchAllSales(req.userId);
+    // The frontend filters this, but we return all for the history
     res.json(rows);
   } catch (err) {
     console.error(err);
@@ -26,10 +30,10 @@ export const recordSale = async (req, res) => {
 
     res.status(201).json({
       message: "Sale recorded successfully",
-      // normalize returned column name `profit_loss` to `profit` for the client
       sale: {
         id: saleRes.rows[0].id,
         profit: Number(saleRes.rows[0].profit_loss ?? 0),
+        created_at: saleRes.rows[0].created_at // Ensure this is sent back
       },
     });
   } catch (err) {
@@ -42,6 +46,8 @@ export const getDailySales = async (req, res) => {
   try {
     const year = parseInt(req.query.year) || new Date().getFullYear();
     const { rows } = await Sales.fetchDailySales(req.userId, year);
+    
+    // We send all daily summaries, the frontend timer handles the visibility
     res.json(rows);
   } catch (err) {
     console.error(err);
@@ -51,7 +57,10 @@ export const getDailySales = async (req, res) => {
 
 export const viewDailySales = async (req, res) => {
   try {
-    const date = req.params.date;
+    // If the client passes 'today', we resolve it to the server's current date
+    let date = req.params.date;
+    if (date === 'today') date = getTodayDate();
+
     if (!date) return res.status(400).json({ message: "Date is required" });
 
     const { rows } = await Sales.fetchSalesByDate(req.userId, date);
@@ -62,125 +71,89 @@ export const viewDailySales = async (req, res) => {
   }
 };
 
-export const getSalesByDate = async (req, res) => {
+export const downloadDailySalesExcel = async (req, res) => {
   try {
-    const date = req.params.date;
-    const { rows } = await Sales.fetchSalesByDate(req.userId, date);
-    res.json(rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error fetching sales for this date" });
-  }
-};
+    let date = req.params.date;
+    if (date === 'today') date = getTodayDate();
 
-
-export const downloadDailySalesInvoice = async (req, res) => {
-  try {
-    const date = req.params.date;
     const { rows } = await Sales.fetchSalesByDate(req.userId, date);
 
-    if (!rows.length) return res.status(404).json({ message: "No sales found" });
+    if (!rows.length) return res.status(404).json({ message: "No sales found for this date." });
 
     const totalAmount = rows.reduce((acc, r) => acc + Number(r.price), 0);
     const totalProfit = rows.reduce((acc, r) => acc + Number(r.profit_loss || 0), 0);
 
-    // HTML Template with CSS for Branding and Watermark
     const htmlContent = `
     <!DOCTYPE html>
     <html>
     <head>
       <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 40px; color: #1e293b; }
-        
-        /* THE WATERMARK */
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 40px; color: #1e293b; }
         .watermark {
           position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg);
           font-size: 80px; font-weight: 900; color: rgba(15, 23, 42, 0.03); 
           z-index: -1; white-space: nowrap;
         }
-
         .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; border-bottom: 4px solid #2563eb; padding-bottom: 20px; }
-        
-        /* LOGO STYLING */
-        .logo-box { width: 70px; height: 70px; background: #2563eb; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; }
-        
+        .logo-box { width: 70px; height: 70px; background: #2563eb; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 24px; }
         .store-details { text-align: right; }
         .store-name { font-size: 24px; font-weight: 900; color: #1e293b; margin: 0; text-transform: uppercase; }
-        .report-type { font-size: 12px; color: #64748b; letter-spacing: 2px; margin-top: 5px; }
-
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th { background: #0f172a; color: white; padding: 12px; font-size: 10px; text-transform: uppercase; text-align: left; }
         td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
-        
-        .amount-col { text-align: right; font-family: monospace; font-size: 13px; }
-        .profit-pos { color: #16a34a; font-weight: bold; }
-        .profit-neg { color: #dc2626; font-weight: bold; }
-        
+        .amount-col { text-align: right; font-family: monospace; }
         .total-row { background: #f8fafc; font-weight: 900; }
         .footer { margin-top: 50px; text-align: center; font-size: 10px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 20px; }
       </style>
     </head>
     <body>
       <div class="watermark">QUANTORA</div>
-
       <div class="header">
-        <div class="logo-box">QS</div> <div class="store-details">
+        <div class="logo-box">QS</div> 
+        <div class="store-details">
           <h1 class="store-name">QUANTORA STORES</h1>
-          <div class="report-type">DAILY SALES TERMINAL REPORT</div>
-          <p style="font-size: 12px; margin: 5px 0;">Date: <strong>${date}</strong></p>
+          <p style="font-size: 12px; margin: 5px 0;">Terminal Report | Date: <strong>${date}</strong></p>
         </div>
       </div>
-
       <table>
         <thead>
           <tr>
             <th>#</th>
             <th>Product Description</th>
             <th>Qty</th>
-            <th class="amount-col">Unit Price</th>
-            <th class="amount-col">Total</th>
+            <th class="amount-col">Total Price</th>
             <th class="amount-col">Profit / Loss</th>
           </tr>
         </thead>
         <tbody>
-          ${rows.map((r, i) => {
-            const qty = Number(r.quantity) || 1;
-            const price = Number(r.price) || 0;
-            const profit = Number(r.profit_loss || 0);
-            return `
+          ${rows.map((r, i) => `
             <tr>
               <td>${i + 1}</td>
               <td style="font-weight: 600;">${r.product_name}</td>
-              <td>${qty}</td>
-              <td class="amount-col">₦${(price / qty).toLocaleString()}</td>
-              <td class="amount-col">₦${price.toLocaleString()}</td>
-              <td class="amount-col ${profit >= 0 ? 'profit-pos' : 'profit-neg'}">
-                ${profit >= 0 ? '+' : '-'} ₦${Math.abs(profit).toLocaleString()}
+              <td>${r.quantity}</td>
+              <td class="amount-col">₦${Number(r.price).toLocaleString()}</td>
+              <td class="amount-col" style="color: ${r.profit_loss >= 0 ? '#16a34a' : '#dc2626'}">
+                ${r.profit_loss >= 0 ? '+' : ''}₦${Number(r.profit_loss).toLocaleString()}
               </td>
-            </tr>`;
-          }).join('')}
+            </tr>`).join('')}
         </tbody>
         <tfoot>
           <tr class="total-row">
-            <td colspan="4" style="text-align: right;">GRAND TOTAL</td>
-            <td class="amount-col" style="color: #2563eb;">₦${totalAmount.toLocaleString()}</td>
-            <td class="amount-col ${totalProfit >= 0 ? 'profit-pos' : 'profit-neg'}">
-               ${totalProfit >= 0 ? '+' : '-'} ₦${Math.abs(totalProfit).toLocaleString()}
-            </td>
+            <td colspan="3" style="text-align: right;">GRAND TOTAL</td>
+            <td class="amount-col">₦${totalAmount.toLocaleString()}</td>
+            <td class="amount-col">₦${totalProfit.toLocaleString()}</td>
           </tr>
         </tfoot>
       </table>
-
       <div class="footer">
-        <p>This is a computer-generated document. No signature required.</p>
+        <p>Generated at ${new Date().toLocaleTimeString()} on ${getTodayDate()}</p>
         <p>&copy; 2026 Quantora Inventory Systems</p>
       </div>
     </body>
     </html>
     `;
 
-    // PDF Options
-    const options = { format: "A4", margin: { top: "20px", right: "20px", bottom: "20px", left: "20px" } };
+    const options = { format: "A4" };
     const file = { content: htmlContent };
 
     html_to_pdf.generatePdf(file, options).then((pdfBuffer) => {
@@ -191,10 +164,11 @@ export const downloadDailySalesInvoice = async (req, res) => {
 
   } catch (err) {
     console.error("PDF Export Error:", err);
-    res.status(500).json({ message: "Error generating professional PDF" });
+    res.status(500).json({ message: "Error generating PDF" });
   }
 };
 
+// ... keep best/least selling product functions as they are
 
 export const getBestSellingProduct = async (req, res) => {
   try {
