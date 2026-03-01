@@ -169,7 +169,7 @@ export const downloadDailySalesExcel = async (req, res) => {
         </div> 
         <div class="store-details">
           <h1 class="store-name">${shopName}</h1>
-          <p style="font-size: 12px; margin: 5px 0;">Terminal Report | Date: <strong>${date}</strong></p>
+          <p style="font-size: 12px; margin: 5px 0;">Sales Report | Date: <strong>${date}</strong></p>
         </div>
       </div>
       <table>
@@ -207,7 +207,9 @@ export const downloadDailySalesExcel = async (req, res) => {
           <tr class="total-row">
             <td colspan="4" style="text-align: right;">GRAND TOTAL</td>
             <td class="amount-col">₦${totalAmount.toLocaleString()}</td>
-            <td class="amount-col">₦${totalProfit.toLocaleString()}</td>
+            <td class="amount-col" style="color: ${totalProfit >= 0 ? '#16a34a' : '#dc2626'}">
+              ${totalProfit >= 0 ? '+' : '-'}₦${Math.abs(totalProfit).toLocaleString()}
+            </td>
           </tr>
         </tfoot>
       </table>

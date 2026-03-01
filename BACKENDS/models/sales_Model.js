@@ -103,9 +103,11 @@ export const fetchSalesByDate = (userId, date) => {
         s.quantity,
         s.price,          -- TOTAL price
         s.profit_loss,
+        u.shop_name
         s.created_at
      FROM sales s
      JOIN products p ON p.id = s.product_id
+     JOIN users u ON u.id = s.user_id
      WHERE s.user_id = $1
        AND DATE(s.created_at) = $2
      ORDER BY s.created_at ASC`,
