@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
+
 // --- LOGO LOGIC ---
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -109,9 +110,7 @@ export const downloadDailySalesExcel = async (req, res) => {
 
     const totalAmount = rows.reduce((acc, r) => acc + Number(r.price), 0);
     const totalProfit = rows.reduce((acc, r) => acc + Number(r.profit_loss || 0), 0);
-    // --- NEW: Calculate Total Quantity ---
     const totalQuantity = rows.reduce((acc, r) => acc + Number(r.quantity), 0);
-    // -------------------------------------
 
     // --- HELPER: Title Case ---
     const toTitleCase = (str) => {
@@ -152,11 +151,16 @@ export const downloadDailySalesExcel = async (req, res) => {
         .qty-col { text-align: center; }
         .total-row { background: #f8fafc; font-weight: 900; border-top: 2px solid #2563eb; }
         
-        /* --- NEW: Summary Styling --- */
-        .summary-box { margin-top: 30px; padding: 15px; background: #f1f5f9; border-radius: 8px; width: 300px; float: right; }
+        /* Summary & Signature Styling */
+        .summary-box { margin-top: 30px; padding: 15px; background: #f1f5f9; border-radius: 8px; width: 300px; float: right; overflow: hidden; }
         .summary-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px; }
         .summary-total { font-weight: 900; border-top: 1px solid #cbd5e1; padding-top: 5px; margin-top: 5px; }
-        /* ---------------------------- */
+        
+        /* New Signature Styles */
+        .signature-container { margin-top: 20px; text-align: center; }
+        .signature-image { max-height: 80px; width: auto; display: block; margin: 0 auto; }
+        .signature-line { border-top: 1px solid #1e293b; margin-top: 5px; width: 80%; margin-left: auto; margin-right: auto; }
+        .signature-text { font-size: 10px; color: #64748b; margin-top: 2px; }
 
         .footer { margin-top: 150px; text-align: center; font-size: 10px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 20px; clear: both;}
       </style>
@@ -223,7 +227,16 @@ export const downloadDailySalesExcel = async (req, res) => {
           <span>Total Items Volume:</span>
           <span>${totalQuantity}</span>
         </div>
-      </div>
+        
+        ${signatureDataUri ? `
+          <div class="signature-container">
+            <img src="${signatureDataUri}" class="signature-image" alt="Authorized Stamp">
+            <div class="signature-line"></div>
+            <div class="signature-text">Authorized Stamp</div>
+          </div>
+        ` : ''}
+        </div>
+
       <div class="footer">
         <p>Generated at ${new Date().toLocaleTimeString()} on ${getTodayDate()}</p>
         <p>&copy; 2026 Quantora Inventory Systems</p>
@@ -250,7 +263,6 @@ export const downloadDailySalesExcel = async (req, res) => {
     res.status(500).json({ message: "Error generating PDF" });
   }
 };
-
 
 export const getBestSellingProduct = async (req, res) => {
   try {
