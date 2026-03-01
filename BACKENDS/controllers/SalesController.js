@@ -167,10 +167,15 @@ export const downloadDailySalesExcel = async (req, res) => {
         .summary-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px; }
         .summary-total { font-weight: 900; border-top: 1px solid #cbd5e1; padding-top: 5px; margin-top: 5px; }
         
-        /* New Signature Styles */
-        .signature-container { margin-top: 20px; text-align: center; }
-        .signature-image { max-height: 80px; width: auto; display: block; margin: 0 auto; }
-        .signature-line { border-top: 1px solid #1e293b; margin-top: 5px; width: 80%; margin-left: auto; margin-right: auto; }
+        /* UPDATED Signature Styles for Bottom Left */
+        .signature-container { 
+          margin-top: 30px; 
+          text-align: left; /* Aligns content to left */
+          width: 200px; 
+          float: left; /* Floats to the left */
+        }
+        .signature-image { max-height: 80px; width: auto; display: block; margin: 0; }
+        .signature-line { border-top: 1px solid #1e293b; margin-top: 5px; width: 100%; }
         .signature-text { font-size: 10px; color: #64748b; margin-top: 2px; }
 
         .footer { margin-top: 150px; text-align: center; font-size: 10px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 20px; clear: both;}
@@ -238,15 +243,15 @@ export const downloadDailySalesExcel = async (req, res) => {
           <span>Total Items Volume:</span>
           <span>${totalQuantity}</span>
         </div>
-        
-        ${signatureDataUri ? `
-          <div class="signature-container">
-            <img src="${signatureDataUri}" class="signature-image" alt="Authorized Stamp">
-            <div class="signature-line"></div>
-            <div class="signature-text">Authorized Stamp</div>
-          </div>
-        ` : ''}
+      </div>
+      
+      ${signatureDataUri ? `
+        <div class="signature-container">
+          <img src="${signatureDataUri}" class="signature-image" alt="Authorized Stamp">
+          <div class="signature-line"></div>
+          <div class="signature-text">Authorized Stamp</div>
         </div>
+      ` : ''}
 
       <div class="footer">
         <p>Generated at ${new Date().toLocaleTimeString()} on ${getTodayDate()}</p>
