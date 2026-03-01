@@ -109,6 +109,20 @@ export const downloadDailySalesExcel = async (req, res) => {
 
     const totalAmount = rows.reduce((acc, r) => acc + Number(r.price), 0);
     const totalProfit = rows.reduce((acc, r) => acc + Number(r.profit_loss || 0), 0);
+    // --- NEW: Calculate Total Quantity ---
+    const totalQuantity = rows.reduce((acc, r) => acc + Number(r.quantity), 0);
+    // -------------------------------------
+
+    // --- HELPER: Title Case ---
+    const toTitleCase = (str) => {
+      return str.toLowerCase().split(' ').map(word => {
+        return (word.charAt(0).toUpperCase() + word.slice(1));
+      }).join(' ');
+    };
+    // -------------------------
+
+    // Assume shop name is in the first row of data
+    const shopName = rows[0].shop_name || "Quantora Stores";
 
     const htmlContent = `
     <!DOCTYPE html>
@@ -124,8 +138,11 @@ export const downloadDailySalesExcel = async (req, res) => {
           text-transform: uppercase; letter-spacing: 15px;
         }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; border-bottom: 4px solid #2563eb; padding-bottom: 20px; }
-        .logo-container { width: 150px; }
+        
+        /* Smaller, professional logo */
+        .logo-container { width: 100px; } 
         .logo-container img { width: 100%; height: auto; display: block; }
+        
         .store-details { text-align: right; }
         .store-name { font-size: 24px; font-weight: 900; color: #1e293b; margin: 0; text-transform: uppercase; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; table-layout: fixed; }
@@ -134,7 +151,14 @@ export const downloadDailySalesExcel = async (req, res) => {
         .amount-col { text-align: right; font-family: monospace; font-weight: 600; }
         .qty-col { text-align: center; }
         .total-row { background: #f8fafc; font-weight: 900; border-top: 2px solid #2563eb; }
-        .footer { margin-top: 50px; text-align: center; font-size: 10px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+        
+        /* --- NEW: Summary Styling --- */
+        .summary-box { margin-top: 30px; padding: 15px; background: #f1f5f9; border-radius: 8px; width: 300px; float: right; }
+        .summary-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px; }
+        .summary-total { font-weight: 900; border-top: 1px solid #cbd5e1; padding-top: 5px; margin-top: 5px; }
+        /* ---------------------------- */
+
+        .footer { margin-top: 150px; text-align: center; font-size: 10px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 20px; clear: both;}
       </style>
     </head>
     <body>
@@ -144,7 +168,7 @@ export const downloadDailySalesExcel = async (req, res) => {
           <img src="${logoDataUri}" alt="Quantora Logo">
         </div> 
         <div class="store-details">
-          <h1 class="store-name">QUANTORA STORES</h1>
+          <h1 class="store-name">${shopName}</h1>
           <p style="font-size: 12px; margin: 5px 0;">Terminal Report | Date: <strong>${date}</strong></p>
         </div>
       </div>
@@ -162,15 +186,19 @@ export const downloadDailySalesExcel = async (req, res) => {
         <tbody>
           ${rows.map((r, i) => {
             const unitPrice = Number(r.price) / Number(r.quantity);
+            const profitLossValue = Number(r.profit_loss);
+            const sign = profitLossValue >= 0 ? '+' : '-';
+            
             return `
             <tr>
               <td>${i + 1}</td>
-              <td style="font-weight: 600;">${r.product_name}</td>
+              <td style="font-weight: 600;">${toTitleCase(r.product_name)}</td>
               <td class="amount-col">₦${unitPrice.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
               <td class="qty-col">${r.quantity}</td>
               <td class="amount-col">₦${Number(r.price).toLocaleString()}</td>
-              <td class="amount-col" style="color: ${r.profit_loss >= 0 ? '#16a34a' : '#dc2626'}">
-                ${r.profit_loss >= 0 ? '+' : ''}₦${Number(r.profit_loss).toLocaleString()}
+              
+              <td class="amount-col" style="color: ${profitLossValue >= 0 ? '#16a34a' : '#dc2626'}">
+                ${sign}₦${Math.abs(profitLossValue).toLocaleString(undefined, {minimumFractionDigits: 2})}
               </td>
             </tr>`;
           }).join('')}
@@ -183,6 +211,17 @@ export const downloadDailySalesExcel = async (req, res) => {
           </tr>
         </tfoot>
       </table>
+
+      <div class="summary-box">
+        <div class="summary-row">
+          <span>Total Products Sold:</span>
+          <span>${rows.length}</span>
+        </div>
+        <div class="summary-row summary-total">
+          <span>Total Items Volume:</span>
+          <span>${totalQuantity}</span>
+        </div>
+      </div>
       <div class="footer">
         <p>Generated at ${new Date().toLocaleTimeString()} on ${getTodayDate()}</p>
         <p>&copy; 2026 Quantora Inventory Systems</p>
@@ -195,8 +234,12 @@ export const downloadDailySalesExcel = async (req, res) => {
     const file = { content: htmlContent };
 
     html_to_pdf.generatePdf(file, options).then((pdfBuffer) => {
+      // Filename with timestamp
+      const timestamp = new Date().getTime();
+      const filename = `Invoice-${date}-${timestamp}.pdf`;
+      
       res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", `attachment; filename=Invoice-${date}.pdf`);
+      res.setHeader("Content-Disposition", `attachment; filename=${filename}`);
       res.send(pdfBuffer);
     });
 
@@ -206,7 +249,7 @@ export const downloadDailySalesExcel = async (req, res) => {
   }
 };
 
-// ... (getBestSellingProduct and getLeastSellingProduct remain the same as your code)
+
 export const getBestSellingProduct = async (req, res) => {
   try {
     const { rows } = await Sales.fetchProductSalesSummary(req.userId);
