@@ -1,5 +1,6 @@
 import * as Sales from "../models/sales_Model.js";
 import html_to_pdf from "html-pdf-node";
+import logo from "../../FRONTENDS/quantora/src/assets/logo.png";
 
 // HELPER: Get today's date in YYYY-MM-DD format based on server time
 const getTodayDate = () => new Date().toLocaleDateString('en-CA');
@@ -96,28 +97,40 @@ export const downloadDailySalesExcel = async (req, res) => {
     <html>
     <head>
       <style>
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 40px; color: #1e293b; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 40px; color: #1e293b; }
+        
         .watermark {
           position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg);
-          font-size: 80px; font-weight: 900; color: rgba(15, 23, 42, 0.03); 
+          font-size: 80px; font-weight: 900; 
+          color: rgba(59, 130, 246, 0.08); 
           z-index: -1; white-space: nowrap;
+          text-transform: uppercase;
+          letter-spacing: 15px;
         }
-        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; border-bottom: 4px solid #2563eb; padding-bottom: 20px; }
-        .logo-box { width: 70px; height: 70px; background: #2563eb; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 24px; }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; border-bottom: 4px solid #2563eb; padding-bottom: 20px; }
+        .logo-container { width: 150px; }
+        .logo-container img { width: 100%; height: auto; display: block; }
         .store-details { text-align: right; }
         .store-name { font-size: 24px; font-weight: 900; color: #1e293b; margin: 0; text-transform: uppercase; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; table-layout: fixed; }
         th { background: #0f172a; color: white; padding: 12px; font-size: 10px; text-transform: uppercase; text-align: left; }
-        td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
-        .amount-col { text-align: right; font-family: monospace; }
-        .total-row { background: #f8fafc; font-weight: 900; }
+        td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 12px; word-wrap: break-word; }
+        
+        .amount-col { text-align: right; font-family: monospace; font-weight: 600; }
+        .qty-col { text-align: center; }
+        
+        .total-row { background: #f8fafc; font-weight: 900; border-top: 2px solid #2563eb; }
         .footer { margin-top: 50px; text-align: center; font-size: 10px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 20px; }
       </style>
     </head>
     <body>
       <div class="watermark">QUANTORA</div>
       <div class="header">
-        <div class="logo-box">QS</div> 
+        <div class="logo-container">
+          <img src="${logo}" alt="Quantora Logo">
+        </div> 
         <div class="store-details">
           <h1 class="store-name">QUANTORA STORES</h1>
           <p style="font-size: 12px; margin: 5px 0;">Terminal Report | Date: <strong>${date}</strong></p>
@@ -126,28 +139,33 @@ export const downloadDailySalesExcel = async (req, res) => {
       <table>
         <thead>
           <tr>
-            <th>#</th>
-            <th>Product Description</th>
-            <th>Qty</th>
-            <th class="amount-col">Total Price</th>
-            <th class="amount-col">Profit / Loss</th>
+            <th style="width: 5%;">#</th>
+            <th style="width: 35%;">Product</th>
+            <th style="width: 15%;" class="amount-col">Unit Price</th>
+            <th style="width: 10%;" class="qty-col">Qty</th>
+            <th style="width: 15%;" class="amount-col">Total Price</th>
+            <th style="width: 20%;" class="amount-col">Profit / Loss</th>
           </tr>
         </thead>
         <tbody>
-          ${rows.map((r, i) => `
+          ${rows.map((r, i) => {
+            const unitPrice = Number(r.price) / Number(r.quantity);
+            return `
             <tr>
               <td>${i + 1}</td>
               <td style="font-weight: 600;">${r.product_name}</td>
-              <td>${r.quantity}</td>
+              <td class="amount-col">₦${unitPrice.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+              <td class="qty-col">${r.quantity}</td>
               <td class="amount-col">₦${Number(r.price).toLocaleString()}</td>
               <td class="amount-col" style="color: ${r.profit_loss >= 0 ? '#16a34a' : '#dc2626'}">
                 ${r.profit_loss >= 0 ? '+' : ''}₦${Number(r.profit_loss).toLocaleString()}
               </td>
-            </tr>`).join('')}
+            </tr>`;
+          }).join('')}
         </tbody>
         <tfoot>
           <tr class="total-row">
-            <td colspan="3" style="text-align: right;">GRAND TOTAL</td>
+            <td colspan="4" style="text-align: right;">GRAND TOTAL</td>
             <td class="amount-col">₦${totalAmount.toLocaleString()}</td>
             <td class="amount-col">₦${totalProfit.toLocaleString()}</td>
           </tr>
