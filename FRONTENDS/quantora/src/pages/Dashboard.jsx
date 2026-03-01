@@ -159,7 +159,7 @@ export default function Dashboard() {
             {/* 1. ACTION CARDS */}
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               <ActionCard 
-                title="Monthly Sales" 
+                title="Monthly Saless" 
                 icon="payments" 
                 desc={`₦${formatShortNumber(displayedSales)}`} 
                 isHighlight 
