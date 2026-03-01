@@ -112,6 +112,17 @@ export const downloadDailySalesExcel = async (req, res) => {
     const totalProfit = rows.reduce((acc, r) => acc + Number(r.profit_loss || 0), 0);
     const totalQuantity = rows.reduce((acc, r) => acc + Number(r.quantity), 0);
 
+    // --- FIX: Define signatureDataUri here ---
+    let signatureDataUri = "";
+    try {
+      const sigPath = path.join(__dirname, "../assets/signature.png");
+      const sigBase64 = fs.readFileSync(sigPath).toString("base64");
+      signatureDataUri = `data:image/png;base64,${sigBase64}`;
+    } catch (error) {
+      console.error("Signature not found, skipping signature stamp", error);
+    }
+    // ------------------------------------------
+
     // --- HELPER: Title Case ---
     const toTitleCase = (str) => {
       return str.toLowerCase().split(' ').map(word => {
