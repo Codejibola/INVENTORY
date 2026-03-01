@@ -1,5 +1,5 @@
 import * as Sales from "../models/sales_Model.js";
-import ExcelJS from "exceljs";
+import html_to_pdf from "html-pdf-node";
 
 export const getAllSales = async (req, res) => {
   try {
@@ -73,199 +73,125 @@ export const getSalesByDate = async (req, res) => {
   }
 };
 
-export const downloadDailySalesExcel = async (req, res) => {
+
+export const downloadDailySalesInvoice = async (req, res) => {
   try {
     const date = req.params.date;
     const { rows } = await Sales.fetchSalesByDate(req.userId, date);
 
-    if (!rows.length) {
-      return res.status(404).json({ message: "No sales for this date" });
-    }
+    if (!rows.length) return res.status(404).json({ message: "No sales found" });
 
-    const sales = rows.map((r) => {
-      const quantity = Number(r.quantity) || 0;
-      const unitPrice = Number(r.price)/quantity || 0;
+    const totalAmount = rows.reduce((acc, r) => acc + Number(r.price), 0);
+    const totalProfit = rows.reduce((acc, r) => acc + Number(r.profit_loss || 0), 0);
 
-      return {
-        product: r.product_name || "",
-        quantity,
-        unitPrice,
-        total: quantity * unitPrice,
-        profit: Number(r.profit_loss ?? 0),
-      };
+    // HTML Template with CSS for Branding and Watermark
+    const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 40px; color: #1e293b; }
+        
+        /* THE WATERMARK */
+        .watermark {
+          position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg);
+          font-size: 80px; font-weight: 900; color: rgba(15, 23, 42, 0.03); 
+          z-index: -1; white-space: nowrap;
+        }
+
+        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; border-bottom: 4px solid #2563eb; padding-bottom: 20px; }
+        
+        /* LOGO STYLING */
+        .logo-box { width: 70px; height: 70px; background: #2563eb; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; }
+        
+        .store-details { text-align: right; }
+        .store-name { font-size: 24px; font-weight: 900; color: #1e293b; margin: 0; text-transform: uppercase; }
+        .report-type { font-size: 12px; color: #64748b; letter-spacing: 2px; margin-top: 5px; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { background: #0f172a; color: white; padding: 12px; font-size: 10px; text-transform: uppercase; text-align: left; }
+        td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
+        
+        .amount-col { text-align: right; font-family: monospace; font-size: 13px; }
+        .profit-pos { color: #16a34a; font-weight: bold; }
+        .profit-neg { color: #dc2626; font-weight: bold; }
+        
+        .total-row { background: #f8fafc; font-weight: 900; }
+        .footer { margin-top: 50px; text-align: center; font-size: 10px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+      </style>
+    </head>
+    <body>
+      <div class="watermark">QUANTORA</div>
+
+      <div class="header">
+        <div class="logo-box">QS</div> <div class="store-details">
+          <h1 class="store-name">QUANTORA STORES</h1>
+          <div class="report-type">DAILY SALES TERMINAL REPORT</div>
+          <p style="font-size: 12px; margin: 5px 0;">Date: <strong>${date}</strong></p>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Product Description</th>
+            <th>Qty</th>
+            <th class="amount-col">Unit Price</th>
+            <th class="amount-col">Total</th>
+            <th class="amount-col">Profit / Loss</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map((r, i) => {
+            const qty = Number(r.quantity) || 1;
+            const price = Number(r.price) || 0;
+            const profit = Number(r.profit_loss || 0);
+            return `
+            <tr>
+              <td>${i + 1}</td>
+              <td style="font-weight: 600;">${r.product_name}</td>
+              <td>${qty}</td>
+              <td class="amount-col">₦${(price / qty).toLocaleString()}</td>
+              <td class="amount-col">₦${price.toLocaleString()}</td>
+              <td class="amount-col ${profit >= 0 ? 'profit-pos' : 'profit-neg'}">
+                ${profit >= 0 ? '+' : '-'} ₦${Math.abs(profit).toLocaleString()}
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+        <tfoot>
+          <tr class="total-row">
+            <td colspan="4" style="text-align: right;">GRAND TOTAL</td>
+            <td class="amount-col" style="color: #2563eb;">₦${totalAmount.toLocaleString()}</td>
+            <td class="amount-col ${totalProfit >= 0 ? 'profit-pos' : 'profit-neg'}">
+               ${totalProfit >= 0 ? '+' : '-'} ₦${Math.abs(totalProfit).toLocaleString()}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <div class="footer">
+        <p>This is a computer-generated document. No signature required.</p>
+        <p>&copy; 2026 Quantora Inventory Systems</p>
+      </div>
+    </body>
+    </html>
+    `;
+
+    // PDF Options
+    const options = { format: "A4", margin: { top: "20px", right: "20px", bottom: "20px", left: "20px" } };
+    const file = { content: htmlContent };
+
+    html_to_pdf.generatePdf(file, options).then((pdfBuffer) => {
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename=Invoice-${date}.pdf`);
+      res.send(pdfBuffer);
     });
 
-    let totalAmount = 0;
-    let totalProfit = 0;
-
-    sales.forEach((s) => {
-      totalAmount += s.total;
-      totalProfit += s.profit;
-    });
-
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet("Daily Sales");
-
-    /* ================= PRINT SETUP ================= */
-    sheet.pageSetup = {
-      paperSize: 9, // A4
-      orientation: "landscape",
-      fitToPage: true,
-      fitToWidth: 1,
-      fitToHeight: false,
-    };
-
-    /* ================= HEADER ================= */
-    sheet.mergeCells("A1:F1");
-    sheet.getCell("A1").value = "Daily Sales Report";
-    sheet.getCell("A1").font = { size: 16, bold: true };
-    sheet.getCell("A1").alignment = {
-      horizontal: "center",
-      vertical: "middle",
-    };
-
-    sheet.mergeCells("A2:F2");
-    sheet.getCell("A2").value = `Date: ${date}`;
-    sheet.getCell("A2").alignment = {
-      horizontal: "center",
-      vertical: "middle",
-    };
-
-    sheet.addRow([]); // spacer row
-
-    /* ================= TABLE HEADER ================= */
-    const headerRow = sheet.addRow([
-      "#",
-      "Product",
-      "Quantity",
-      "Unit Price",
-      "Total",
-      "Profit / Loss",
-    ]);
-
-    headerRow.font = { bold: true };
-
-    headerRow.eachCell((cell, colNumber) => {
-      cell.alignment = {
-        vertical: "middle",
-        horizontal:
-          colNumber === 1
-            ? "center"
-            : colNumber === 2
-            ? "left"
-            : "right",
-      };
-    });
-
-    /* Repeat header on every printed page */
-    sheet.pageSetup.printTitlesRow = `${headerRow.number}:${headerRow.number}`;
-
-    /* ================= COLUMN DEFINITIONS ================= */
-    sheet.columns = [
-      { key: "index", width: 5 },
-      { key: "product", width: 32 },
-      { key: "quantity", width: 12 },
-      { key: "unitPrice", width: 15 },
-      { key: "total", width: 15 },
-      { key: "profit", width: 18 },
-    ];
-
-    /* ================= TABLE ROWS ================= */
-    sales.forEach((s, i) => {
-      const row = sheet.addRow([
-        i + 1,
-        s.product,
-        s.quantity,
-        s.unitPrice,
-        s.total,
-        s.profit,
-      ]);
-
-      row.eachCell((cell, colNumber) => {
-        cell.alignment = {
-          vertical: "middle",
-          horizontal:
-            colNumber === 1
-              ? "center"
-              : colNumber === 2
-              ? "left"
-              : "right",
-        };
-      });
-
-      row.getCell(4).numFmt = '"₦"#,##0.00';
-      row.getCell(5).numFmt = '"₦"#,##0.00';
-      row.getCell(6).numFmt =
-        '"+""₦"#,##0.00; "-""₦"#,##0.00;"₦"0.00';
-
-      row.getCell(6).font = {
-        color: {
-          argb: s.profit >= 0 ? "FF16A34A" : "FFDC2626",
-        },
-      };
-    });
-
-    /* ================= TOTAL ROW ================= */
-    sheet.addRow([]);
-
-    const totalRow = sheet.addRow([
-      "",
-      "",
-      "",
-      "TOTAL SALES",
-      totalAmount,
-      totalProfit,
-    ]);
-
-    totalRow.font = { bold: true };
-
-    totalRow.eachCell((cell) => {
-      cell.alignment = {
-        vertical: "middle",
-        horizontal: "right",
-      };
-    });
-
-    totalRow.getCell(5).numFmt = '"₦"#,##0.00';
-    totalRow.getCell(6).numFmt =
-      '"+""₦"#,##0.00;"-"₦"#,##0.00';
-
-    totalRow.getCell(6).font = {
-      color: {
-        argb: totalProfit >= 0 ? "FF16A34A" : "FFDC2626",
-      },
-    };
-
-    /* ================= BORDERS FOR PRINT ================= */
-    sheet.eachRow((row, rowNumber) => {
-      if (rowNumber >= headerRow.number) {
-        row.eachCell((cell) => {
-          cell.border = {
-            top: { style: "thin" },
-            left: { style: "thin" },
-            bottom: { style: "thin" },
-            right: { style: "thin" },
-          };
-        });
-      }
-    });
-
-    /* ================= RESPONSE ================= */
-    res.setHeader(
-      "Content-Type",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    );
-
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=sales-${date}.xlsx`
-    );
-
-    await workbook.xlsx.write(res);
-    res.end();
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Error generating Excel file" });
+    console.error("PDF Export Error:", err);
+    res.status(500).json({ message: "Error generating professional PDF" });
   }
 };
 

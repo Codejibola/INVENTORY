@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
 import { Download, Eye, Calendar, FileText, X } from "lucide-react";
@@ -30,14 +30,8 @@ export default function Invoices() {
     "July", "August", "September", "October", "November", "December"
   ];
 
-  useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    if (savedUser) setCurrentUser(JSON.parse(savedUser));
-    const current = new Date().getFullYear();
-    setYears(Array.from({ length: 5 }, (_, i) => current - i));
-  }, []);
-
-  useEffect(() => {
+  // --- REUSABLE FETCH FUNCTION ---
+  const fetchDailySales = useCallback(() => {
     if (!token) return;
     apiFetch(`${LOCAL_ENV.API_URL}/api/sales/daily?year=${year}`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -46,6 +40,33 @@ export default function Invoices() {
       .then((data) => setDailySales(data))
       .catch((err) => console.error(err));
   }, [year, token]);
+
+  // --- MIDNIGHT AUTO-REFRESH LOGIC ---
+  useEffect(() => {
+    const now = new Date();
+    const midnight = new Date();
+    midnight.setHours(24, 0, 0, 0); // Target next 12:00:00 AM
+
+    const msUntilMidnight = midnight.getTime() - now.getTime();
+
+    const midnightTimer = setTimeout(() => {
+      console.log("New day detected. Refreshing invoice records...");
+      fetchDailySales();
+    }, msUntilMidnight);
+
+    return () => clearTimeout(midnightTimer);
+  }, [dailySales, fetchDailySales]);
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) setCurrentUser(JSON.parse(savedUser));
+    const current = new Date().getFullYear();
+    setYears(Array.from({ length: 5 }, (_, i) => current - i));
+  }, []);
+
+  useEffect(() => {
+    fetchDailySales();
+  }, [fetchDailySales]);
 
   useEffect(() => {
     let filtered = dailySales;
@@ -84,7 +105,7 @@ export default function Invoices() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `sales-${date}.pdf`;
+      a.download = `Invoice-${date}.pdf`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -111,7 +132,7 @@ export default function Invoices() {
           <main className="p-6 lg:p-10 space-y-8 max-w-6xl mx-auto w-full">
             <header>
               <h1 className="text-3xl font-black text-white tracking-tight">Sales Invoices</h1>
-              <p className="text-gray-500 text-sm">Export and review your daily transaction reports.</p>
+              <p className="text-gray-500 text-sm">Review and export daily transaction reports. System resets at 12 AM.</p>
             </header>
 
             {/* FILTERS */}
@@ -160,43 +181,55 @@ export default function Invoices() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {currentData.length === 0 ? (
-                    <tr><td colSpan="3" className="px-6 py-20 text-center text-gray-600 italic">No invoice records found for this period.</td></tr>
-                  ) : (
-                    currentData.map((row) => (
-                      <tr key={row.date} className="group hover:bg-white/[0.01] transition-colors">
-                        <td className="px-6 py-4 font-bold text-gray-300">
-                          {new Date(row.date).toLocaleDateString(undefined, { dateStyle: 'long' })}
-                        </td>
-                        <td className="px-6 py-4 font-black text-blue-400">
-                          ₦{Number(row.total_sales ?? 0).toLocaleString()}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex justify-end gap-2">
-                            <button 
-                              onClick={() => handleView(row.date)}
-                              className="p-2 hover:bg-blue-500/10 text-gray-400 hover:text-blue-400 rounded-lg transition-all"
-                            >
-                              <Eye size={18} />
-                            </button>
-                            <button 
-                              onClick={() => handleDownload(formatDate(row.date))}
-                              className="p-2 hover:bg-green-500/10 text-gray-400 hover:text-green-400 rounded-lg transition-all"
-                            >
-                              <Download size={18} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
+                  <AnimatePresence mode='popLayout'>
+                    {currentData.length === 0 ? (
+                      <motion.tr 
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                        key="empty"
+                      >
+                        <td colSpan="3" className="px-6 py-20 text-center text-gray-600 italic">No invoice records found for this period.</td>
+                      </motion.tr>
+                    ) : (
+                      currentData.map((row) => (
+                        <motion.tr 
+                          layout
+                          initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                          key={row.date} 
+                          className="group hover:bg-white/[0.01] transition-colors"
+                        >
+                          <td className="px-6 py-4 font-bold text-gray-300">
+                            {new Date(row.date).toLocaleDateString(undefined, { dateStyle: 'long' })}
+                          </td>
+                          <td className="px-6 py-4 font-black text-blue-400">
+                            ₦{Number(row.total_sales ?? 0).toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex justify-end gap-2">
+                              <button 
+                                onClick={() => handleView(row.date)}
+                                className="p-2 hover:bg-blue-500/10 text-gray-400 hover:text-blue-400 rounded-lg transition-all"
+                              >
+                                <Eye size={18} />
+                              </button>
+                              <button 
+                                onClick={() => handleDownload(formatDate(row.date))}
+                                className="p-2 hover:bg-green-500/10 text-gray-400 hover:text-green-400 rounded-lg transition-all"
+                              >
+                                <Download size={18} />
+                              </button>
+                            </div>
+                          </td>
+                        </motion.tr>
+                      ))
+                    )}
+                  </AnimatePresence>
                 </tbody>
               </table>
             </motion.div>
           </main>
         </div>
 
-        {/* MODAL */}
+        {/* MODAL SECTION REMAINS THE SAME AS BEFORE */}
         <AnimatePresence>
           {viewModalOpen && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
