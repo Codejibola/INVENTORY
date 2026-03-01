@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
-// 1. Import your environment configuration
 import LOCAL_ENV from "../../ENV.js"; 
 import {
   BarChart,
@@ -52,14 +51,10 @@ export default function Dashboard() {
 
   const formatShortNumber = (value) => {
     const num = Number(value) || 0;
-    try {
-      return new Intl.NumberFormat("en", {
-        notation: "compact",
-        maximumFractionDigits: 1,
-      }).format(num);
-    } catch (e) {
-      return num.toLocaleString();
-    }
+    return new Intl.NumberFormat("en", {
+      notation: "compact",
+      maximumFractionDigits: 1,
+    }).format(num);
   };
 
   useEffect(() => {
@@ -68,27 +63,27 @@ export default function Dashboard() {
     fetchData();
   }, [token]);
 
+  // Counting animation for the sales card
   useEffect(() => {
-    if (monthlySales > 0) {
-      let start = 0;
-      const duration = 800;
-      const steps = Math.min(monthlySales, 60) || 1;
-      const increment = monthlySales / steps;
-      const intervalTime = duration / steps;
-
-      const timer = setInterval(() => {
-        start += increment;
-        if (start >= monthlySales) {
-          start = monthlySales;
-          clearInterval(timer);
-        }
-        setDisplayedSales(Math.floor(start));
-      }, intervalTime);
-
-      return () => clearInterval(timer);
-    } else {
-      setDisplayedSales(0);
+    let start = 0;
+    const end = Number(monthlySales);
+    if (end <= 0) {
+        setDisplayedSales(0);
+        return;
     }
+    const duration = 1000;
+    const increment = end / (duration / 16);
+    
+    const timer = setInterval(() => {
+      start += increment;
+      if (start >= end) {
+        setDisplayedSales(end);
+        clearInterval(timer);
+      } else {
+        setDisplayedSales(Math.floor(start));
+      }
+    }, 16);
+    return () => clearInterval(timer);
   }, [monthlySales]);
 
   const fetchData = async () => {
@@ -96,41 +91,54 @@ export default function Dashboard() {
       const authHeader = { headers: { Authorization: `Bearer ${token}` } };
       const now = new Date();
       const currentYear = now.getFullYear();
-      const currentMonthIdx = now.getMonth();
+      const currentMonthIdx = now.getMonth(); // 0 = Jan, 2 = Mar
 
-      // 2. Swapped all localhost/hardcoded URLs for LOCAL_ENV.API_URL
+      // 1. Fetch Latest Sales
       const salesRes = await apiFetch(`${LOCAL_ENV.API_URL}/api/sales`, authHeader);
       const salesData = salesRes.ok ? await salesRes.json() : [];
       if (salesData.length > 0) setLatestSale(salesData[0]);
 
+      // 2. Fetch Daily Aggregate for Chart & Monthly Totals
       const dailyRes = await apiFetch(`${LOCAL_ENV.API_URL}/api/sales/daily?year=${currentYear}`, authHeader);
       const dailyData = dailyRes.ok ? await dailyRes.json() : [];
 
       const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      const monthlyTotals = months.map((month, idx) => {
-        const total = dailyData
-          .filter(d => new Date(d.date).getMonth() === idx)
+      
+      const monthlyTotals = months.map((monthName, idx) => {
+        const monthSales = dailyData
+          .filter(d => {
+            // Using UTC to avoid "last day of month" timezone shifts
+            const dDate = new Date(d.date);
+            return dDate.getUTCMonth() === idx;
+          })
           .reduce((sum, d) => sum + Number(d.total_sales || 0), 0);
-        return { month, sales: total };
+          
+        return { month: monthName, sales: monthSales };
       });
 
       setChartData(monthlyTotals);
-      setMonthlySales(monthlyTotals[currentMonthIdx]?.sales || 0);
 
-      const profitTotal = dailyData
-        .filter(d => new Date(d.date).getMonth() === currentMonthIdx)
+      // 3. Set Monthly Stats (Sales and Profit)
+      // We calculate specifically for the current month
+      const currentMonthSales = monthlyTotals[currentMonthIdx]?.sales || 0;
+      setMonthlySales(currentMonthSales);
+
+      const currentMonthProfit = dailyData
+        .filter(d => new Date(d.date).getUTCMonth() === currentMonthIdx)
         .reduce((sum, d) => sum + Number(d.total_profit_loss || 0), 0);
-      setMonthlyProfitLoss(profitTotal);
+      setMonthlyProfitLoss(currentMonthProfit);
 
+      // 4. Shop Worth & Products
       const prodRes = await apiFetch(`${LOCAL_ENV.API_URL}/api/products`, authHeader);
       const prodData = prodRes.ok ? await prodRes.json() : [];
-      setShopWorth(prodData.reduce((sum, p) => sum + Number(p.selling_price || 0) * Number(p.units || 0), 0));
+      setShopWorth(prodData.reduce((sum, p) => sum + (Number(p.selling_price || 0) * Number(p.units || 0)), 0));
       
       if (prodData.length > 0) {
-        const sortedProds = [...prodData].sort((a, b) => (b.id || 0) - (a.id || 0));
+        const sortedProds = [...prodData].sort((a, b) => b.id - a.id);
         setLatestProduct(sortedProds[0]);
       }
 
+      // 5. Performance Insights
       const [bestRes, leastRes] = await Promise.all([
         apiFetch(`${LOCAL_ENV.API_URL}/api/sales/best-selling`, authHeader),
         apiFetch(`${LOCAL_ENV.API_URL}/api/sales/least-selling`, authHeader)
@@ -147,48 +155,30 @@ export default function Dashboard() {
   return (
     <HelmetProvider>
       <Helmet><title>Dashboard | Quantora</title></Helmet>
-
+      {/* Rest of your JSX remains the same */}
       <div className="min-h-screen bg-[#050505] flex relative">
         <Sidebar isOpen={menuOpen} setIsOpen={setMenuOpen} />
-
         <div className="flex-1 flex flex-col">
           <Topbar onMenuClick={() => setMenuOpen(true)} userName={currentUser?.name} />
-
           <main className="flex-1 p-6 lg:p-10 space-y-10 text-white max-w-[1600px] mx-auto w-full">
-            
-            {/* 1. ACTION CARDS */}
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               <ActionCard 
-                title="Monthly Sales" 
+                title={`${new Date().toLocaleString('default', { month: 'long' })} Sales`} 
                 icon="payments" 
-                desc={`₦${formatShortNumber(displayedSales)}`} 
+                desc={`₦${displayedSales.toLocaleString()}`} 
                 isHighlight 
               />
-              <ActionCard 
-                title="Shop Worth" 
-                icon="inventory" 
-                desc={`₦${formatShortNumber(shopWorth)}`} 
-              />
-              <ActionCard 
-                title="Manage Products" 
-                icon="edit_note" 
-                to="/Manage_Products" 
-              />
-              <ActionCard 
-                title="Record Sales" 
-                icon="add_shopping_cart" 
-                to="/recordSales" 
-              />
+              <ActionCard title="Shop Worth" icon="inventory" desc={`₦${formatShortNumber(shopWorth)}`} />
+              <ActionCard title="Manage Products" icon="edit_note" to="/Manage_Products" />
+              <ActionCard title="Record Sales" icon="add_shopping_cart" to="/recordSales" />
             </section>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              
-              {/* 2. SALES CHART */}
               <article className="bg-[#111] border border-white/5 rounded-2xl p-6 lg:col-span-2 shadow-2xl">
                 <div className="flex justify-between items-center mb-8">
-                  <h2 className="text-xl font-bold tracking-tight">Revenue Trends</h2>
+                  <h2 className="text-xl font-bold tracking-tight">Revenue Trends ({new Date().getFullYear()})</h2>
                   <div className="flex items-center gap-2 text-green-400 bg-green-400/10 px-3 py-1 rounded-full text-xs font-bold">
-                    <TrendingUp size={14} /> Trends Active
+                    <TrendingUp size={14} /> Live Updates
                   </div>
                 </div>
                 <ResponsiveContainer width="100%" height={350}>
@@ -202,52 +192,26 @@ export default function Dashboard() {
                 </ResponsiveContainer>
               </article>
 
-              {/* 3. INSIGHTS SIDEBAR */}
               <aside className="space-y-6">
                 <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500">Quick Insights</h2>
-                
                 <div className="bg-[#111] border border-white/5 rounded-2xl overflow-hidden divide-y divide-white/5">
-                  {/* Profit Loss Row */}
                   <div className="p-5 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className={`p-3 rounded-xl ${monthlyProfitLoss >= 0 ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"}`}>
                         {monthlyProfitLoss >= 0 ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 font-medium">Monthly Profit</p>
-                        <p className={`text-lg font-bold ${monthlyProfitLoss >= 0 ? "text-green-400" : "text-red-400"}`}>{monthlyProfitLoss >= 0 ? "+" : "-"}₦{Math.abs(monthlyProfitLoss).toLocaleString()}</p>
+                        <p className="text-xs text-gray-500 font-medium">Profit ({new Date().toLocaleString('default', { month: 'short' })})</p>
+                        <p className={`text-lg font-bold ${monthlyProfitLoss >= 0 ? "text-green-400" : "text-red-400"}`}>
+                            {monthlyProfitLoss >= 0 ? "+" : "-"}₦{Math.abs(monthlyProfitLoss).toLocaleString()}
+                        </p>
                       </div>
                     </div>
                   </div>
-
-                  <InsightRow 
-                    label="Latest Sale" 
-                    title={latestSale ? toTitle(latestSale.product_name) : "No Sales"} 
-                    sub={`Qty: ${latestSale?.quantity || 0}`}
-                    icon={<ShoppingCart size={18} className="text-blue-400" />}
-                  />
-
-                  <InsightRow 
-                    label="New Arrival" 
-                    title={latestProduct ? toTitle(latestProduct.name) : "No Products"} 
-                    sub={`Stock: ${latestProduct?.units || 0}`}
-                    icon={<Package size={18} className="text-purple-400" />}
-                  />
-
-                  <InsightRow 
-                    label="Top Performer" 
-                    title={bestSellingProduct ? toTitle(bestSellingProduct.productName) : "N/A"} 
-                    sub={`${bestSellingProduct?.totalQuantitySold || 0} sold`}
-                    icon={<Award size={18} className="text-yellow-400" />}
-                    isBest
-                  />
-
-                  <InsightRow 
-                    label="Low Performance" 
-                    title={leastSellingProduct ? toTitle(leastSellingProduct.productName) : "N/A"} 
-                    sub={`${leastSellingProduct?.totalQuantitySold || 0} sold`}
-                    icon={<AlertCircle size={18} className="text-red-400" />}
-                  />
+                  <InsightRow label="Latest Sale" title={latestSale ? toTitle(latestSale.product_name) : "No Sales"} sub={`Qty: ${latestSale?.quantity || 0}`} icon={<ShoppingCart size={18} className="text-blue-400" />} />
+                  <InsightRow label="New Arrival" title={latestProduct ? toTitle(latestProduct.name) : "No Products"} sub={`Stock: ${latestProduct?.units || 0}`} icon={<Package size={18} className="text-purple-400" />} />
+                  <InsightRow label="Top Performer" title={bestSellingProduct ? toTitle(bestSellingProduct.productName) : "N/A"} sub={`${bestSellingProduct?.totalQuantitySold || 0} sold`} icon={<Award size={18} className="text-yellow-400" />} isBest />
+                  <InsightRow label="Low Performance" title={leastSellingProduct ? toTitle(leastSellingProduct.productName) : "N/A"} sub={`${leastSellingProduct?.totalQuantitySold || 0} sold`} icon={<AlertCircle size={18} className="text-red-400" />} />
                 </div>
               </aside>
             </div>
@@ -258,41 +222,42 @@ export default function Dashboard() {
   );
 }
 
+// Keep your ActionCard and InsightRow functions as they were...
 function ActionCard({ title, desc, icon, isHighlight, to }) {
-  const navigate = useNavigate();
-  return (
-    <motion.div
-      whileHover={{ y: -5 }}
-      onClick={() => to && navigate(to)}
-      className={`p-6 rounded-2xl cursor-pointer transition-all border ${
-        isHighlight 
-        ? "bg-blue-600 border-blue-500 shadow-lg shadow-blue-900/20" 
-        : "bg-[#111] border-white/5 hover:border-white/20"
-      }`}
-    >
-      <div className="flex justify-between items-start">
-        <span className="material-icons text-white/50 text-3xl">{icon}</span>
-        {to && <ArrowRight size={16} className="text-white/30" />}
-      </div>
-      <div className="mt-4">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-white/60">{title}</h3>
-        <p className="text-2xl font-black mt-1">{desc || "Manage"}</p>
-      </div>
-    </motion.div>
-  );
+    const navigate = useNavigate();
+    return (
+      <motion.div
+        whileHover={{ y: -5 }}
+        onClick={() => to && navigate(to)}
+        className={`p-6 rounded-2xl cursor-pointer transition-all border ${
+          isHighlight 
+          ? "bg-blue-600 border-blue-500 shadow-lg shadow-blue-900/20" 
+          : "bg-[#111] border-white/5 hover:border-white/20"
+        }`}
+      >
+        <div className="flex justify-between items-start">
+          <span className="material-icons text-white/50 text-3xl">{icon}</span>
+          {to && <ArrowRight size={16} className="text-white/30" />}
+        </div>
+        <div className="mt-4">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-white/60">{title}</h3>
+          <p className="text-2xl font-black mt-1">{desc || "Manage"}</p>
+        </div>
+      </motion.div>
+    );
 }
 
 function InsightRow({ label, title, sub, icon, isBest }) {
-  return (
-    <div className="p-5 flex items-center justify-between group hover:bg-white/[0.02] transition-colors">
-      <div className="flex items-center gap-4">
-        <div className="bg-white/5 p-2 rounded-lg">{icon}</div>
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-tighter text-gray-500">{label}</p>
-          <p className={`text-sm font-bold truncate max-w-[140px] ${isBest ? "text-yellow-500" : "text-gray-200"}`}>{title}</p>
+    return (
+      <div className="p-5 flex items-center justify-between group hover:bg-white/[0.02] transition-colors">
+        <div className="flex items-center gap-4">
+          <div className="bg-white/5 p-2 rounded-lg">{icon}</div>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-tighter text-gray-500">{label}</p>
+            <p className={`text-sm font-bold truncate max-w-[140px] ${isBest ? "text-yellow-500" : "text-gray-200"}`}>{title}</p>
+          </div>
         </div>
+        <span className="text-[11px] font-bold bg-white/5 px-2 py-1 rounded text-gray-400">{sub}</span>
       </div>
-      <span className="text-[11px] font-bold bg-white/5 px-2 py-1 rounded text-gray-400">{sub}</span>
-    </div>
-  );
+    );
 }

@@ -7,7 +7,6 @@ const getTodayDate = () => new Date().toLocaleDateString('en-CA');
 export const getAllSales = async (req, res) => {
   try {
     const { rows } = await Sales.fetchAllSales(req.userId);
-    // The frontend filters this, but we return all for the history
     res.json(rows);
   } catch (err) {
     console.error(err);
@@ -27,13 +26,12 @@ export const recordSale = async (req, res) => {
 
   try {
     const saleRes = await Sales.insertSale(userId, productId, quantity, price);
-
     res.status(201).json({
       message: "Sale recorded successfully",
       sale: {
         id: saleRes.rows[0].id,
         profit: Number(saleRes.rows[0].profit_loss ?? 0),
-        created_at: saleRes.rows[0].created_at // Ensure this is sent back
+        created_at: saleRes.rows[0].created_at
       },
     });
   } catch (err) {
@@ -46,8 +44,6 @@ export const getDailySales = async (req, res) => {
   try {
     const year = parseInt(req.query.year) || new Date().getFullYear();
     const { rows } = await Sales.fetchDailySales(req.userId, year);
-    
-    // We send all daily summaries, the frontend timer handles the visibility
     res.json(rows);
   } catch (err) {
     console.error(err);
@@ -55,12 +51,11 @@ export const getDailySales = async (req, res) => {
   }
 };
 
+// This handles viewing sales for a specific date (or 'today')
 export const viewDailySales = async (req, res) => {
   try {
-    // If the client passes 'today', we resolve it to the server's current date
     let date = req.params.date;
     if (date === 'today') date = getTodayDate();
-
     if (!date) return res.status(400).json({ message: "Date is required" });
 
     const { rows } = await Sales.fetchSalesByDate(req.userId, date);
@@ -71,13 +66,26 @@ export const viewDailySales = async (req, res) => {
   }
 };
 
+// FIXED: Exporting this specifically to satisfy your routes file
+export const getSalesByDate = async (req, res) => {
+  try {
+    let date = req.params.date;
+    if (date === 'today') date = getTodayDate();
+    const { rows } = await Sales.fetchSalesByDate(req.userId, date);
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error fetching sales for this date" });
+  }
+};
+
+// FIXED: Renamed to match the import in your routes (was downloadDailySalesInvoice)
 export const downloadDailySalesExcel = async (req, res) => {
   try {
     let date = req.params.date;
     if (date === 'today') date = getTodayDate();
 
     const { rows } = await Sales.fetchSalesByDate(req.userId, date);
-
     if (!rows.length) return res.status(404).json({ message: "No sales found for this date." });
 
     const totalAmount = rows.reduce((acc, r) => acc + Number(r.price), 0);
@@ -168,26 +176,14 @@ export const downloadDailySalesExcel = async (req, res) => {
   }
 };
 
-// ... keep best/least selling product functions as they are
-
 export const getBestSellingProduct = async (req, res) => {
   try {
     const { rows } = await Sales.fetchProductSalesSummary(req.userId);
+    if (!rows.length) return res.status(404).json({ message: "No sales data available" });
 
-    if (!rows.length) {
-      return res.status(404).json({
-        message: "No sales data available",
-      });
-    }
-
-    // Find product with highest total_quantity_sold
     let bestProduct = rows[0];
-
     for (const product of rows) {
-      if (
-        Number(product.total_quantity_sold) >
-        Number(bestProduct.total_quantity_sold)
-      ) {
+      if (Number(product.total_quantity_sold) > Number(bestProduct.total_quantity_sold)) {
         bestProduct = product;
       }
     }
@@ -199,31 +195,18 @@ export const getBestSellingProduct = async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({
-      message: "Server error fetching best selling product",
-    });
+    res.status(500).json({ message: "Server error fetching best selling product" });
   }
 };
-
 
 export const getLeastSellingProduct = async (req, res) => {
   try {
     const { rows } = await Sales.fetchProductSalesSummary(req.userId);
+    if (!rows.length) return res.status(404).json({ message: "No sales data available" });
 
-    if (!rows.length) {
-      return res.status(404).json({
-        message: "No sales data available",
-      });
-    }
-
-    // Find product with lowest total_quantity_sold
     let leastProduct = rows[0];
-
     for (const product of rows) {
-      if (
-        Number(product.total_quantity_sold) <
-        Number(leastProduct.total_quantity_sold)
-      ) {
+      if (Number(product.total_quantity_sold) < Number(leastProduct.total_quantity_sold)) {
         leastProduct = product;
       }
     }
@@ -235,8 +218,6 @@ export const getLeastSellingProduct = async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({
-      message: "Server error fetching least selling product",
-    });
+    res.status(500).json({ message: "Server error fetching least selling product" });
   }
 };
