@@ -1,6 +1,27 @@
 import * as Sales from "../models/sales_Model.js";
 import html_to_pdf from "html-pdf-node";
-import logo from "../../FRONTENDS/quantora/src/assets/logo.png";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// --- LOGO LOGIC ---
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// This reads the image file and converts it to a string the PDF can understand
+const getLogoDataUri = () => {
+  try {
+    const logoPath = path.join(__dirname, "../assets/logo.png");
+    const logoBase64 = fs.readFileSync(logoPath).toString("base64");
+    return `data:image/png;base64,${logoBase64}`;
+  } catch (error) {
+    console.error("Logo not found at assets/logo.png, using empty string");
+    return "";
+  }
+};
+
+const logoDataUri = getLogoDataUri();
+// ------------------
 
 // HELPER: Get today's date in YYYY-MM-DD format based on server time
 const getTodayDate = () => new Date().toLocaleDateString('en-CA');
@@ -52,7 +73,6 @@ export const getDailySales = async (req, res) => {
   }
 };
 
-// This handles viewing sales for a specific date (or 'today')
 export const viewDailySales = async (req, res) => {
   try {
     let date = req.params.date;
@@ -67,7 +87,6 @@ export const viewDailySales = async (req, res) => {
   }
 };
 
-// FIXED: Exporting this specifically to satisfy your routes file
 export const getSalesByDate = async (req, res) => {
   try {
     let date = req.params.date;
@@ -80,7 +99,6 @@ export const getSalesByDate = async (req, res) => {
   }
 };
 
-// FIXED: Renamed to match the import in your routes (was downloadDailySalesInvoice)
 export const downloadDailySalesExcel = async (req, res) => {
   try {
     let date = req.params.date;
@@ -98,29 +116,23 @@ export const downloadDailySalesExcel = async (req, res) => {
     <head>
       <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 40px; color: #1e293b; }
-        
         .watermark {
           position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg);
           font-size: 80px; font-weight: 900; 
           color: rgba(59, 130, 246, 0.08); 
           z-index: -1; white-space: nowrap;
-          text-transform: uppercase;
-          letter-spacing: 15px;
+          text-transform: uppercase; letter-spacing: 15px;
         }
-
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; border-bottom: 4px solid #2563eb; padding-bottom: 20px; }
         .logo-container { width: 150px; }
         .logo-container img { width: 100%; height: auto; display: block; }
         .store-details { text-align: right; }
         .store-name { font-size: 24px; font-weight: 900; color: #1e293b; margin: 0; text-transform: uppercase; }
-        
         table { width: 100%; border-collapse: collapse; margin-top: 20px; table-layout: fixed; }
         th { background: #0f172a; color: white; padding: 12px; font-size: 10px; text-transform: uppercase; text-align: left; }
         td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 12px; word-wrap: break-word; }
-        
         .amount-col { text-align: right; font-family: monospace; font-weight: 600; }
         .qty-col { text-align: center; }
-        
         .total-row { background: #f8fafc; font-weight: 900; border-top: 2px solid #2563eb; }
         .footer { margin-top: 50px; text-align: center; font-size: 10px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 20px; }
       </style>
@@ -129,7 +141,7 @@ export const downloadDailySalesExcel = async (req, res) => {
       <div class="watermark">QUANTORA</div>
       <div class="header">
         <div class="logo-container">
-          <img src="${logo}" alt="Quantora Logo">
+          <img src="${logoDataUri}" alt="Quantora Logo">
         </div> 
         <div class="store-details">
           <h1 class="store-name">QUANTORA STORES</h1>
@@ -194,6 +206,7 @@ export const downloadDailySalesExcel = async (req, res) => {
   }
 };
 
+// ... (getBestSellingProduct and getLeastSellingProduct remain the same as your code)
 export const getBestSellingProduct = async (req, res) => {
   try {
     const { rows } = await Sales.fetchProductSalesSummary(req.userId);

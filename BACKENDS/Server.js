@@ -1,4 +1,3 @@
-/* eslint-disable */
 import dotenv from "dotenv";
 dotenv.config(); 
 
@@ -26,6 +25,7 @@ class WebServer {
     // If PORT is missing, default to 5000 so the process doesn't exit
     this.#port = LOCAL_ENV.PORT || 5000;
     this.app = express();
+    this.app.set('trust proxy', 1)
     this.app.use(cors());
     this.app.use(express.json());
   }
