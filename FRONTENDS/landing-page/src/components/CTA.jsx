@@ -31,14 +31,13 @@ export default function CTA() {
           </p>
         </header>
 
-        <button
-          type="button"
-          aria-label="Start free trial of Quantora inventory management software"
-          className="bg-blue-600 hover:bg-blue-500 transition px-10 py-4 rounded-md font-semibold text-lg"
-          to="https://quantora-app.vercel.app/"
-        >
-          Start Free Trial
-        </button>
+       <a
+  href="https://quantora-app.vercel.app/"
+  aria-label="Start free trial of Quantora inventory management software"
+  className="inline-block bg-blue-600 hover:bg-blue-500 transition px-10 py-4 rounded-md font-semibold text-lg text-white"
+>
+  Start Free Trial
+</a>
       </motion.div>
     </section>
   );
