@@ -11,7 +11,16 @@ export default function Privacy() {
         />
       </Helmet>
 
-      <div className="max-w-4xl mx-auto px-6 py-16 text-gray-800">
+      {/* --- ADDED BACK BUTTON --- */}
+      <div className="max-w-4xl mx-auto px-6 pt-10">
+        <a href="https://inventory-5xr8.vercel.app/" className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+          Back to Home
+        </a>
+      </div>
+      {/* ------------------------- */}
+
+      <div className="max-w-4xl mx-auto px-6 py-10 text-gray-800">
         <h1 className="text-4xl font-extrabold text-black mb-8 border-b border-gray-700 pb-4">
           Privacy Policy
         </h1>
@@ -23,7 +32,7 @@ export default function Privacy() {
 
         <section className="space-y-6">
           <div>
-            <h2 className="text-xl font-semibold text-white mb-2">Information We Collect</h2>
+            <h2 className="text-xl font-semibold text-black mb-2">Information We Collect</h2>
             <p>
               We collect information you provide such as your name, email address,
               and business records entered into the platform.
@@ -50,7 +59,7 @@ export default function Privacy() {
             <h2 className="text-xl font-semibold text-black mb-2">Access & Deletion</h2>
             <p>
               You may request access to or deletion of your data by contacting us
-              at <span className="text-blue-400">quantora.00@gmail.com</span>.
+              at <a href="mailto:quantora.nigeria@gmail.com" className="text-blue-600 hover:underline">quantora.nigeria@gmail.com</a>.
             </p>
           </div>
         </section>

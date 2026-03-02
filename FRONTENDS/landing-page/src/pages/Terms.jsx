@@ -11,7 +11,16 @@ export default function Terms() {
         />
       </Helmet>
 
-      <div className="max-w-4xl mx-auto px-6 py-16 text-gray-800">
+      {/* --- ADDED BACK BUTTON --- */}
+      <div className="max-w-4xl mx-auto px-6 pt-10">
+        <a href="https://inventory-5xr8.vercel.app/" className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+          Back to Home
+        </a>
+      </div>
+      {/* ------------------------- */}
+
+      <div className="max-w-4xl mx-auto px-6 py-10 text-gray-800">
         <h1 className="text-4xl font-extrabold text-black mb-8 border-b border-gray-700 pb-4">
           Terms and Conditions
         </h1>
@@ -56,7 +65,7 @@ export default function Terms() {
           </div>
         </section>
 
-        <p className="mt-12 text-sm text-blue-500">
+        <p className="mt-12 text-sm text-gray-500">
           Last updated: 18 December 2025
         </p>
       </div>
