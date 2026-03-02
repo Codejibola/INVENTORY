@@ -174,9 +174,9 @@ export const downloadDailySalesExcel = async (req, res) => {
           width: 200px; 
           float: left; /* Floats to the left */
         }
-        .signature-image { max-height: 80px; width: auto; display: block; margin-left: 40%; }
+        .signature-image { max-height: 80px; width: auto; display: block; margin-left: 30%; }
         .signature-line { border-top: 1px solid #1e293b; margin-top: 5px; width: 100%; }
-        .signature-text { font-size: 10px; color: #64748b; margin: 2px 0px 0px 10px; }
+        .signature-text { font-size: 10px; color: #64748b; margin: 2px 0px 0px 60px; }
 
         .footer { margin-top: 150px; text-align: center; font-size: 10px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 20px; clear: both;}
       </style>
