@@ -47,9 +47,9 @@ export default function Features() {
     if (isPaused) return;
     const interval = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % FEATURES.length);
-    }, 5000); // Increased time for better readability
+    }, 5000); 
     return () => clearInterval(interval);
-  }, [isPaused]);
+  }, [isPaused, activeIndex]); // Added activeIndex to dependency for cleaner resets
 
   const active = FEATURES[activeIndex];
 
@@ -57,21 +57,21 @@ export default function Features() {
     <section id="features" className="bg-zinc-950 text-zinc-100 py-32 overflow-hidden">
       <div className="max-w-7xl mx-auto px-6">
         
-        {/* Professional Header Section */}
+        {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-20 gap-8">
           <div className="max-w-2xl">
             <h2 className="text-blue-500 font-bold tracking-[0.25em] text-xs mb-4 uppercase">System Capabilities</h2>
             <h3 className="text-4xl md:text-5xl font-black text-white leading-tight">
               Enterprise Control. <br />
-              <span className="italic text-zinc-500 font-light">Startup Simplicity.</span>
+              <span className="italic text-zinc-500 font-light text-3xl md:text-4xl">Startup Simplicity.</span>
             </h3>
           </div>
           <p className="text-zinc-400 text-lg max-w-sm border-l border-zinc-800 pl-6 hidden md:block">
-            Quantora replaces outdated workflows with a streamlined engine designed for modern retail and distribution.
+            Quantora replaces outdated workflows with a streamlined engine designed for modern retail.
           </p>
         </div>
 
-        {/* Feature Navigation with Timer Progress */}
+        {/* Feature Navigation */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-20">
           {FEATURES.map((feature, index) => (
             <button
@@ -93,7 +93,7 @@ export default function Features() {
                 {feature.title}
               </div>
               
-              {/* Progress Bar for Active Tab */}
+              {/* Progress Bar */}
               {index === activeIndex && (
                 <motion.div 
                   layoutId="activeTabProgress"
@@ -107,18 +107,18 @@ export default function Features() {
           ))}
         </div>
 
-        {/* Dynamic Showcase Area */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
+        {/* Dynamic Area */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
           
-          {/* Detailed Content Side */}
-          <div className="lg:col-span-5 order-2 lg:order-1">
+          {/* Text Side */}
+          <div className="lg:col-span-5 order-2 lg:order-1 h-full flex flex-col justify-center">
             <AnimatePresence mode="wait">
               <motion.div
                 key={active.title}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.4 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
               >
                 <div className="inline-block px-3 py-1 rounded-md bg-blue-600/10 text-blue-400 text-[10px] font-black tracking-widest uppercase mb-6">
                    {active.subtitle}
@@ -130,8 +130,8 @@ export default function Features() {
                   {active.description}
                 </p>
                 
-                {/* Metric / Impact Badge */}
-                <div className="p-5 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center gap-5 shadow-xl">
+                {/* Metric Badge */}
+                <div className="p-5 rounded-2xl bg-zinc-900/50 border border-zinc-800 flex items-center gap-5 shadow-xl backdrop-blur-sm">
                   <div className="h-12 w-12 rounded-xl bg-blue-600/20 flex items-center justify-center flex-shrink-0">
                     <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                   </div>
@@ -144,30 +144,25 @@ export default function Features() {
             </AnimatePresence>
           </div>
 
-          {/* Visual Showcase Side */}
+          {/* Visual Side */}
           <div className="lg:col-span-7 order-1 lg:order-2">
             <div 
-              className="relative group" 
+              className="relative aspect-[16/10] w-full rounded-3xl border border-zinc-800 bg-zinc-900 p-2 shadow-2xl overflow-hidden"
               onMouseEnter={() => setIsPaused(true)} 
               onMouseLeave={() => setIsPaused(false)}
             >
-              {/* High-End Glow Effect */}
-              <div className="absolute -inset-10 bg-blue-600/10 rounded-full blur-[100px] opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
-              
-              <div className="relative rounded-3xl border border-zinc-800 bg-zinc-900 p-2 shadow-[0_40px_100px_rgba(0,0,0,0.6)] overflow-hidden">
-                <AnimatePresence mode="popLayout">
-                  <motion.img
-                    key={active.image}
-                    src={active.image}
-                    alt={active.title}
-                    initial={{ opacity: 0, scale: 1.05, filter: "brightness(0.5)" }}
-                    animate={{ opacity: 1, scale: 1, filter: "brightness(1)" }}
-                    exit={{ opacity: 0, filter: "blur(20px)" }}
-                    transition={{ duration: 0.7, ease: "easeOut" }}
-                    className="w-full h-auto rounded-2xl grayscale-[20%] group-hover:grayscale-0 transition-all duration-700"
-                  />
-                </AnimatePresence>
-              </div>
+              <AnimatePresence mode="wait">
+                <motion.img
+                  key={active.image}
+                  src={active.image}
+                  alt={active.title}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5, ease: "easeInOut" }}
+                  className="w-full h-full object-cover rounded-2xl grayscale-[20%] hover:grayscale-0 transition-all duration-700"
+                />
+              </AnimatePresence>
             </div>
           </div>
 
