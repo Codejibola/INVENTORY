@@ -52,20 +52,24 @@ export default function DemoPage() {
         />
       </Helmet>
 
-      {/* --- NEW NAVIGATION HEADER --- */}
+      {/* --- NAVIGATION HEADER --- */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-zinc-950/80 backdrop-blur-sm border-b border-zinc-800">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <a href="https://inventory-5xr8.vercel.app/" className="text-xl font-bold text-white">
-            Quantora<span className="text-blue-500">.</span>
-          </a>
-          <a
-            href="https://quantora-app.vercel.app/"
-            className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-md text-sm font-semibold transition duration-150"
-          >
-            Launch App
-          </a>
-        </div>
-      </nav>
+  <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    {/* Added cursor-pointer and hover:text-white for interactivity */}
+    <a 
+      href="https://inventory-5xr8.vercel.app/" 
+      className="text-xl font-bold text-white hover:text-blue-400 transition-colors duration-150 cursor-pointer"
+    >
+      Quantora<span className="text-blue-500">.</span>
+    </a>
+    <a
+      href="https://quantora-app.vercel.app/"
+      className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-md text-sm font-semibold transition duration-150"
+    >
+      Launch App
+    </a>
+  </div>
+</nav>
       {/* ----------------------------- */}
 
       <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-6 text-white pt-28">
