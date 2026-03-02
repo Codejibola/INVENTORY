@@ -1,28 +1,25 @@
 /* eslint-disable no-unused-vars */
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import demo1 from "../assets/Demo01.png";
-import demo2 from "../assets/demo2.png";
-import demo3 from "../assets/Demo3.png";
-import demo4 from "../assets/Demo4.png";
-import demo5 from "../assets/demo5.png";
-import demo6 from "../assets/demo6.png";
-import demo7 from "../assets/demo7.png";
-import demo8 from "../assets/demo8.png";
-import demo9 from "../assets/demo9.png";
 import { Helmet } from "react-helmet-async";
 
-// Updated array to include explanatory text
+// Image Imports - Renamed based on your prompt
+import registration from "../assets/registration.png";
+import dashboard from "../assets/dashboard.png";
+import inventory from "../assets/inventory.png";
+import recordsales from "../assets/recordsales.png";
+import invoices from "../assets/invoices.png";
+import oversight from "../assets/oversight.png";
+
+// Updated array to include explanatory text and correct image mapping
 const demoSteps = [
-  { image: demo1, title: "Secure Onboarding", description: "Create your business account in seconds. Set up your profile and get ready to master your data." },
-  { image: demo2, title: "Dashboard Overview", description: "Your central hub for real-time inventory levels, recent sales activity, and critical stock alerts." },
-  { image: demo3, title: "Adding Products", description: "Easily input new stock, set SKU variants, assign categories, and define pricing structures." },
-  { image: demo4, title: "Inventory Management", description: "View your entire product catalog. Filter by stock level to identify items that need reordering." },
-  { image: demo5, title: "Staff & Role Control", description: "Manage workers by assigning roles. Admin monitors activity, while staff focus on sales without seeing full profit margins." },
-  { image: demo6, title: "Creating Invoices", description: "Generate professional, tax-compliant invoices in one click for your clients directly from the dashboard." },
-  { image: demo7, title: "Sales Tracking", description: "Track every transaction. View sales history, payment status, and customer details effortlessly." },
-  { image: demo8, title: "Fiscal Reporting", description: "Generate automated P&L statements and tax-ready reports to understand your business profitability." },
-  { image: demo9, title: "System Settings", description: "Customize your business profile, manage subscription details, and configure security settings." },
+  { image: registration, title: "Secure Onboarding", description: "Create your business account in seconds. Set up your profile and get ready to master your data." },
+  { image: dashboard, title: "Dashboard Overview", description: "Your central hub for real-time inventory levels, recent sales activity, and critical stock alerts." },
+  { image: inventory, title: "Adding Products", description: "Easily input new stock, set SKU variants, assign categories, and define pricing structures." },
+  { image: recordsales, title: "Inventory Management", description: "View your entire product catalog. Filter by stock level to identify items that need reordering." },
+  { image: oversight, title: "Staff & Role Control", description: "Manage workers by assigning roles. Admin monitors activity, while staff focus on sales without seeing full profit margins." },
+  { image: invoices, title: "Creating Invoices", description: "Generate professional, tax-compliant invoices in one click for your clients directly from the dashboard." },
+  // If you have more images, add them here following the same pattern
 ];
 
 export default function DemoPage() {
