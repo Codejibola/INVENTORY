@@ -151,6 +151,7 @@ export default function Features() {
             </AnimatePresence>
           </div>
 
+          {/* Image Showcase Side */}
           <div className="lg:col-span-7 order-1 lg:order-2">
             <div className="relative aspect-[16/10] w-full rounded-3xl border border-zinc-800 bg-zinc-900 p-2 shadow-2xl overflow-hidden">
               <AnimatePresence mode="wait">
@@ -162,7 +163,8 @@ export default function Features() {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.5, ease: "easeInOut" }}
-                  className="w-full h-full object-cover rounded-2xl grayscale-[20%] hover:grayscale-0 transition-all duration-700"
+                  // CHANGED: object-contain makes the image show in full
+                  className="w-full h-full object-contain rounded-2xl grayscale-[20%] hover:grayscale-0 transition-all duration-700"
                 />
               </AnimatePresence>
             </div>

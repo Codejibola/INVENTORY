@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Helmet } from "react-helmet-async";
 
-// Image Imports - Renamed based on your prompt
+// Image Imports
 import registration from "../assets/registration.png";
 import dashboard from "../assets/dashboard.png";
 import inventory from "../assets/inventory.png";
@@ -11,7 +11,7 @@ import recordsales from "../assets/recordsales.png";
 import invoices from "../assets/invoices.png";
 import oversight from "../assets/oversight.png";
 
-// Updated array to include explanatory text and correct image mapping
+// Updated array to include explanatory text
 const demoSteps = [
   { image: registration, title: "Secure Onboarding", description: "Create your business account in seconds. Set up your profile and get ready to master your data." },
   { image: dashboard, title: "Dashboard Overview", description: "Your central hub for real-time inventory levels, recent sales activity, and critical stock alerts." },
@@ -19,13 +19,12 @@ const demoSteps = [
   { image: recordsales, title: "Inventory Management", description: "View your entire product catalog. Filter by stock level to identify items that need reordering." },
   { image: oversight, title: "Staff & Role Control", description: "Manage workers by assigning roles. Admin monitors activity, while staff focus on sales without seeing full profit margins." },
   { image: invoices, title: "Creating Invoices", description: "Generate professional, tax-compliant invoices in one click for your clients directly from the dashboard." },
-  // If you have more images, add them here following the same pattern
 ];
 
 export default function DemoPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Auto-slide every 6 seconds (longer for reading time)
+  // Auto-slide every 6 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % demoSteps.length);
@@ -53,7 +52,23 @@ export default function DemoPage() {
         />
       </Helmet>
 
-      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-6 text-white pt-24">
+      {/* --- NEW NAVIGATION HEADER --- */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-zinc-950/80 backdrop-blur-sm border-b border-zinc-800">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <a href="https://inventory-5xr8.vercel.app/" className="text-xl font-bold text-white">
+            Quantora<span className="text-blue-500">.</span>
+          </a>
+          <a
+            href="https://quantora-app.vercel.app/"
+            className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-md text-sm font-semibold transition duration-150"
+          >
+            Launch App
+          </a>
+        </div>
+      </nav>
+      {/* ----------------------------- */}
+
+      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-6 text-white pt-28">
         <header className="text-center mb-16 max-w-3xl">
           <h1 className="text-4xl md:text-6xl font-black mb-6 tracking-tight">
             Master Your Business Data <br />
@@ -78,6 +93,10 @@ export default function DemoPage() {
             <p className="text-zinc-400 text-lg leading-relaxed">
               {activeStep.description}
             </p>
+            {/* Added CTA below description for visibility */}
+            <a href="https://quantora-app.vercel.app/" className="inline-block bg-zinc-800 hover:bg-zinc-700 text-white px-6 py-3 rounded-md font-semibold transition">
+                Try it Yourself
+            </a>
           </div>
 
           {/* Image Showcase Side */}
