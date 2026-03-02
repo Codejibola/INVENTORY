@@ -16,7 +16,7 @@ const demoSteps = [
   { image: registration, title: "Secure Onboarding", description: "Create your business account in seconds. Set up your profile and get ready to master your data." },
   { image: dashboard, title: "Dashboard Overview", description: "Your central hub for real-time inventory levels, recent sales activity, and critical stock alerts." },
   { image: inventory, title: "Adding Products", description: "Easily input new stock, set SKU variants, assign categories, and define pricing structures." },
-  { image: recordsales, title: "Inventory Management", description: "View your entire product catalog. Filter by stock level to identify items that need reordering." },
+  { image: recordsales, title: "Inventory Management", description: "Record sales instantly and see immediate feedback on profit or loss for each transaction, ensuring you know exactly how your business is performing." },
   { image: oversight, title: "Staff & Role Control", description: "Manage workers by assigning roles. Admin monitors activity, while staff focus on sales without seeing full profit margins." },
   { image: invoices, title: "Creating Invoices", description: "Generate professional, tax-compliant invoices in one click for your clients directly from the dashboard." },
 ];
