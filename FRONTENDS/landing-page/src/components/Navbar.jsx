@@ -1,5 +1,6 @@
 //eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
+import logo from "../assets/logo.png";
 import { useState, useRef, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 
@@ -36,6 +37,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
 
         {/* Logotype */}
+        <img src={logo} alt="Quantora Logo" className="h-8 w-auto" />
         <a href="#hero" className="text-xl font-semibold tracking-tight">
           <span className="text-blue-500 font-bold">Q</span>
           <span className="text-zinc-100">uantora</span>

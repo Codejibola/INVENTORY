@@ -1,11 +1,13 @@
 //eslint-disable-next-line no-unused-vars 
 import { motion } from "framer-motion";
+import hero from "../assets/hero.png";
 import { Link } from "react-router-dom";
 
 export default function Hero() {
   const benefits = [
     "Eliminate stockouts and overstock",
     "Real-time Profit & Loss tracking",
+    "Automated Invoicing & Tax-Ready reports",
     "Seamless Multi-store synchronization"
   ];
 
@@ -93,7 +95,7 @@ export default function Hero() {
           
           <div className="relative p-2 bg-zinc-900/50 backdrop-blur-sm border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
              <img
-              src="https://images.pexels.com/photos/669615/pexels-photo-669615.jpeg?auto=compress&cs=tinysrgb&w=1200"
+              src={hero}
               alt="Quantora inventory management dashboard preview"
               className="rounded-xl grayscale-[20%] hover:grayscale-0 transition-all duration-700"
             />
