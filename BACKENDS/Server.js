@@ -27,7 +27,6 @@ class WebServer {
     this.app = express();
     this.app.set('trust proxy', 1)
     this.app.use(cors());
-    this.app.use(express.json());
   }
 
   registerDefaultRoutes() {
@@ -61,15 +60,19 @@ class WebServer {
 
 const Quantora = new WebServer();
 
+//paystack webhook needs raw body, so we register it before express.json()
+Quantora.app.use("/api/paystack", paystackRoutes);
+
+//JSON parsing for all other routes
+Quantora.app.use(express.json());
+
 // Global Middleware
 Quantora.app.use(globalLimiter);
-
 // -- ROUTERS --
 Quantora.app.use("/api/auth", registrationRouter);
 Quantora.app.use("/api/auth", adminRouter);
 Quantora.app.use("/api", productRoutes);
 Quantora.app.use("/api", salesRoutes);
-Quantora.app.use("/api/paystack", paystackRoutes);
 
 // Default
 Quantora.registerDefaultRoutes();
