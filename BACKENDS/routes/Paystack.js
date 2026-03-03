@@ -7,8 +7,9 @@ import pool from '../config/db.js';
 
 const router = express.Router();
 
-// Initialize Paystack Payment
-router.post('/pay', async (req, res) => {
+// 1. FIXED: Added express.json() here specifically for this route
+router.post('/pay', express.json(), async (req, res) => {
+  // Now req.body will actually contain your data!
   const { email, amount, planType } = req.body;
 
   if (!email || !amount) {
@@ -32,7 +33,7 @@ router.post('/pay', async (req, res) => {
       email,
       amount,
       metadata: { planType, userId },
-      callback_url: `https://quantora-app.vercel.app//dashboard`
+      callback_url: `https://quantora-app.vercel.app/dashboard`
     };
 
     console.log("Initializing Paystack payment with metadata:", payload.metadata);
@@ -54,7 +55,7 @@ router.post('/pay', async (req, res) => {
   }
 });
 
-// Paystack webhook — use raw body to verify signature
+// 2. KEEP AS RAW: Webhook stays raw for signature verification
 router.post('/webhook', express.raw({ type: '*/*' }), async (req, res) => {
   console.log("Webhook received from Paystack");
   
@@ -62,31 +63,22 @@ router.post('/webhook', express.raw({ type: '*/*' }), async (req, res) => {
     const signature = req.headers['x-paystack-signature'];
     const secret = LOCAL_ENV.PAYSTACK_SECRET_KEY;
 
-    // --- DEBUGGING SIGNATURE ---
     const hash = crypto.createHmac('sha512', secret).update(req.body).digest('hex');
     
     if (hash !== signature) {
       console.error('Paystack webhook: invalid signature');
-      console.error('Calculated Hash:', hash);
-      console.error('Signature Received:', signature);
       return res.status(401).send('Unauthorized');
     }
-    console.log("Signature verified successfully");
 
+    console.log("Signature verified successfully");
     const event = JSON.parse(req.body.toString());
-    console.log("Event Type:", event.event);
 
     if (event.event === 'charge.success') {
-      console.log("Charge successful. Data:", JSON.stringify(event.data, null, 2));
-      
       const { metadata } = event.data || {};
       const userId = metadata?.userId;
       const planType = metadata?.planType;
 
-      console.log("Extracted Metadata - UserId:", userId, "PlanType:", planType);
-
       if (userId) {
-        // compute expiry date
         let expiryDate;
         const now = new Date();
         if (planType === 'monthly') {
@@ -95,28 +87,17 @@ router.post('/webhook', express.raw({ type: '*/*' }), async (req, res) => {
           expiryDate = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
         }
         
-        console.log("Updating database for user", userId, "with expiry", expiryDate);
-
         try {
-          const result = await pool.query(
+          await pool.query(
             'UPDATE users SET subscription_status = $1, subscription_plan = $2, subscription_expiry = $3 WHERE id = $4',
             ['active', planType || null, expiryDate, userId]
           );
-          
-          if (result.rowCount === 0) {
-            console.error(`No user found with ID: ${userId}`);
-          } else {
-            console.log(`Successfully activated subscription for user ${userId}`);
-          }
-
+          console.log(`Successfully activated subscription for user ${userId}`);
         } catch (dbErr) {
           console.error('Failed to update subscription in DB:', dbErr.message);
         }
-      } else {
-        console.error("No userId found in metadata!");
       }
     }
-
     res.sendStatus(200);
   } catch (err) {
     console.error('Webhook handling error:', err.message);
