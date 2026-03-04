@@ -18,6 +18,11 @@ export default function Admin() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
