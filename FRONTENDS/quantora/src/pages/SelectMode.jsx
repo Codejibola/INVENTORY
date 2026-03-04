@@ -2,16 +2,17 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShieldCheck, Briefcase, Eye, EyeOff } from "lucide-react";
+import { ShieldCheck, Briefcase, Eye, EyeOff, AlertCircle, CreditCard } from "lucide-react";
 import logo from "../assets/logo.png";
 import LOCAL_ENV from "../../ENV.js"; 
-import { useAuth } from "../context/AuthContext"; // 1. Import Auth Hook
+import { useAuth } from "../context/AuthContext";
 
 export default function SelectMode() {
   const navigate = useNavigate();
-  const { user, setUser } = useAuth(); // 2. Get global user and setter
+  const { user, setUser } = useAuth();
   
   const [showModal, setShowModal] = useState(false);
+  const [showSubModal, setShowSubModal] = useState(false); // New state for Sub Alert
   const [selectedRole, setSelectedRole] = useState(null);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -71,36 +72,25 @@ export default function SelectMode() {
 
       const data = await res.json();
 
-      // CASE 1: Password is wrong (401)
       if (res.status === 401) {
         setError(data.error || "Invalid password");
         return;
       }
 
-      // CASE 2: Password is CORRECT, but Subscription is INACTIVE (403)
+      // UX IMPROVEMENT: If subscription is inactive, show the SubModal
       if (res.status === 403 || (data.valid && data.subscribed === false)) {
-        if (selectedRole.id === "admin") {
-          // Admins go to subscription page to pay
-          navigate("/subscription");
-        } else {
-          // Workers are just blocked with a message
-          setError("Access Denied: Shop subscription is inactive. Please contact your administrator.");
-        }
+        setShowModal(false); // Close password modal
+        setShowSubModal(true); // Open subscription alert
         return;
       }
 
-      // CASE 3: Everything is correct
       if (res.ok && data.valid && data.subscribed) {
         const updatedUser = { ...user, activeRole: selectedRole.id };
-        
-        // Sync with LocalStorage and Global Context
         localStorage.setItem("user", JSON.stringify(updatedUser));
         setUser(updatedUser); 
         
         setShowModal(false);
-        selectedRole.id === "admin"
-          ? navigate("/dashboard")
-          : navigate("/worker");
+        selectedRole.id === "admin" ? navigate("/dashboard") : navigate("/worker");
       } else {
         setError(data.error || "Verification failed");
       }
@@ -116,7 +106,13 @@ export default function SelectMode() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-4">
-      <div className="w-full max-w-5xl">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-blue-600/10 blur-[120px] rounded-full"></div>
+        <div className="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-indigo-600/10 blur-[120px] rounded-full"></div>
+      </div>
+
+      <div className="w-full max-w-5xl z-10">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center text-center mb-12">
           <img src={logo} alt="Quantora Logo" className="w-16 h-16 mb-4" />
           <h1 className="text-4xl font-bold text-white tracking-wide">
@@ -152,6 +148,7 @@ export default function SelectMode() {
       </div>
 
       <AnimatePresence>
+        {/* MODAL 1: Password Verification */}
         {showModal && (
           <motion.div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="w-full max-w-sm rounded-2xl bg-slate-900 border border-white/10 p-6 shadow-2xl">
@@ -168,11 +165,47 @@ export default function SelectMode() {
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
-              {error && <p className="text-red-400 text-sm mb-3 font-medium leading-tight">{error}</p>}
+              {error && <p className="text-red-400 text-sm mb-3 font-medium">{error}</p>}
               <div className="flex justify-between gap-3 mt-4">
                 <button onClick={() => setShowModal(false)} className="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 transition">Cancel</button>
                 <button onClick={handleVerify} disabled={loading} className={`flex-1 py-2 rounded-xl font-medium transition ${loading ? "bg-blue-600/50 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"}`}>
                   {loading ? "Verifying…" : "Verify"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* MODAL 2: Subscription Alert (The UX Upgrade) */}
+        {showSubModal && (
+          <motion.div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md px-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="w-full max-w-md rounded-3xl bg-slate-900 border border-yellow-500/30 p-8 shadow-2xl text-center">
+              <div className="w-20 h-20 bg-yellow-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <AlertCircle className="text-yellow-500" size={40} />
+              </div>
+              <h3 className="text-2xl font-bold mb-3">Subscription Required</h3>
+              <p className="text-slate-400 mb-8 leading-relaxed">
+                Your shop subscription is currently inactive or has expired. 
+                {selectedRole?.id === "admin" 
+                  ? " Please renew your plan to regain access to the Admin Dashboard." 
+                  : " Please contact your shop administrator to renew the subscription."}
+              </p>
+              
+              <div className="flex flex-col gap-3">
+                {selectedRole?.id === "admin" && (
+                  <button 
+                    onClick={() => navigate("/subscription")}
+                    className="w-full py-4 rounded-2xl bg-blue-600 hover:bg-blue-700 font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/20"
+                  >
+                    <CreditCard size={20} />
+                    Renew Subscription Now
+                  </button>
+                )}
+                <button 
+                  onClick={() => setShowSubModal(false)} 
+                  className="w-full py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+                >
+                  Close
                 </button>
               </div>
             </motion.div>
