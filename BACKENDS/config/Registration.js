@@ -183,3 +183,5 @@ router.post("/verify-role", async (req, res) => {
     return res.status(500).json({ error: "Server error" });
   }
 });
+
+export default router;
