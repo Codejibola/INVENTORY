@@ -6,20 +6,17 @@ import { Helmet } from "react-helmet-async";
 import { FiMail, FiLock, FiEye, FiEyeOff, FiArrowRight, FiCheckCircle } from "react-icons/fi";
 import bg from "../assets/admin0.png";
 import logo from "../assets/logo.png";
+// 1. Import your environment configuration
 import LOCAL_ENV from "../../ENV.js"; 
-// 1. IMPORT USEAUTH
-import { useAuth } from "../context/AuthContext"; 
+import { useAuth } from "../context/AuthContext"; // 1. Import the hook
 
 export default function Admin() {
   const navigate = useNavigate();
-  // 2. EXTRACT SETUSER
-  const { setUser } = useAuth(); 
+  const { setUser } = useAuth(); // 2. Pull setUser from Context
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
-  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -35,14 +32,14 @@ export default function Admin() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Invalid credentials");
       
-      // 3. UPDATE STORAGE
+      // 3. Save to storage
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
       
-      // 4. UPDATE GLOBAL STATE (This fixes the "Authorized" error)
+      // 4. Update the global Auth State immediately
+      // This tells the whole app (and PrivateRoutes) that the user is now valid.
       setUser(data.user); 
 
-      // 5. NAVIGATE
       navigate("/select-mode");
     } catch (err) {
       setError(err.message);
@@ -50,8 +47,6 @@ export default function Admin() {
       setLoading(false);
     }
   }
-
- 
 
   return (
     <>

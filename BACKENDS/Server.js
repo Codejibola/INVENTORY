@@ -11,8 +11,6 @@ import productRoutes from "./routes/productRoutes.js";
 import salesRoutes from "./routes/salesRoutes.js";
 import paystackRoutes from "./routes/Paystack.js";
 import { LOCAL_ENV } from "./config/localEnv.js";
-import { authenticate } from "./config/Authenticate.js";
-import { subscriptionGuard } from "./middleware/subscriptionGuard.js";
 
 // --- DEBUG TEST BLOCK ---
 console.log("------------------------------------");
@@ -70,17 +68,11 @@ Quantora.app.use(express.json());
 
 // Global Middleware
 Quantora.app.use(globalLimiter);
-// --- PROTECTED ROUTES ---
-// Users must be logged in AND have an active subscription to access these
-Quantora.app.use("/api/products", authenticate, subscriptionGuard, productRoutes);
-Quantora.app.use("/api/sales", authenticate, subscriptionGuard, salesRoutes);
-
-// --- SEMI-PROTECTED ---
-// User must be logged in, but doesn't need a subscription to see their own profile
-Quantora.app.use("/api/auth", authenticate, adminRouter); 
-
-// --- PUBLIC ---
+// -- ROUTERS --
 Quantora.app.use("/api/auth", registrationRouter);
+Quantora.app.use("/api/auth", adminRouter);
+Quantora.app.use("/api", productRoutes);
+Quantora.app.use("/api", salesRoutes);
 
 
 // Default
