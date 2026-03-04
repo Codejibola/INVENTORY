@@ -6,11 +6,14 @@ import { Helmet } from "react-helmet-async";
 import { FiMail, FiLock, FiEye, FiEyeOff, FiArrowRight, FiCheckCircle } from "react-icons/fi";
 import bg from "../assets/admin0.png";
 import logo from "../assets/logo.png";
-// 1. Import your environment configuration
 import LOCAL_ENV from "../../ENV.js"; 
+// 1. IMPORT USEAUTH
+import { useAuth } from "../context/AuthContext"; 
 
 export default function Admin() {
   const navigate = useNavigate();
+  // 2. EXTRACT SETUSER
+  const { setUser } = useAuth(); 
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,7 +26,6 @@ export default function Admin() {
     setError("");
     setLoading(true);
     try {
-      // 2. Use the dynamic API_URL from your ENV file
       const res = await fetch(`${LOCAL_ENV.API_URL}/api/auth/admin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -33,8 +35,14 @@ export default function Admin() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Invalid credentials");
       
+      // 3. UPDATE STORAGE
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
+      
+      // 4. UPDATE GLOBAL STATE (This fixes the "Authorized" error)
+      setUser(data.user); 
+
+      // 5. NAVIGATE
       navigate("/select-mode");
     } catch (err) {
       setError(err.message);
@@ -42,6 +50,8 @@ export default function Admin() {
       setLoading(false);
     }
   }
+
+ 
 
   return (
     <>
