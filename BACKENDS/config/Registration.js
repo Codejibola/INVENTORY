@@ -123,7 +123,7 @@ router.put("/settings", authenticate, async (req, res) => {
 });
 
 // ---------------------
-// VERIFY ROLE ROUTE
+// VERIFY ROLE ROUTE (With Subscription Guard)
 // ---------------------
 router.post("/verify-role", async (req, res) => {
   try {
@@ -133,9 +133,9 @@ router.post("/verify-role", async (req, res) => {
       return res.status(400).json({ error: "userId, role, and password are required" });
     }
 
-    // Fetch the user by ID
+    // 1. Fetch user, passwords AND subscription status
     const result = await pool.query(
-      "SELECT id, admin_password, worker_password FROM users WHERE id = $1",
+      "SELECT id, admin_password, worker_password, subscription_status, subscription_expiry FROM users WHERE id = $1",
       [userId]
     );
 
@@ -145,22 +145,41 @@ router.post("/verify-role", async (req, res) => {
 
     const user = result.rows[0];
 
-    // Pick the correct hashed password
-    const hashedPassword =
-      role === "admin" ? user.admin_password : user.worker_password;
+    // 2. Pick the correct hashed password based on the role
+    const hashedPassword = role === "admin" ? user.admin_password : user.worker_password;
 
-    // Compare input with hash
+    // 3. Compare input password with hash
     const valid = await bcrypt.compare(password, hashedPassword);
 
     if (!valid) {
       return res.status(401).json({ valid: false, error: "Incorrect password" });
     }
 
-    return res.json({ valid: true });
+    // 4. SUBSCRIPTION CHECK LOGIC
+    // We only block them AFTER we know the password is correct
+    const now = new Date();
+    const expiryDate = user.subscription_expiry ? new Date(user.subscription_expiry) : null;
+    
+    // Check if status is not active OR if the current date is past the expiry date
+    const isExpired = expiryDate && now > expiryDate;
+    const isInactive = user.subscription_status !== "active";
+
+    if (isInactive || isExpired) {
+      return res.status(403).json({ 
+        valid: true, // Password was correct
+        subscribed: false, 
+        error: "Your subscription has expired or is inactive." 
+      });
+    }
+
+    // 5. Success!
+    return res.json({ 
+      valid: true, 
+      subscribed: true 
+    });
+
   } catch (err) {
-    console.error(err);
+    console.error("Role Verification Error:", err);
     return res.status(500).json({ error: "Server error" });
   }
 });
-
-export default router;

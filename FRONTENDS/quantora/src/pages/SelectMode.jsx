@@ -1,29 +1,28 @@
+/* eslint-disable */
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShieldCheck, Briefcase, Eye, EyeOff } from "lucide-react";
 import logo from "../assets/logo.png";
-// 1. Import your environment configuration
 import LOCAL_ENV from "../../ENV.js"; 
+import { useAuth } from "../context/AuthContext"; // 1. Import Auth Hook
 
 export default function SelectMode() {
   const navigate = useNavigate();
+  const { user, setUser } = useAuth(); // 2. Get global user and setter
+  
   const [showModal, setShowModal] = useState(false);
   const [selectedRole, setSelectedRole] = useState(null);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (!storedUser) {
+    if (!user && !localStorage.getItem("user")) {
       navigate("/login"); 
-    } else {
-      setUser(JSON.parse(storedUser));
     }
-  }, [navigate]);
+  }, [user, navigate]);
 
   const roles = [
     {
@@ -60,7 +59,6 @@ export default function SelectMode() {
     setError("");
 
     try {
-      // 2. Swapped localhost for LOCAL_ENV.API_URL
       const res = await fetch(`${LOCAL_ENV.API_URL}/api/auth/verify-role`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -73,17 +71,40 @@ export default function SelectMode() {
 
       const data = await res.json();
 
-      if (!res.ok || !data.valid) {
+      // CASE 1: Password is wrong (401)
+      if (res.status === 401) {
         setError(data.error || "Invalid password");
-      } else {
+        return;
+      }
+
+      // CASE 2: Password is CORRECT, but Subscription is INACTIVE (403)
+      if (res.status === 403 || (data.valid && data.subscribed === false)) {
+        if (selectedRole.id === "admin") {
+          // Admins go to subscription page to pay
+          navigate("/subscription");
+        } else {
+          // Workers are just blocked with a message
+          setError("Access Denied: Shop subscription is inactive. Please contact your administrator.");
+        }
+        return;
+      }
+
+      // CASE 3: Everything is correct
+      if (res.ok && data.valid && data.subscribed) {
         const updatedUser = { ...user, activeRole: selectedRole.id };
+        
+        // Sync with LocalStorage and Global Context
         localStorage.setItem("user", JSON.stringify(updatedUser));
+        setUser(updatedUser); 
         
         setShowModal(false);
         selectedRole.id === "admin"
           ? navigate("/dashboard")
-          : navigate("/worker/");
+          : navigate("/worker");
+      } else {
+        setError(data.error || "Verification failed");
       }
+
     } catch (err) {
       setError("Server connection failed");
     } finally {
@@ -101,7 +122,7 @@ export default function SelectMode() {
           <h1 className="text-4xl font-bold text-white tracking-wide">
             <span className="text-blue-500">Q</span>uantora
           </h1>
-          <p className="mt-4 text-slate-400">Signed in as <span className="text-white font-medium">{user.shopName}</span></p>
+          <p className="mt-4 text-slate-400">Signed in as <span className="text-white font-medium">{user.shopName || user.shop_name}</span></p>
           <p className="mt-2 text-slate-300">Choose how you want to operate the store</p>
         </motion.div>
 
@@ -114,8 +135,8 @@ export default function SelectMode() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.15 }}
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.97 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => handleSelect(role)}
                 className="relative cursor-pointer rounded-2xl p-[1px] bg-gradient-to-br from-white/10 to-white/5"
               >
@@ -147,7 +168,7 @@ export default function SelectMode() {
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
-              {error && <p className="text-red-400 text-sm mb-3">{error}</p>}
+              {error && <p className="text-red-400 text-sm mb-3 font-medium leading-tight">{error}</p>}
               <div className="flex justify-between gap-3 mt-4">
                 <button onClick={() => setShowModal(false)} className="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 transition">Cancel</button>
                 <button onClick={handleVerify} disabled={loading} className={`flex-1 py-2 rounded-xl font-medium transition ${loading ? "bg-blue-600/50 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"}`}>
