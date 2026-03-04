@@ -43,22 +43,25 @@ export default function App() {
           {/* Mode selection */}
           <Route path="/select-mode" element={<PrivateRoute><SelectMode /></PrivateRoute>} />
 
-          {/* Admin routes */}
-          <Route path="/dashboard" element={<PrivateRoute allowedRole="admin"><Dashboard /></PrivateRoute>} />
-          <Route path="/manage_products" element={<PrivateRoute allowedRole="admin"><Manage_Products /></PrivateRoute>} />
-          <Route path="/recordSales" element={<PrivateRoute allowedRole="admin"><RecordSales /></PrivateRoute>} />
-          <Route path="/invoices" element={<PrivateRoute allowedRole="admin"><Invoices /></PrivateRoute>} />
-          <Route path="/notifications" element={<PrivateRoute allowedRole="admin"><Notification /></PrivateRoute>} />
-          <Route path="/feedback" element={<PrivateRoute allowedRole="admin"><Feedback /></PrivateRoute>} />
-          <Route path="/settings" element={<PrivateRoute allowedRole="admin"><Settings /></PrivateRoute>} />
-          <Route path="/subscription" element={<PrivateRoute allowedRole="admin"><Subscription /></PrivateRoute>} />
+          
+          {/* Admin Group */}
+<Route element={<PrivateRoute allowedRole="admin" />}>
+  <Route path="/dashboard" element={<Dashboard />} />
+  <Route path="/manage_products" element={<Manage_Products />} />
+  <Route path="/recordSales" element={<RecordSales />} />
+  <Route path="/subscription" element={<Subscription />} />
+  <Route path="/invoices" element={<Invoices />} />
+  <Route path="/notifications" element={<Notification />} />
+  <Route path="/feedback" element={<Feedback />} />
+  <Route path="/settings" element={<Settings />} />
+</Route>
 
-          {/* Worker routes */}
-          <Route path="/worker/*" element={<PrivateRoute allowedRole="worker"><WorkerDashboard /></PrivateRoute>}>
-             <Route index element={<WorkerRecordSales />} />
-             <Route path="record-sales" element={<WorkerRecordSales />} />
-             <Route path="available-products" element={<AvailableProducts />} />
-          </Route>
+{/* Worker Group */}
+<Route path="/worker" element={<PrivateRoute allowedRole="worker" />}>
+    <Route index element={<WorkerRecordSales />} />
+    <Route path="record-sales" element={<WorkerRecordSales />} />
+    <Route path="available-products" element={<AvailableProducts />} />
+</Route>
 
           <Route path="*" element={<h1 className="text-center text-white mt-20">404 – Page Not Found</h1>} />
         </Routes>

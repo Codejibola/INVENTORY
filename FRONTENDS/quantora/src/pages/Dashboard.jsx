@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
 import LOCAL_ENV from "../../ENV.js"; 
+import { useAuth } from "../context/AuthContext";
 import {
   BarChart,
   Bar,
@@ -28,7 +29,7 @@ import { Helmet, HelmetProvider } from "react-helmet-async";
 
 export default function Dashboard() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user: currentUser, refreshUser } = useAuth();
   const [monthlySales, setMonthlySales] = useState(0);
   const [displayedSales, setDisplayedSales] = useState(0);
   const [latestProduct, setLatestProduct] = useState(null);
@@ -58,10 +59,12 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    if (savedUser) setCurrentUser(JSON.parse(savedUser));
-    fetchData();
-  }, [token]);
+  // 1. Sync the latest subscription status from the DB
+  refreshUser(); 
+  
+  // 2. Fetch the dashboard data
+  fetchData();
+}, [token, refreshUser]); // Added refreshUser to dependency array for best practice
 
   // Counting animation for the sales card
   useEffect(() => {
@@ -86,40 +89,45 @@ export default function Dashboard() {
     return () => clearInterval(timer);
   }, [monthlySales]);
 
-  const fetchData = async () => {
+ const fetchData = async () => {
     try {
       const authHeader = { headers: { Authorization: `Bearer ${token}` } };
       const now = new Date();
       const currentYear = now.getFullYear();
-      const currentMonthIdx = now.getMonth(); // 0 = Jan, 2 = Mar
+      const currentMonthIdx = now.getMonth();
+
+      // --- NEW: Security Helper ---
+      const secureFetch = async (url) => {
+        const res = await apiFetch(url, authHeader);
+        if (res.status === 403) {
+          // If backend guard blocks access, sync the local status
+          await refreshUser(); 
+          return null;
+        }
+        return res.ok ? await res.json() : null;
+      };
 
       // 1. Fetch Latest Sales
-      const salesRes = await apiFetch(`${LOCAL_ENV.API_URL}/api/sales`, authHeader);
-      const salesData = salesRes.ok ? await salesRes.json() : [];
+      const salesData = await secureFetch(`${LOCAL_ENV.API_URL}/api/sales`) || [];
       if (salesData.length > 0) setLatestSale(salesData[0]);
 
-      // 2. Fetch Daily Aggregate for Chart & Monthly Totals
-      const dailyRes = await apiFetch(`${LOCAL_ENV.API_URL}/api/sales/daily?year=${currentYear}`, authHeader);
-      const dailyData = dailyRes.ok ? await dailyRes.json() : [];
+      // 2. Fetch Daily Aggregate
+      const dailyData = await secureFetch(`${LOCAL_ENV.API_URL}/api/sales/daily?year=${currentYear}`) || [];
 
       const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      
       const monthlyTotals = months.map((monthName, idx) => {
         const monthSales = dailyData
           .filter(d => {
-            // Using UTC to avoid "last day of month" timezone shifts
             const dDate = new Date(d.date);
             return dDate.getUTCMonth() === idx;
           })
           .reduce((sum, d) => sum + Number(d.total_sales || 0), 0);
-          
         return { month: monthName, sales: monthSales };
       });
 
       setChartData(monthlyTotals);
 
-      // 3. Set Monthly Stats (Sales and Profit)
-      // We calculate specifically for the current month
+      // 3. Set Monthly Stats
       const currentMonthSales = monthlyTotals[currentMonthIdx]?.sales || 0;
       setMonthlySales(currentMonthSales);
 
@@ -129,8 +137,7 @@ export default function Dashboard() {
       setMonthlyProfitLoss(currentMonthProfit);
 
       // 4. Shop Worth & Products
-      const prodRes = await apiFetch(`${LOCAL_ENV.API_URL}/api/products`, authHeader);
-      const prodData = prodRes.ok ? await prodRes.json() : [];
+      const prodData = await secureFetch(`${LOCAL_ENV.API_URL}/api/products`) || [];
       setShopWorth(prodData.reduce((sum, p) => sum + (Number(p.selling_price || 0) * Number(p.units || 0)), 0));
       
       if (prodData.length > 0) {
@@ -139,18 +146,18 @@ export default function Dashboard() {
       }
 
       // 5. Performance Insights
-      const [bestRes, leastRes] = await Promise.all([
-        apiFetch(`${LOCAL_ENV.API_URL}/api/sales/best-selling`, authHeader),
-        apiFetch(`${LOCAL_ENV.API_URL}/api/sales/least-selling`, authHeader)
-      ]);
+      // We wrap these in secureFetch logic as well
+      const bestData = await secureFetch(`${LOCAL_ENV.API_URL}/api/sales/best-selling`);
+      const leastData = await secureFetch(`${LOCAL_ENV.API_URL}/api/sales/least-selling`);
 
-      if (bestRes.ok) setBestSellingProduct(await bestRes.json());
-      if (leastRes.ok) setLeastSellingProduct(await leastRes.json());
+      if (bestData) setBestSellingProduct(bestData);
+      if (leastData) setLeastSellingProduct(leastData);
 
     } catch (err) {
       console.error("fetchData Error:", err);
     }
   };
+
 
   return (
     <HelmetProvider>
