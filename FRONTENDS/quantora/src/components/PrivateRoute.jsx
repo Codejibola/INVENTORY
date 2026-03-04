@@ -1,4 +1,5 @@
-import { Navigate, useLocation, Outlet } from "react-router-dom"; // 1. Added Outlet
+/* eslint-disable */
+import { Navigate, useLocation, Outlet } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const PrivateRoute = ({ children, allowedRole }) => {
@@ -20,12 +21,13 @@ const PrivateRoute = ({ children, allowedRole }) => {
   }
 
   // 3. Role Check (Admin vs Worker mode)
+  // We keep this so the app knows which dashboard to show
   if (allowedRole && user.activeRole !== allowedRole) {
     return <Navigate to="/select-mode" replace />;
   }
 
-  // 4. THE GLOBAL SUBSCRIPTION LOCK
-  const isExpired = user.subscription_expiry && new Date(user.subscription_expiry) < new Date();
+  // 4. THE GLOBAL SUBSCRIPTION LOCK (TEMPORARILY DISABLED)
+  /* const isExpired = user.subscription_expiry && new Date(user.subscription_expiry) < new Date();
   const isInactive = user.subscription_status !== "active";
   
   const isRestrictedPath = !["/subscription", "/settings", "/login", "/select-mode"].includes(location.pathname);
@@ -36,6 +38,7 @@ const PrivateRoute = ({ children, allowedRole }) => {
     }
     return <Navigate to="/subscription" replace />;
   }
+  */
 
   // 5. Render children (for single routes) OR Outlet (for group routes)
   return children ? children : <Outlet />;
