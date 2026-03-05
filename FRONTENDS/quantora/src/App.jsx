@@ -5,6 +5,7 @@ import SelectMode from "./pages/SelectMode";
 import ForgotPassword from "./pages/Forgot-Password";
 import ResetPassword from "./pages/ResetPassword";
 import { AuthProvider } from "./context/AuthContext";
+import ProtectedLayout from "./components/ProtectedLayout"; 
 
 // Admin pages
 import Dashboard from "./pages/Dashboard";
@@ -46,24 +47,29 @@ export default function App() {
             <Route path="/subscription" element={<Subscription />} />
           </Route>
 
+          {/* --- PROTECTED ROUTES WITH SUBSCRIPTION GUARD --- */}
+          <Route element={<ProtectedLayout />}>
+
           
           {/* Admin Group */}
-<Route element={<PrivateRoute allowedRole="admin" />}>
-  <Route path="/dashboard" element={<Dashboard />} />
-  <Route path="/manage_products" element={<Manage_Products />} />
-  <Route path="/recordSales" element={<RecordSales />} />
-  <Route path="/invoices" element={<Invoices />} />
-  <Route path="/notifications" element={<Notification />} />
-  <Route path="/feedback" element={<Feedback />} />
-  <Route path="/settings" element={<Settings />} />
-</Route>
+      <Route element={<PrivateRoute allowedRole="admin" />}>
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/manage_products" element={<Manage_Products />} />
+        <Route path="/recordSales" element={<RecordSales />} />
+        <Route path="/invoices" element={<Invoices />} />
+        <Route path="/notifications" element={<Notification />} />
+        <Route path="/feedback" element={<Feedback />} />
+        <Route path="/settings" element={<Settings />} />
+      </Route>
 
-{/* Worker Group */}
-<Route path="/worker" element={<PrivateRoute allowedRole="worker" />}>
-    <Route index element={<WorkerRecordSales />} />
-    <Route path="record-sales" element={<WorkerRecordSales />} />
-    <Route path="available-products" element={<AvailableProducts />} />
-</Route>
+         {/* Worker Group */}
+      <Route path="/worker" element={<PrivateRoute allowedRole="worker" />}>
+        <Route index element={<WorkerRecordSales />} />
+        <Route path="record-sales" element={<WorkerRecordSales />} />
+        <Route path="available-products" element={<AvailableProducts />} />
+      </Route>
+
+      </Route>
 
           <Route path="*" element={<h1 className="text-center text-white mt-20">404 – Page Not Found</h1>} />
         </Routes>
