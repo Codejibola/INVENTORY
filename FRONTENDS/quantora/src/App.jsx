@@ -40,8 +40,11 @@ export default function App() {
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          {/* Mode selection */}
-          <Route path="/select-mode" element={<PrivateRoute><SelectMode /></PrivateRoute>} />
+          
+          <Route element={<PrivateRoute />}> 
+            <Route path="/select-mode" element={<SelectMode />} />
+            <Route path="/subscription" element={<Subscription />} />
+          </Route>
 
           
           {/* Admin Group */}
@@ -49,7 +52,6 @@ export default function App() {
   <Route path="/dashboard" element={<Dashboard />} />
   <Route path="/manage_products" element={<Manage_Products />} />
   <Route path="/recordSales" element={<RecordSales />} />
-  <Route path="/subscription" element={<Subscription />} />
   <Route path="/invoices" element={<Invoices />} />
   <Route path="/notifications" element={<Notification />} />
   <Route path="/feedback" element={<Feedback />} />
