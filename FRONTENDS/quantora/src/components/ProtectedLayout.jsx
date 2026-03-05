@@ -1,5 +1,5 @@
 import { Outlet } from "react-router-dom";
-import SubscriptionGuard from "./SubscriptionGuard";
+import SubscriptionGuard from "./subscriptionGuard";
 
 export default function ProtectedLayout() {
   return (
