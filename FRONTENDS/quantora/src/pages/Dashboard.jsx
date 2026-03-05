@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react"; // Added useCallback
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
@@ -58,8 +58,10 @@ export default function Dashboard() {
     }).format(num);
   };
 
-
-  const fetchData = async () => {
+  // 1. Wrap fetchData in useCallback to stop the infinite loop
+  const fetchData = useCallback(async () => {
+    if (!token) return;
+    
     try {
       const authHeader = { headers: { Authorization: `Bearer ${token}` } };
       const now = new Date();
@@ -75,11 +77,10 @@ export default function Dashboard() {
         return res.ok ? await res.json() : null;
       };
 
-      // 1. Fetch Latest Sales
+      // Fetch Data Parallelly or Sequentially
       const salesData = await secureFetch(`${LOCAL_ENV.API_URL}/api/sales`) || [];
       if (salesData.length > 0) setLatestSale(salesData[0]);
 
-      // 2. Fetch Daily Aggregate
       const dailyData = await secureFetch(`${LOCAL_ENV.API_URL}/api/sales/daily?year=${currentYear}`) || [];
 
       const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -91,7 +92,10 @@ export default function Dashboard() {
       });
 
       setChartData(monthlyTotals);
-      setMonthlySales(monthlyTotals[currentMonthIdx]?.sales || 0);
+      
+      const salesThisMonth = monthlyTotals[currentMonthIdx]?.sales || 0;
+      setMonthlySales(salesThisMonth);
+      setDisplayedSales(salesThisMonth); // Fix: Actually update the displayed value
 
       const currentMonthProfit = dailyData
         .filter(d => new Date(d.date).getUTCMonth() === currentMonthIdx)
@@ -115,31 +119,27 @@ export default function Dashboard() {
     } catch (err) {
       console.error("fetchData Error:", err);
     }
-  };
+  }, [token, refreshUser]);
 
+  // 2. Controlled useEffect
   useEffect(() => {
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
     const syncAndFetch = async () => {
-      // 1. Check if returning from payment to clear URL
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('status') === 'success' || urlParams.get('trxref')) {
         window.history.replaceState({}, document.title, "/dashboard");
       }
 
-      // 2. Await the refresh so local storage/context is updated BEFORE fetchData runs
       await refreshUser(); 
-      
-      // 3. Now fetch the dashboard data with the fresh subscription status
       fetchData();
     };
 
-    if (token) {
-      syncAndFetch();
-    } else {
-      navigate("/login");
-    }
-  }, [token, refreshUser, fetchData]); 
-
-
+    syncAndFetch();
+  }, [token, refreshUser, fetchData, navigate]);
 
   return (
     <HelmetProvider>
