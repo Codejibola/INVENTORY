@@ -11,6 +11,8 @@ import productRoutes from "./routes/productRoutes.js";
 import salesRoutes from "./routes/salesRoutes.js";
 import paystackRoutes from "./routes/Paystack.js";
 import { LOCAL_ENV } from "./config/localEnv.js";
+import cron from "node-cron"; 
+
 
 // --- DEBUG TEST BLOCK ---
 console.log("------------------------------------");
@@ -18,6 +20,21 @@ console.log("🔍 STARTING SYSTEM CHECK...");
 console.log("DATABASE HOST:", process.env.DB_HOST || "❌ NOT FOUND IN .ENV");
 console.log("PORT TO USE:", LOCAL_ENV.PORT || "❌ UNDEFINED (Check localEnv.js)");
 console.log("------------------------------------");
+
+
+// --- CRON JOB: SUBSCRIPTION CLEANUP ---
+// This runs every day at 00:00 (Midnight)
+cron.schedule("0 0 * * *", async () => {
+  console.log("🕒 [CRON] Checking for expired subscriptions...");
+  try {
+    const result = await pool.query(
+      "UPDATE users SET subscription_status = 'inactive' WHERE subscription_expiry < NOW() AND subscription_status = 'active'"
+    );
+    console.log(`✅ [CRON] Cleanup finished. Updated ${result.rowCount} users.`);
+  } catch (err) {
+    console.error("❌ [CRON] Error during subscription cleanup:", err.message);
+  }
+});
 
 class WebServer {
   #port;
