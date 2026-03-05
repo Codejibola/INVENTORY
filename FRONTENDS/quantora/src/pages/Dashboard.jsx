@@ -58,49 +58,38 @@ export default function Dashboard() {
     }).format(num);
   };
 
-  useEffect(() => {
-  // 1. Sync the latest subscription status from the DB
-  refreshUser(); 
-  
-  // 2. Fetch the dashboard data
-  fetchData();
-}, [token, refreshUser]); // Added refreshUser to dependency array for best practice
-
-  // Counting animation for the sales card
-  useEffect(() => {
-    let start = 0;
-    const end = Number(monthlySales);
-    if (end <= 0) {
-        setDisplayedSales(0);
-        return;
-    }
-    const duration = 1000;
-    const increment = end / (duration / 16);
-    
-    const timer = setInterval(() => {
-      start += increment;
-      if (start >= end) {
-        setDisplayedSales(end);
-        clearInterval(timer);
-      } else {
-        setDisplayedSales(Math.floor(start));
+useEffect(() => {
+    const syncAndFetch = async () => {
+      // 1. Check if returning from payment to clear URL
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('status') === 'success' || urlParams.get('trxref')) {
+        window.history.replaceState({}, document.title, "/dashboard");
       }
-    }, 16);
-    return () => clearInterval(timer);
-  }, [monthlySales]);
 
- const fetchData = async () => {
+      // 2. Await the refresh so local storage/context is updated BEFORE fetchData runs
+      await refreshUser(); 
+      
+      // 3. Now fetch the dashboard data with the fresh subscription status
+      fetchData();
+    };
+
+    if (token) {
+      syncAndFetch();
+    } else {
+      navigate("/login");
+    }
+  }, [token, refreshUser, fetchData]); 
+
+  const fetchData = async () => {
     try {
       const authHeader = { headers: { Authorization: `Bearer ${token}` } };
       const now = new Date();
       const currentYear = now.getFullYear();
       const currentMonthIdx = now.getMonth();
 
-      // --- NEW: Security Helper ---
       const secureFetch = async (url) => {
         const res = await apiFetch(url, authHeader);
         if (res.status === 403) {
-          // If backend guard blocks access, sync the local status
           await refreshUser(); 
           return null;
         }
@@ -117,26 +106,19 @@ export default function Dashboard() {
       const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
       const monthlyTotals = months.map((monthName, idx) => {
         const monthSales = dailyData
-          .filter(d => {
-            const dDate = new Date(d.date);
-            return dDate.getUTCMonth() === idx;
-          })
+          .filter(d => new Date(d.date).getUTCMonth() === idx)
           .reduce((sum, d) => sum + Number(d.total_sales || 0), 0);
         return { month: monthName, sales: monthSales };
       });
 
       setChartData(monthlyTotals);
-
-      // 3. Set Monthly Stats
-      const currentMonthSales = monthlyTotals[currentMonthIdx]?.sales || 0;
-      setMonthlySales(currentMonthSales);
+      setMonthlySales(monthlyTotals[currentMonthIdx]?.sales || 0);
 
       const currentMonthProfit = dailyData
         .filter(d => new Date(d.date).getUTCMonth() === currentMonthIdx)
         .reduce((sum, d) => sum + Number(d.total_profit_loss || 0), 0);
       setMonthlyProfitLoss(currentMonthProfit);
 
-      // 4. Shop Worth & Products
       const prodData = await secureFetch(`${LOCAL_ENV.API_URL}/api/products`) || [];
       setShopWorth(prodData.reduce((sum, p) => sum + (Number(p.selling_price || 0) * Number(p.units || 0)), 0));
       
@@ -145,8 +127,6 @@ export default function Dashboard() {
         setLatestProduct(sortedProds[0]);
       }
 
-      // 5. Performance Insights
-      // We wrap these in secureFetch logic as well
       const bestData = await secureFetch(`${LOCAL_ENV.API_URL}/api/sales/best-selling`);
       const leastData = await secureFetch(`${LOCAL_ENV.API_URL}/api/sales/least-selling`);
 
@@ -229,7 +209,7 @@ export default function Dashboard() {
   );
 }
 
-// Keep your ActionCard and InsightRow functions as they were...
+
 function ActionCard({ title, desc, icon, isHighlight, to }) {
     const navigate = useNavigate();
     return (
