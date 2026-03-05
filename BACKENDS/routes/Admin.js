@@ -106,7 +106,7 @@ router.post("/admin", authLimiter, async (req, res) => {
     }
 
     const { rows } = await pool.query(
-      "SELECT id, name, email, shop_name, password FROM users WHERE email = $1",
+      "SELECT id, name, email, shop_name, password, subscription_status, subscription_expiry FROM users WHERE email = $1",
       [email]
     );
 
@@ -135,6 +135,8 @@ router.post("/admin", authLimiter, async (req, res) => {
         name: user.name,
         email: user.email,
         shop_name: user.shop_name,
+        subscription_status: user.subscription_status, 
+        subscription_expiry: user.subscription_expiry, 
       },
     });
   } catch (err) {
