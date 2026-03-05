@@ -58,27 +58,6 @@ export default function Dashboard() {
     }).format(num);
   };
 
-useEffect(() => {
-    const syncAndFetch = async () => {
-      // 1. Check if returning from payment to clear URL
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('status') === 'success' || urlParams.get('trxref')) {
-        window.history.replaceState({}, document.title, "/dashboard");
-      }
-
-      // 2. Await the refresh so local storage/context is updated BEFORE fetchData runs
-      await refreshUser(); 
-      
-      // 3. Now fetch the dashboard data with the fresh subscription status
-      fetchData();
-    };
-
-    if (token) {
-      syncAndFetch();
-    } else {
-      navigate("/login");
-    }
-  }, [token, refreshUser, fetchData]); 
 
   const fetchData = async () => {
     try {
@@ -137,6 +116,29 @@ useEffect(() => {
       console.error("fetchData Error:", err);
     }
   };
+
+  useEffect(() => {
+    const syncAndFetch = async () => {
+      // 1. Check if returning from payment to clear URL
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('status') === 'success' || urlParams.get('trxref')) {
+        window.history.replaceState({}, document.title, "/dashboard");
+      }
+
+      // 2. Await the refresh so local storage/context is updated BEFORE fetchData runs
+      await refreshUser(); 
+      
+      // 3. Now fetch the dashboard data with the fresh subscription status
+      fetchData();
+    };
+
+    if (token) {
+      syncAndFetch();
+    } else {
+      navigate("/login");
+    }
+  }, [token, refreshUser, fetchData]); 
+
 
 
   return (
