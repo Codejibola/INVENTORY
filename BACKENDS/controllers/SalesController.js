@@ -129,7 +129,7 @@ export const downloadDailySalesExcel = async (req, res) => {
         return (word.charAt(0).toUpperCase() + word.slice(1));
       }).join(' ');
     };
-    // -------------------------
+    // -----------------------
 
     // Assume shop name is in the first row of data
     const shopName = rows[0].shop_name || "Quantora Stores";
