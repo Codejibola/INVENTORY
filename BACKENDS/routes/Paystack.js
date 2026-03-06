@@ -105,4 +105,8 @@ router.post('/webhook', express.raw({ type: '*/*' }), async (req, res) => {
   }
 });
 
+
+
+console.log("Current Key Type:", LOCAL_ENV.PAYSTACK_SECRET_KEY?.substring(0, 7));
+
 export default router;

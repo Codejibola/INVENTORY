@@ -16,16 +16,15 @@ router.post("/register", authLimiter, async (req, res) => {
     // Validate fields
     if (!name || !email || !password || !shopName || !adminPassword || !workerPassword) {
       return res.status(400).json({
-        message: "All fields (name, email, password, shopName, adminPassword, workerPassword) are required",
+        message: "All fields are required",
       });
     }
 
     // Check if email already exists
     const checkEmail = await pool.query("SELECT id FROM users WHERE email = $1", [email]);
-
     if (checkEmail.rows.length > 0) {
       return res.status(409).json({
-        message: "This email is already registered. Try logging in or use another email.",
+        message: "This email is already registered.",
       });
     }
 
@@ -34,13 +33,33 @@ router.post("/register", authLimiter, async (req, res) => {
     const hashedAdminPassword = await bcrypt.hash(adminPassword, 10);
     const hashedWorkerPassword = await bcrypt.hash(workerPassword, 10);
 
-    // Insert new user
+    // --- NEW TRIAL LOGIC ---
+    // Set status to 'active', plan to 'trial', and expiry to 14 days from now
+    const trialStatus = 'active';
+    const trialPlan = 'trial';
+    const trialExpiry = new Date();
+    trialExpiry.setDate(trialExpiry.getDate() + 14); 
+
+    // Insert new user with trial subscription
     await pool.query(
-      "INSERT INTO users (name, email, password, shop_name, admin_password, worker_password) VALUES ($1, $2, $3, $4, $5, $6)",
-      [name, email, hashedPassword, shopName, hashedAdminPassword, hashedWorkerPassword]
+      `INSERT INTO users (
+        name, email, password, shop_name, admin_password, worker_password, 
+        subscription_status, subscription_plan, subscription_expiry
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [
+        name, 
+        email, 
+        hashedPassword, 
+        shopName, 
+        hashedAdminPassword, 
+        hashedWorkerPassword,
+        trialStatus,
+        trialPlan,
+        trialExpiry
+      ]
     );
 
-    return res.status(201).json({ message: "Account created successfully" });
+    return res.status(201).json({ message: "Account created successfully with 2 weeks free trial!" });
   } catch (err) {
     console.error("Registration error:", err);
     return res.status(500).json({
