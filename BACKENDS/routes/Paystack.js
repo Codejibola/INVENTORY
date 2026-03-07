@@ -58,13 +58,13 @@ router.post('/pay', express.json(), async (req, res) => {
 // 2. KEEP AS RAW: Webhook stays raw for signature verification
 router.post('/webhook', express.raw({ type: '*/*' }), async (req, res) => {
   console.log("Webhook received from Paystack");
-  
+
   try {
     const signature = req.headers['x-paystack-signature'];
     const secret = LOCAL_ENV.PAYSTACK_SECRET_KEY;
 
     const hash = crypto.createHmac('sha512', secret).update(req.body).digest('hex');
-    
+
     if (hash !== signature) {
       console.error('Paystack webhook: invalid signature');
       return res.status(401).send('Unauthorized');
@@ -79,34 +79,48 @@ router.post('/webhook', express.raw({ type: '*/*' }), async (req, res) => {
       const planType = metadata?.planType;
 
       if (userId) {
-        let expiryDate;
-        const now = new Date();
-        if (planType === 'monthly') {
-          expiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-        } else {
-          expiryDate = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
-        }
-        
         try {
+          // 1. Fetch current subscription details
+          const userCheck = await pool.query(
+            'SELECT subscription_expiry FROM users WHERE id = $1',
+            [userId]
+          );
+
+          const currentExpiry = userCheck.rows[0]?.subscription_expiry;
+          const now = new Date();
+
+          // 2. Determine "Starting Point"
+          let baseDate = (currentExpiry && new Date(currentExpiry) > now)
+            ? new Date(currentExpiry)
+            : now;
+
+          let newExpiry;
+          if (planType === 'monthly') {
+            newExpiry = new Date(baseDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+          } else {
+            newExpiry = new Date(baseDate.getTime() + 365 * 24 * 60 * 60 * 1000);
+          }
+
+          // 3. Update the database
           await pool.query(
             'UPDATE users SET subscription_status = $1, subscription_plan = $2, subscription_expiry = $3 WHERE id = $4',
-            ['active', planType || null, expiryDate, userId]
+            ['active', planType || null, newExpiry, userId]
           );
-          console.log(`Successfully activated subscription for user ${userId}`);
+
+          console.log(`Successfully extended subscription for user ${userId}. New expiry: ${newExpiry}`);
         } catch (dbErr) {
           console.error('Failed to update subscription in DB:', dbErr.message);
         }
       }
     }
+
+    // IMPORTANT: Always send 200 to Paystack to acknowledge receipt
     res.sendStatus(200);
+
   } catch (err) {
     console.error('Webhook handling error:', err.message);
     res.status(500).send('Webhook processing failed');
   }
 });
-
-
-
-console.log("Current Key Type:", LOCAL_ENV.PAYSTACK_SECRET_KEY?.substring(0, 7));
 
 export default router;
