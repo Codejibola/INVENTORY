@@ -7,13 +7,24 @@ import pool from '../config/db.js';
 
 const router = express.Router();
 
-// 1. FIXED: Added express.json() here specifically for this route
+// --- SECURE PRICE CONFIGURATION ---
+// Prices in Kobo (Naira * 100)
+const SECURE_PRICES = {
+  monthly: 5000 * 100, // ₦5,000
+  yearly: 50000 * 100  // ₦50,000
+};
+
 router.post('/pay', express.json(), async (req, res) => {
-  // Now req.body will actually contain your data!
-  const { email, amount, planType } = req.body;
+  // 1. Remove 'amount' from destructuring to ignore frontend input
+  const { email, planType } = req.body;
+
+  // 2. Lookup the correct price on the server
+  const amount = SECURE_PRICES[planType];
 
   if (!email || !amount) {
-    return res.status(400).json({ message: 'Email and amount are required' });
+    return res.status(400).json({ 
+      message: 'Email and valid planType (monthly/yearly) are required' 
+    });
   }
 
   const authHeader = req.headers.authorization || req.headers.Authorization;
@@ -31,12 +42,10 @@ router.post('/pay', express.json(), async (req, res) => {
   try {
     const payload = {
       email,
-      amount,
+      amount, // Now using the server-side SECURE_PRICES
       metadata: { planType, userId },
       callback_url: `https://quantora-app.vercel.app/dashboard`
     };
-
-    console.log("Initializing Paystack payment with metadata:", payload.metadata);
 
     const response = await axios.post('https://api.paystack.co/transaction/initialize', payload, {
       headers: {
@@ -48,78 +57,54 @@ router.post('/pay', express.json(), async (req, res) => {
     return res.json(response.data);
   } catch (error) {
     console.error('Paystack error:', error.response?.data || error.message);
-    return res.status(500).json({ 
-      message: 'Payment initialization failed', 
-      error: error.response?.data || error.message 
-    });
+    return res.status(500).json({ message: 'Payment initialization failed' });
   }
 });
 
-// 2. KEEP AS RAW: Webhook stays raw for signature verification
+// Webhook remains the same, but adding an amount check is a "Pro" move
 router.post('/webhook', express.raw({ type: '*/*' }), async (req, res) => {
-  console.log("Webhook received from Paystack");
-
   try {
     const signature = req.headers['x-paystack-signature'];
     const secret = LOCAL_ENV.PAYSTACK_SECRET_KEY;
-
     const hash = crypto.createHmac('sha512', secret).update(req.body).digest('hex');
 
-    if (hash !== signature) {
-      console.error('Paystack webhook: invalid signature');
-      return res.status(401).send('Unauthorized');
-    }
+    if (hash !== signature) return res.status(401).send('Unauthorized');
 
-    console.log("Signature verified successfully");
     const event = JSON.parse(req.body.toString());
 
     if (event.event === 'charge.success') {
-      const { metadata } = event.data || {};
-      const userId = metadata?.userId;
-      const planType = metadata?.planType;
+      const { amount: paidAmount, metadata } = event.data;
+      const { userId, planType } = metadata || {};
+
+      // 3. SECURE VERIFICATION: Check if the amount paid matches our price record
+      if (paidAmount !== SECURE_PRICES[planType]) {
+        console.error(`PRICE MISMATCH: User ${userId} paid ${paidAmount} for ${planType}`);
+        return res.sendStatus(200); // Still 200 so Paystack stops retrying, but we don't upgrade
+      }
 
       if (userId) {
         try {
-          // 1. Fetch current subscription details
-          const userCheck = await pool.query(
-            'SELECT subscription_expiry FROM users WHERE id = $1',
-            [userId]
-          );
-
+          const userCheck = await pool.query('SELECT subscription_expiry FROM users WHERE id = $1', [userId]);
           const currentExpiry = userCheck.rows[0]?.subscription_expiry;
           const now = new Date();
+          let baseDate = (currentExpiry && new Date(currentExpiry) > now) ? new Date(currentExpiry) : now;
 
-          // 2. Determine "Starting Point"
-          let baseDate = (currentExpiry && new Date(currentExpiry) > now)
-            ? new Date(currentExpiry)
-            : now;
+          let newExpiry = (planType === 'monthly') 
+            ? new Date(baseDate.getTime() + 30 * 24 * 60 * 60 * 1000)
+            : new Date(baseDate.getTime() + 365 * 24 * 60 * 60 * 1000);
 
-          let newExpiry;
-          if (planType === 'monthly') {
-            newExpiry = new Date(baseDate.getTime() + 30 * 24 * 60 * 60 * 1000);
-          } else {
-            newExpiry = new Date(baseDate.getTime() + 365 * 24 * 60 * 60 * 1000);
-          }
-
-          // 3. Update the database
           await pool.query(
             'UPDATE users SET subscription_status = $1, subscription_plan = $2, subscription_expiry = $3 WHERE id = $4',
-            ['active', planType || null, newExpiry, userId]
+            ['active', planType, newExpiry, userId]
           );
-
-          console.log(`Successfully extended subscription for user ${userId}. New expiry: ${newExpiry}`);
         } catch (dbErr) {
-          console.error('Failed to update subscription in DB:', dbErr.message);
+          console.error('DB Update Error:', dbErr.message);
         }
       }
     }
-
-    // IMPORTANT: Always send 200 to Paystack to acknowledge receipt
     res.sendStatus(200);
-
   } catch (err) {
-    console.error('Webhook handling error:', err.message);
-    res.status(500).send('Webhook processing failed');
+    res.status(500).send('Webhook error');
   }
 });
 
