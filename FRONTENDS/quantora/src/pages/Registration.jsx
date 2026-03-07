@@ -1,8 +1,9 @@
+/* eslint-disable no-unused-vars */
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { FiUser, FiShoppingBag, FiMail, FiLock, FiShield, FiBriefcase, FiArrowRight, FiCheckCircle } from "react-icons/fi";
+import { FiUser, FiShoppingBag, FiMail, FiLock, FiShield, FiBriefcase, FiArrowRight, FiCheckCircle, FiGift } from "react-icons/fi";
 import bg from "../assets/inventory1.jpg";
 import logo from "../assets/logo.png";
 import LOCAL_ENV from "../../ENV.js";
@@ -89,8 +90,12 @@ export default function Register() {
                 animate={{ scale: 1 }}
                 src={logo}
                 alt="Quantora Logo"
-                className="h-14 w-auto mb-6 mx-auto"
+                className="h-14 w-auto mb-4 mx-auto"
               />
+              {/* MOBILE TRIAL BADGE */}
+              <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 text-blue-400 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider mb-4">
+                <FiGift /> 14-Day Free Trial Included
+              </div>
               <h1 className="text-2xl font-bold text-white tracking-tight">Setup Your Store</h1>
               <p className="text-slate-400 mt-2 text-sm px-4">Create your workspace and secure your inventory.</p>
             </motion.div>
@@ -121,21 +126,28 @@ export default function Register() {
         <div className="hidden lg:flex min-h-screen items-center justify-center relative z-10 p-6">
           <div className="w-full max-w-6xl grid grid-cols-2 rounded-xl overflow-hidden shadow-2xl">
             {/* LEFT */}
-            <aside className="hidden lg:flex flex-col justify-center p-12 bg-black/40 text-white relative overflow-hidden">
-              {/* Decorative glow */}
+            <aside className="hidden lg:flex flex-col justify-center p-12 bg-black/40 text-white relative overflow-hidden border-r border-white/5">
               <div className="absolute top-20 -right-32 w-64 h-64 bg-blue-600/20 blur-[100px] rounded-full opacity-50" />
               <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-indigo-600/10 blur-[120px] rounded-full opacity-40" />
               
               <div className="relative z-10">
-                {/* Logo & Brand */}
-                <div className="flex items-center gap-3 mb-12">
+                {/* DESKTOP TRIAL BADGE */}
+                <motion.div 
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="inline-flex items-center gap-2 bg-blue-600/20 border border-blue-400/30 text-blue-300 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest mb-8"
+                >
+                  <FiGift className="text-blue-400" /> Start your 14-day free trial
+                </motion.div>
+
+                <div className="flex items-center gap-3 mb-8">
                   <motion.img
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.1 }}
                     src={logo}
                     alt="Quantora Logo"
-                    className="h-12 w-auto"
+                    className="h-10 w-auto"
                   />
                   <motion.span 
                     initial={{ opacity: 0, x: -10 }}
@@ -147,7 +159,6 @@ export default function Register() {
                   </motion.span>
                 </div>
 
-                {/* Main Heading */}
                 <motion.h2 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -158,14 +169,13 @@ export default function Register() {
                   <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">workspace today</span>
                 </motion.h2>
 
-                {/* Subtitle */}
                 <motion.p 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.25 }}
-                  className="text-white/70 mb-10 leading-relaxed"
+                  className="text-white/70 mb-10 leading-relaxed max-w-sm"
                 >
-                  Configure inventory, administrators and workers securely. Start managing your business in minutes.
+                  Configure inventory, administrators and workers securely. No credit card required to start.
                 </motion.p>
 
                 {/* Features List */}
@@ -176,19 +186,19 @@ export default function Register() {
                   className="space-y-4 mb-12"
                 >
                   {[
-                    { icon: '✓', text: 'Unlimited inventory SKUs', color: 'text-blue-400' },
-                    { icon: '✓', text: 'Multi-level role management', color: 'text-indigo-400' },
-                    { icon: '✓', text: 'Real-time stock tracking', color: 'text-cyan-400' },
-                    { icon: '✓', text: 'Encrypted security & PINs', color: 'text-green-400' },
+                    { icon: <FiCheckCircle />, text: '14 Days of Premium Access', color: 'text-blue-400' },
+                    { icon: <FiCheckCircle />, text: 'Unlimited inventory SKUs', color: 'text-indigo-400' },
+                    { icon: <FiCheckCircle />, text: 'Multi-level role management', color: 'text-cyan-400' },
+                    { icon: <FiCheckCircle />, text: 'Encrypted security & PINs', color: 'text-green-400' },
                   ].map((item, idx) => (
                     <motion.li 
                       key={idx}
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.3 + idx * 0.05 }}
-                      className="flex items-center gap-3 text-sm text-white/80 hover:text-white/100 transition-colors"
+                      className="flex items-center gap-3 text-sm text-white/80"
                     >
-                      <span className={`text-lg font-bold ${item.color}`}>{item.icon}</span>
+                      <span className={`text-lg ${item.color}`}>{item.icon}</span>
                       {item.text}
                     </motion.li>
                   ))}
@@ -209,11 +219,11 @@ export default function Register() {
                     </div>
                     <div>
                       <p className="text-2xl font-bold text-indigo-400">700+</p>
-                      <p className="text-xs text-white/50 mt-1">Products Tracked</p>
+                      <p className="text-xs text-white/50 mt-1">Products</p>
                     </div>
                     <div>
                       <p className="text-2xl font-bold text-cyan-400">99.9%</p>
-                      <p className="text-xs text-white/50 mt-1">Uptime SLA</p>
+                      <p className="text-xs text-white/50 mt-1">Uptime</p>
                     </div>
                   </div>
                 </motion.div>
@@ -221,7 +231,7 @@ export default function Register() {
             </aside>
 
             {/* RIGHT */}
-            <section className="bg-white p-12">
+            <section className="bg-white p-12 overflow-y-auto max-h-screen">
               <FormContent
                 formData={formData}
                 handleChange={handleChange}
@@ -247,7 +257,7 @@ function FormContent({ formData, handleChange, acceptedTerms, setAcceptedTerms, 
     <>
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-slate-900">Create Account</h2>
-        <p className="text-sm text-slate-500 mt-1">Fill in the details to get started.</p>
+        <p className="text-sm text-slate-500 mt-1">Join Quantora and start selling today.</p>
       </div>
 
       <AnimatePresence>
@@ -322,7 +332,7 @@ function Input({ label, icon, ...props }) {
             {icon}
         </div>
         <input
-          {...props}
+          {props}
           required
           className="w-full pl-11 pr-4 py-3 bg-slate-50 border-2 border-transparent rounded-2xl text-sm focus:ring-0 focus:border-blue-600/20 focus:bg-white transition-all outline-none"
         />
