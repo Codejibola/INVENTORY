@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Check, Zap, Crown, Loader2, ShieldCheck, ArrowLeft } from 'lucide-react'; // 1. Added ArrowLeft
-import { useNavigate } from 'react-router-dom'; // 2. Added useNavigate
+import { Check, Zap, Crown, Loader2, ShieldCheck, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext'; 
 import LOCAL_ENV from '../../ENV.js';
 
@@ -9,8 +9,7 @@ const plans = [
   {
     id: "monthly",
     name: "Starter Monthly",
-    price: 5000,
-    displayPrice: "5,000",
+    displayPrice: "5,000", // Keep for UI only
     icon: <Zap className="text-blue-400" size={32} />,
     features: ["Full Inventory Management", "Daily Sales Analytics", "Worker Account Access", "Real-time Stock Alerts"],
     buttonText: "Start Monthly",
@@ -19,8 +18,7 @@ const plans = [
   {
     id: "yearly",
     name: "Business Yearly",
-    price: 50000,
-    displayPrice: "50,000",
+    displayPrice: "50,000", // Keep for UI only
     icon: <Crown className="text-yellow-400" size={32} />,
     features: ["Everything in Monthly", "Save ₦10,000 Yearly", "Priority Tech Support", "Detailed Monthly Reports", "Unlimited Worker Accounts"],
     buttonText: "Claim 2 Months Free",
@@ -30,7 +28,7 @@ const plans = [
 
 const Subscription = () => {
   const { user } = useAuth();
-  const navigate = useNavigate(); // 3. Initialized Navigation
+  const navigate = useNavigate();
   const [loadingPlan, setLoadingPlan] = useState(null);
 
   const handlePayment = async (plan) => {
@@ -43,9 +41,10 @@ const Subscription = () => {
     setLoadingPlan(plan.id);
 
     try {
+      // CLEANUP: We now only send email and planType. 
+      // The backend handles the price lookup securely.
       const response = await axios.post(`${LOCAL_ENV.API_URL}/api/paystack/pay`, {
         email: user?.email, 
-        amount: plan.price * 100, 
         planType: plan.id 
       }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -64,7 +63,7 @@ const Subscription = () => {
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-slate-200 py-16 px-4">
       
-      {/* --- 4. THE BACK BUTTON --- */}
+      {/* --- BACK BUTTON --- */}
       <div className="max-w-4xl mx-auto mb-12">
         <button 
           onClick={() => navigate('/dashboard')}
