@@ -332,7 +332,7 @@ function Input({ label, icon, ...props }) {
             {icon}
         </div>
         <input
-          {props}
+          {...props}
           required
           className="w-full pl-11 pr-4 py-3 bg-slate-50 border-2 border-transparent rounded-2xl text-sm focus:ring-0 focus:border-blue-600/20 focus:bg-white transition-all outline-none"
         />

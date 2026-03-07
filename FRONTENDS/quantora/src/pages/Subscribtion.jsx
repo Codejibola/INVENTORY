@@ -9,8 +9,8 @@ const plans = [
   {
     id: "monthly",
     name: "Starter Monthly",
-    price: 5000,
-    displayPrice: "5,000",
+    price: 100,
+    displayPrice: "100",
     icon: <Zap className="text-blue-400" size={32} />,
     features: ["Full Inventory Management", "Daily Sales Analytics", "Worker Account Access", "Real-time Stock Alerts"],
     buttonText: "Start Monthly",
