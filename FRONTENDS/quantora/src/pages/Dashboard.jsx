@@ -27,6 +27,29 @@ import {
 } from "lucide-react";
 import { Helmet, HelmetProvider } from "react-helmet-async";
 
+
+//counting number 
+function NumberTicker({ value, duration = 1500 }) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let startTimestamp = null;
+    const step = (timestamp) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+      setCount(Math.floor(progress * value));
+      if (progress < 1) {
+        window.requestAnimationFrame(step);
+      }
+    };
+    window.requestAnimationFrame(step);
+  }, [value, duration]);
+
+  return <span>₦{count.toLocaleString()}</span>;
+}
+
+
+
 export default function Dashboard() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { user: currentUser, refreshUser } = useAuth();
@@ -144,7 +167,6 @@ export default function Dashboard() {
   return (
     <HelmetProvider>
       <Helmet><title>Dashboard | Quantora</title></Helmet>
-      {/* Rest of your JSX remains the same */}
       <div className="min-h-screen bg-[#050505] flex relative">
         <Sidebar isOpen={menuOpen} setIsOpen={setMenuOpen} />
         <div className="flex-1 flex flex-col">
@@ -154,14 +176,14 @@ export default function Dashboard() {
               <ActionCard 
                 title={`${new Date().toLocaleString('default', { month: 'long' })} Sales`} 
                 icon="payments" 
-                desc={`₦${displayedSales.toLocaleString()}`} 
+                desc={monthlySales} 
+                isAnimatedValue={true} 
                 isHighlight 
               />
               <ActionCard title="Shop Worth" icon="inventory" desc={`₦${formatShortNumber(shopWorth)}`} />
               <ActionCard title="Manage Products" icon="edit_note" to="/Manage_Products" />
               <ActionCard title="Record Sales" icon="add_shopping_cart" to="/recordSales" />
             </section>
-
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <article className="bg-[#111] border border-white/5 rounded-2xl p-6 lg:col-span-2 shadow-2xl">
                 <div className="flex justify-between items-center mb-8">
@@ -212,10 +234,12 @@ export default function Dashboard() {
 }
 
 
-function ActionCard({ title, desc, icon, isHighlight, to }) {
+function ActionCard({ title, desc, icon, isHighlight, to, isAnimatedValue }) {
     const navigate = useNavigate();
     return (
       <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
         whileHover={{ y: -5 }}
         onClick={() => to && navigate(to)}
         className={`p-6 rounded-2xl cursor-pointer transition-all border ${
@@ -230,7 +254,9 @@ function ActionCard({ title, desc, icon, isHighlight, to }) {
         </div>
         <div className="mt-4">
           <h3 className="text-xs font-bold uppercase tracking-wider text-white/60">{title}</h3>
-          <p className="text-2xl font-black mt-1">{desc || "Manage"}</p>
+          <div className="text-2xl font-black mt-1">
+            {isAnimatedValue ? <NumberTicker value={desc} /> : (desc || "Manage")}
+          </div>
         </div>
       </motion.div>
     );
