@@ -10,8 +10,8 @@ const router = express.Router();
 // --- SECURE PRICE CONFIGURATION ---
 // Prices in Kobo (Naira * 100)
 const SECURE_PRICES = {
-  monthly: 5000 * 100, // ₦5,000
-  yearly: 50000 * 100  // ₦50,000
+  monthly: 3000 * 100, // ₦3,000
+  yearly: 30000 * 100  // ₦30,000
 };
 
 router.post('/pay', express.json(), async (req, res) => {

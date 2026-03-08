@@ -9,7 +9,7 @@ const plans = [
   {
     id: "monthly",
     name: "Starter Monthly",
-    displayPrice: "5,000", // Keep for UI only
+    displayPrice: "3,000", // Keep for UI only
     icon: <Zap className="text-blue-400" size={32} />,
     features: ["Full Inventory Management", "Daily Sales Analytics", "Worker Account Access", "Real-time Stock Alerts"],
     buttonText: "Start Monthly",
@@ -18,7 +18,7 @@ const plans = [
   {
     id: "yearly",
     name: "Business Yearly",
-    displayPrice: "50,000", // Keep for UI only
+    displayPrice: "30,000", // Keep for UI only
     icon: <Crown className="text-yellow-400" size={32} />,
     features: ["Everything in Monthly", "Save ₦10,000 Yearly", "Priority Tech Support", "Detailed Monthly Reports", "Unlimited Worker Accounts"],
     buttonText: "Claim 2 Months Free",
