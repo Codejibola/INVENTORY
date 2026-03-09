@@ -112,15 +112,11 @@ const handleDownload = async (date) => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
 
-    // --- 1. BRAND WATERMARK (The Background) ---
-    doc.setTextColor(245, 245, 245); // Very faint grey
+    // --- 1. BRAND WATERMARK ---
+    doc.setTextColor(245, 245, 245); 
     doc.setFontSize(60);
     doc.setFont("helvetica", "bold");
-    // This draws "QUANTORA" diagonally across the center of the page
     doc.text("QUANTORA", pageWidth / 2, 150, { align: "center", angle: 45 });
-
-    // IMPORTANT: Reset text color to white for the header
-    doc.setTextColor(255, 255, 255); 
 
     // --- 2. HEADER SECTION ---
     doc.setFillColor(15, 23, 42); 
@@ -130,9 +126,9 @@ const handleDownload = async (date) => {
       doc.addImage(logo, "PNG", 15, 8, 20, 20); 
     }
 
+    doc.setTextColor(255, 255, 255); 
     doc.setFontSize(20);
     doc.text(shopName.toUpperCase(), 40, 22); 
-    
     doc.setFontSize(10);
     doc.text(`SALES REPORT | DATE: ${date}`, 40, 32);
 
@@ -157,28 +153,46 @@ const handleDownload = async (date) => {
         4: { halign: 'right' },
         5: { halign: 'right' },
       },
-      styles: { 
-        fontSize: 8, 
-        cellPadding: 5, 
-        fillColor: false // This makes table cells transparent so the watermark shows through 
-        },
+      styles: { fontSize: 8, cellPadding: 5, fillColor: false },
+      didParseCell: function (data) {
+        if (data.column.index === 5 && data.section === 'body') {
+          const val = data.cell.raw;
+          if (val && val.includes('-')) data.cell.styles.textColor = [220, 38, 38]; // Red for loss
+          else if (val) data.cell.styles.textColor = [22, 163, 74]; // Green for profit
+        }
+      }
     });
 
-    // --- 4. SIGNATURE & TOTALS ---
-    const finalY = doc.lastAutoTable.finalY + 15;
-    const totalRev = sales.reduce((acc, s) => acc + Number(s.price), 0);
+    // --- 4. TOTALS & SIGNATURE ---
+    let currentY = doc.lastAutoTable.finalY + 15;
     
-    doc.setTextColor(30, 41, 59); // Dark text for total
+    // CALCULATIONS
+    const totalRev = sales.reduce((acc, s) => acc + Number(s.price), 0);
+    const totalPL = sales.reduce((acc, s) => acc + Number(s.profit_loss), 0);
+
+    // Render Grand Total Revenue
+    doc.setTextColor(30, 41, 59);
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
-    doc.text(`GRAND TOTAL: N${totalRev.toLocaleString()}`, pageWidth - 15, finalY, { align: "right" });
+    doc.text(`GRAND TOTAL: N${totalRev.toLocaleString()}`, pageWidth - 15, currentY, { align: "right" });
 
+    // Render Total Profit/Loss (Color coded)
+    currentY += 8; // Move down slightly
+    if (totalPL >= 0) {
+      doc.setTextColor(22, 163, 74); // Green
+      doc.text(`TOTAL PROFIT: +N${totalPL.toLocaleString()}`, pageWidth - 15, currentY, { align: "right" });
+    } else {
+      doc.setTextColor(220, 38, 38); // Red
+      doc.text(`TOTAL LOSS: N${totalPL.toLocaleString()}`, pageWidth - 15, currentY, { align: "right" });
+    }
+
+    // Reset for signature
     if (signatureStamp) {
-      doc.addImage(signatureStamp, "PNG", pageWidth - 50, finalY + 10, 35, 15);
+      doc.addImage(signatureStamp, "PNG", pageWidth - 50, currentY + 10, 35, 15);
       doc.setFontSize(8);
       doc.setFont("helvetica", "italic");
       doc.setTextColor(100);
-      doc.text("Authorized Signature", pageWidth - 32, finalY + 30, { align: "center" });
+      doc.text("Authorized Signature", pageWidth - 32, currentY + 30, { align: "center" });
     }
 
     // --- 5. FOOTER ---
