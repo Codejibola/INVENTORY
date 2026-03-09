@@ -1,9 +1,9 @@
 /* eslint-disable no-unused-vars */
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useCallback } from "react";
+import { Download, Eye, Calendar, FileText, X, Loader2 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
-import { Download, Eye, Calendar, FileText, X } from "lucide-react";
 import apiFetch from "../utils/apiFetch.js";
 import LOCAL_ENV from "../../ENV.js";
 import { Helmet, HelmetProvider } from "react-helmet-async";
@@ -25,7 +25,7 @@ export default function Invoices() {
   const [selectedSales, setSelectedSales] = useState([]);
   const [selectedDate, setSelectedDate] = useState("");
   const [viewLoading, setViewLoading] = useState(false);
-
+  const [downloadingDate, setDownloadingDate] = useState(null);
   const token = localStorage.getItem("token");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -82,7 +82,13 @@ export default function Invoices() {
     setCurrentPage(1);
   }, [month, dailySales]);
 
-  const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString("en-CA");
+  const formatDate = (dateStr) => {
+    const d = new Date(dateStr);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
   const handleView = async (date) => {
     setViewLoading(true);
@@ -103,6 +109,7 @@ export default function Invoices() {
 
 
 const handleDownload = async (date) => {
+  setDownloadingDate(date);
   try {
     const res = await apiFetch(`${LOCAL_ENV.API_URL}/api/sales/daily/${date}/data`, {
       headers: { Authorization: `Bearer ${token}` }
@@ -205,6 +212,8 @@ const handleDownload = async (date) => {
   } catch (err) {
     console.error("PDF Error:", err);
     alert("Could not generate PDF.");
+  } finally{
+    setDownloadingDate(null);
   }
 };
 
@@ -305,12 +314,17 @@ const handleDownload = async (date) => {
                               >
                                 <Eye size={18} />
                               </button>
-                              <button 
-                                onClick={() => handleDownload(formatDate(row.date))}
-                                className="p-2 hover:bg-green-500/10 text-gray-400 hover:text-green-400 rounded-lg transition-all"
-                              >
-                                <Download size={18} />
-                              </button>
+                             <button 
+                              disabled={downloadingDate === formatDate(row.date)}
+                              onClick={() => handleDownload(formatDate(row.date))}
+                              className="p-2 hover:bg-green-500/10 text-gray-400 hover:text-green-400 rounded-lg transition-all disabled:opacity-50"
+                            >
+                             {downloadingDate === formatDate(row.date) ? (
+                                <Loader2 className="animate-spin" size={18} />
+                             ) : (
+                              <Download size={18} />
+                              )}
+                            </button>
                             </div>
                           </td>
                         </motion.tr>
@@ -358,7 +372,7 @@ const handleDownload = async (date) => {
                       <tbody className="divide-y divide-white/5">
                         {selectedSales.map((s) => (
                           <tr key={s.id}>
-                            <td className="py-3 font-bold text-gray-300">{s.product_name}</td>
+                            <td className="py-3 font-bold text-gray-300 capitalize">{s.product_name?.toLowerCase() || s.product_name}</td>
                             <td className="py-3 text-gray-500">×{s.quantity}</td>
                             <td className="py-3 text-right font-bold text-white">₦{Number(s.price).toLocaleString()}</td>
                           </tr>
@@ -372,12 +386,22 @@ const handleDownload = async (date) => {
                     <p className="text-[10px] font-black text-gray-500 uppercase">Grand Total</p>
                     <p className="text-2xl font-black text-white">₦{totalForSelectedDate.toLocaleString()}</p>
                   </div>
+                  
                   <button 
-                    onClick={() => handleDownload(formatDate(selectedDate))}
-                    className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black text-xs uppercase tracking-widest transition-all"
-                  >
-                    Download PDF
-                  </button>
+  disabled={downloadingDate === formatDate(selectedDate)}
+  onClick={() => handleDownload(formatDate(selectedDate))}
+  className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black text-xs uppercase tracking-widest transition-all flex items-center gap-2 disabled:bg-blue-800"
+>
+  {downloadingDate === formatDate(selectedDate) ? (
+    <>
+      <Loader2 className="animate-spin" size={16} />
+      Downloading...
+    </>
+  ) : (
+    "Download PDF"
+  )}
+</button>
+
                 </div>
               </motion.div>
             </div>

@@ -109,8 +109,8 @@ export const fetchSalesByDate = (userId, date) => {
      JOIN products p ON p.id = s.product_id
      JOIN users u ON u.id = s.user_id
      WHERE s.user_id = $1
-       AND DATE(s.created_at) = $2
-     ORDER BY s.created_at ASC`,
+       AND (s.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Africa/Lagos')::DATE = $2::DATE
+     ORDER BY s.created_at ASC`, // Removed the comma from inside the string and added backtick
     [userId, date]
   );
 };
