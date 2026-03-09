@@ -1,0 +1,542 @@
+is this correct now : 
+//frontend;
+/* eslint-disable no-unused-vars */
+import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useCallback } from "react";
+import Sidebar from "../components/Sidebar";
+import Topbar from "../components/Topbar";
+import { Download, Eye, Calendar, FileText, X } from "lucide-react";
+import apiFetch from "../utils/apiFetch.js";
+import LOCAL_ENV from "../../ENV.js";
+import { Helmet, HelmetProvider } from "react-helmet-async";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+
+
+export default function Invoices() {
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [month, setMonth] = useState("");
+  const [years, setYears] = useState([]);
+  const [dailySales, setDailySales] = useState([]);
+  const [filteredSales, setFilteredSales] = useState([]);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [selectedSales, setSelectedSales] = useState([]);
+  const [selectedDate, setSelectedDate] = useState("");
+  const [viewLoading, setViewLoading] = useState(false);
+
+  const token = localStorage.getItem("token");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  // --- REUSABLE FETCH FUNCTION ---
+  const fetchDailySales = useCallback(() => {
+    if (!token) return;
+    apiFetch(`${LOCAL_ENV.API_URL}/api/sales/daily?year=${year}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => setDailySales(data))
+      .catch((err) => console.error(err));
+  }, [year, token]);
+
+  // --- MIDNIGHT AUTO-REFRESH LOGIC ---
+  useEffect(() => {
+    const now = new Date();
+    const midnight = new Date();
+    midnight.setHours(24, 0, 0, 0); // Target next 12:00:00 AM
+
+    const msUntilMidnight = midnight.getTime() - now.getTime();
+
+    const midnightTimer = setTimeout(() => {
+      console.log("New day detected. Refreshing invoice records...");
+      fetchDailySales();
+    }, msUntilMidnight);
+
+    return () => clearTimeout(midnightTimer);
+  }, [dailySales, fetchDailySales]);
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) setCurrentUser(JSON.parse(savedUser));
+    const current = new Date().getFullYear();
+    setYears(Array.from({ length: 5 }, (_, i) => current - i));
+  }, []);
+
+  useEffect(() => {
+    fetchDailySales();
+  }, [fetchDailySales]);
+
+  useEffect(() => {
+    let filtered = dailySales;
+    if (month !== "") {
+      filtered = filtered.filter((item) => new Date(item.date).getMonth() === month);
+    }
+    setFilteredSales(filtered);
+    setCurrentPage(1);
+  }, [month, dailySales]);
+
+  const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString("en-CA");
+
+  const handleView = async (date) => {
+    setViewLoading(true);
+    setSelectedDate(date);
+    try {
+      const res = await apiFetch(`${LOCAL_ENV.API_URL}/api/sales/daily/${formatDate(date)}/view`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      setSelectedSales(data);
+      setViewModalOpen(true);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setViewLoading(false);
+    }
+  };
+
+
+const handleDownload = async (date) => {
+  try {
+    // 1. Fetch the raw data from your new lightweight endpoint
+    const res = await apiFetch(`${LOCAL_ENV.API_URL}/api/sales/daily/${date}/data`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const { shopName, sales } = await res.json();
+
+    // 2. Initialize PDF (A4 size)
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    // 3. Add Brand Watermark (Light Grey)
+    doc.setTextColor(240, 240, 240);
+    doc.setFontSize(60);
+    doc.setFont("helvetica", "bold");
+    doc.text("QUANTORA", pageWidth / 2, 150, { align: "center", angle: 45 });
+
+    // 4. Header Section
+    doc.setFillColor(15, 23, 42); // Dark Navy background
+    doc.rect(0, 0, pageWidth, 40, "F");
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(20);
+    doc.text(shopName.toUpperCase(), 15, 20);
+    
+    doc.setFontSize(10);
+    doc.text(`SALES REPORT | DATE: ${date}`, 15, 30);
+
+    // 5. Build the Table
+    const tableRows = sales.map((r, i) => [
+      i + 1,
+      r.product_name.toUpperCase(),
+      `N${(Number(r.price) / Number(r.quantity)).toLocaleString()}`,
+      r.quantity,
+      `N${Number(r.price).toLocaleString()}`,
+      `${Number(r.profit_loss) >= 0 ? '+' : ''}N${Number(r.profit_loss).toLocaleString()}`
+    ]);
+
+    autoTable(doc, {
+      startY: 50,
+      head: [['#', 'Product', 'Unit Price', 'Qty', 'Total', 'Profit/Loss']],
+      body: tableRows,
+      headStyles: { fillColor: [15, 23, 42], fontSize: 9, halign: 'center' },
+      columnStyles: {
+        2: { halign: 'right' },
+        3: { halign: 'center' },
+        4: { halign: 'right' },
+        5: { halign: 'right' },
+      },
+      styles: { fontSize: 8, cellPadding: 5 },
+      didParseCell: function (data) {
+        // Color coding Profit/Loss column
+        if (data.column.index === 5 && data.section === 'body') {
+          const val = data.cell.raw;
+          if (val.includes('-')) data.cell.styles.textColor = [220, 38, 38]; // Red
+          else data.cell.styles.textColor = [22, 163, 74]; // Green
+        }
+      }
+    });
+
+    // 6. Totals & Footer
+    const finalY = doc.lastAutoTable.finalY + 10;
+    const totalRev = sales.reduce((acc, s) => acc + Number(s.price), 0);
+    
+    doc.setTextColor(30, 41, 59);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text(`GRAND TOTAL: N${totalRev.toLocaleString()}`, pageWidth - 15, finalY, { align: "right" });
+
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(150);
+    doc.text(`Generated by Quantora Systems at ${new Date().toLocaleTimeString()}`, pageWidth / 2, 285, { align: "center" });
+
+    // 7. Trigger instant download
+    doc.save(`Invoice-${date}.pdf`);
+
+  } catch (err) {
+    console.error("Frontend PDF Error:", err);
+    alert("Could not generate PDF. Please try again.");
+  }
+};
+  const indexOfLast = currentPage * itemsPerPage;
+  const indexOfFirst = indexOfLast - itemsPerPage;
+  const currentData = filteredSales.slice(indexOfFirst, indexOfLast);
+  const totalForSelectedDate = selectedSales.reduce((acc, s) => acc + Number(s.price), 0);
+
+  return (
+    <HelmetProvider>
+      <Helmet><title>Invoices | Quantora</title></Helmet>
+
+      <div className="flex min-h-screen bg-[#050505] text-gray-300">
+        <Sidebar isOpen={menuOpen} setIsOpen={setMenuOpen} />
+
+        <div className="flex-1 flex flex-col">
+          <Topbar onMenuClick={() => setMenuOpen(true)} userName={currentUser?.name} />
+
+          <main className="p-6 lg:p-10 space-y-8 max-w-6xl mx-auto w-full">
+            <header>
+              <h1 className="text-3xl font-black text-white tracking-tight">Sales Invoices</h1>
+              <p className="text-gray-500 text-sm">Review and export daily transaction reports. System resets at 12 AM.</p>
+            </header>
+
+            {/* FILTERS */}
+            <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-[#111] border border-white/5 p-4 rounded-2xl flex items-center gap-4">
+                <div className="p-3 bg-blue-600/10 text-blue-500 rounded-xl"><Calendar size={20}/></div>
+                <div className="flex-1">
+                  <p className="text-[10px] uppercase font-black text-gray-500 tracking-widest">Year</p>
+                  <select 
+                    value={year} 
+                    onChange={(e) => setYear(Number(e.target.value))}
+                    className="bg-transparent text-white font-bold outline-none w-full"
+                  >
+                    {years.map(y => <option key={y} value={y} className="bg-[#111]">{y}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="bg-[#111] border border-white/5 p-4 rounded-2xl flex items-center gap-4">
+                <div className="p-3 bg-purple-600/10 text-purple-500 rounded-xl"><FileText size={20}/></div>
+                <div className="flex-1">
+                  <p className="text-[10px] uppercase font-black text-gray-500 tracking-widest">Month</p>
+                  <select 
+                    value={month} 
+                    onChange={(e) => setMonth(e.target.value === "" ? "" : Number(e.target.value))}
+                    className="bg-transparent text-white font-bold outline-none w-full"
+                  >
+                    <option value="" className="bg-[#111]">All Months</option>
+                    {months.map((m, idx) => <option key={m} value={idx} className="bg-[#111]">{m}</option>)}
+                  </select>
+                </div>
+              </div>
+            </section>
+
+            {/* TABLE */}
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+              className="bg-[#111] border border-white/5 rounded-3xl overflow-hidden shadow-2xl"
+            >
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-white/[0.02] border-b border-white/5 text-[10px] font-black uppercase tracking-widest text-gray-500">
+                    <th className="px-6 py-5">Date</th>
+                    <th className="px-6 py-5">Total Revenue</th>
+                    <th className="px-6 py-5 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  <AnimatePresence mode='popLayout'>
+                    {currentData.length === 0 ? (
+                      <motion.tr 
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                        key="empty"
+                      >
+                        <td colSpan="3" className="px-6 py-20 text-center text-gray-600 italic">No invoice records found for this period.</td>
+                      </motion.tr>
+                    ) : (
+                      currentData.map((row) => (
+                        <motion.tr 
+                          layout
+                          initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                          key={row.date} 
+                          className="group hover:bg-white/[0.01] transition-colors"
+                        >
+                          <td className="px-6 py-4 font-bold text-gray-300">
+                            {new Date(row.date).toLocaleDateString(undefined, { dateStyle: 'long' })}
+                          </td>
+                          <td className="px-6 py-4 font-black text-blue-400">
+                            ₦{Number(row.total_sales ?? 0).toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex justify-end gap-2">
+                              <button 
+                                onClick={() => handleView(row.date)}
+                                className="p-2 hover:bg-blue-500/10 text-gray-400 hover:text-blue-400 rounded-lg transition-all"
+                              >
+                                <Eye size={18} />
+                              </button>
+                              <button 
+                                onClick={() => handleDownload(formatDate(row.date))}
+                                className="p-2 hover:bg-green-500/10 text-gray-400 hover:text-green-400 rounded-lg transition-all"
+                              >
+                                <Download size={18} />
+                              </button>
+                            </div>
+                          </td>
+                        </motion.tr>
+                      ))
+                    )}
+                  </AnimatePresence>
+                </tbody>
+              </table>
+            </motion.div>
+          </main>
+        </div>
+
+        {/* MODAL SECTION REMAINS THE SAME AS BEFORE */}
+        <AnimatePresence>
+          {viewModalOpen && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <motion.div 
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                onClick={() => setViewModalOpen(false)}
+                className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+              />
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+                className="relative bg-[#0d0d0d] border border-white/10 w-full max-w-2xl rounded-3xl shadow-3xl overflow-hidden flex flex-col max-h-[85vh]"
+              >
+                <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
+                  <h2 className="text-xl font-black text-white">Daily Report</h2>
+                  <button onClick={() => setViewModalOpen(false)} className="text-gray-500 hover:text-white transition-colors"><X/></button>
+                </div>
+                
+                <div className="p-6 overflow-y-auto">
+                   <div className="mb-6">
+                      <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Transaction Date</p>
+                      <p className="text-lg font-bold text-blue-400">{new Date(selectedDate).toLocaleDateString(undefined, { dateStyle: 'full' })}</p>
+                   </div>
+
+                   <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-left text-[10px] font-black text-gray-500 uppercase border-b border-white/5">
+                          <th className="pb-3">Product</th>
+                          <th className="pb-3">Qty</th>
+                          <th className="pb-3 text-right">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5">
+                        {selectedSales.map((s) => (
+                          <tr key={s.id}>
+                            <td className="py-3 font-bold text-gray-300">{s.product_name}</td>
+                            <td className="py-3 text-gray-500">×{s.quantity}</td>
+                            <td className="py-3 text-right font-bold text-white">₦{Number(s.price).toLocaleString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                   </table>
+                </div>
+
+                <div className="p-6 border-t border-white/5 bg-white/[0.02] flex justify-between items-center">
+                  <div>
+                    <p className="text-[10px] font-black text-gray-500 uppercase">Grand Total</p>
+                    <p className="text-2xl font-black text-white">₦{totalForSelectedDate.toLocaleString()}</p>
+                  </div>
+                  <button 
+                    onClick={() => handleDownload(formatDate(selectedDate))}
+                    className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black text-xs uppercase tracking-widest transition-all"
+                  >
+                    Download PDF
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </div>
+    </HelmetProvider>
+  );
+}
+
+
+//Backend;
+import * as Sales from "../models/sales_Model.js";
+import html_to_pdf from "html-pdf-node";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+
+// --- LOGO LOGIC ---
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// This reads the image file and converts it to a string the PDF can understand
+const getLogoDataUri = () => {
+  try {
+    const logoPath = path.join(__dirname, "../assets/logo.png");
+    const logoBase64 = fs.readFileSync(logoPath).toString("base64");
+    return `data:image/png;base64,${logoBase64}`;
+  } catch (error) {
+    console.error("Logo not found at assets/logo.png, using empty string");
+    return "";
+  }
+};
+
+const logoDataUri = getLogoDataUri();
+// ------------------
+
+// HELPER: Get today's date in YYYY-MM-DD format based on server time
+const getTodayDate = () => new Date().toLocaleDateString('en-CA');
+
+export const getAllSales = async (req, res) => {
+  try {
+    const { rows } = await Sales.fetchAllSales(req.userId);
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error fetching sales" });
+  }
+};
+
+export const recordSale = async (req, res) => {
+  const { productId, quantity, price } = req.body;
+  const userId = req.userId;
+
+  if (!productId || !quantity || !price) {
+    return res.status(400).json({
+      message: "productId, quantity, and price are required.",
+    });
+  }
+
+  try {
+    const saleRes = await Sales.insertSale(userId, productId, quantity, price);
+    res.status(201).json({
+      message: "Sale recorded successfully",
+      sale: {
+        id: saleRes.rows[0].id,
+        profit: Number(saleRes.rows[0].profit_loss ?? 0),
+        created_at: saleRes.rows[0].created_at
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message || "Server error recording sale" });
+  }
+};
+
+export const getDailySales = async (req, res) => {
+  try {
+    const year = parseInt(req.query.year) || new Date().getFullYear();
+    const { rows } = await Sales.fetchDailySales(req.userId, year);
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error fetching daily sales" });
+  }
+};
+
+export const viewDailySales = async (req, res) => {
+  try {
+    let date = req.params.date;
+    if (date === 'today') date = getTodayDate();
+    if (!date) return res.status(400).json({ message: "Date is required" });
+
+    const { rows } = await Sales.fetchSalesByDate(req.userId, date);
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error fetching daily sales" });
+  }
+};
+
+export const getSalesByDate = async (req, res) => {
+  try {
+    let date = req.params.date;
+    if (date === 'today') date = getTodayDate();
+    const { rows } = await Sales.fetchSalesByDate(req.userId, date);
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error fetching sales for this date" });
+  }
+};
+
+
+export const downloadDailySalesData = async (req, res) => {
+  try {
+    let date = req.params.date;
+    if (date === 'today') date = new Date().toLocaleDateString('en-CA');
+
+    const { rows } = await Sales.fetchSalesByDate(req.userId, date);
+    
+    if (!rows.length) {
+      return res.status(404).json({ message: "No sales found for this date." });
+    }
+
+    // Just send the raw data. The frontend handles the rest!
+    res.json({
+      shopName: rows[0].shop_name || "Quantora Stores",
+      date: date,
+      sales: rows
+    });
+
+  } catch (err) {
+    console.error("Data Fetch Error:", err);
+    res.status(500).json({ message: "Error fetching invoice data" });
+  }
+};
+
+
+export const getBestSellingProduct = async (req, res) => {
+  try {
+    const { rows } = await Sales.fetchProductSalesSummary(req.userId);
+    if (!rows.length) return res.status(404).json({ message: "No sales data available" });
+
+    let bestProduct = rows[0];
+    for (const product of rows) {
+      if (Number(product.total_quantity_sold) > Number(bestProduct.total_quantity_sold)) {
+        bestProduct = product;
+      }
+    }
+
+    res.json({
+      productId: bestProduct.product_id,
+      productName: bestProduct.product_name,
+      totalQuantitySold: Number(bestProduct.total_quantity_sold),
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error fetching best selling product" });
+  }
+};
+
+export const getLeastSellingProduct = async (req, res) => {
+  try {
+    const { rows } = await Sales.fetchProductSalesSummary(req.userId);
+    if (!rows.length) return res.status(404).json({ message: "No sales data available" });
+
+    let leastProduct = rows[0];
+    for (const product of rows) {
+      if (Number(product.total_quantity_sold) < Number(leastProduct.total_quantity_sold)) {
+        leastProduct = product;
+      }
+    }
+
+    res.json({
+      productId: leastProduct.product_id,
+      productName: leastProduct.product_name,
+      totalQuantitySold: Number(leastProduct.total_quantity_sold),
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error fetching least selling product" });
+  }
+};

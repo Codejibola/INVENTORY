@@ -9,7 +9,7 @@ const plans = [
   {
     id: "monthly",
     name: "Starter Monthly",
-    displayPrice: "3,000", // Keep for UI only
+    displayPrice: "3,000", 
     icon: <Zap className="text-blue-400" size={32} />,
     features: ["Full Inventory Management", "Daily Sales Analytics", "Worker Account Access", "Real-time Stock Alerts"],
     buttonText: "Start Monthly",
@@ -18,9 +18,9 @@ const plans = [
   {
     id: "yearly",
     name: "Business Yearly",
-    displayPrice: "30,000", // Keep for UI only
+    displayPrice: "30,000", 
     icon: <Crown className="text-yellow-400" size={32} />,
-    features: ["Everything in Monthly", "Save ₦10,000 Yearly", "Priority Tech Support", "Detailed Monthly Reports", "Unlimited Worker Accounts"],
+    features: ["Everything in Monthly", "Save ₦6,000 Yearly", "Priority Tech Support", "Detailed Monthly Reports", "Unlimited Worker Accounts"],
     buttonText: "Claim 2 Months Free",
     popular: true
   }
@@ -40,8 +40,7 @@ const Subscription = () => {
 
     setLoadingPlan(plan.id);
 
-    try {
-      // CLEANUP: We now only send email and planType. 
+    try { 
       // The backend handles the price lookup securely.
       const response = await axios.post(`${LOCAL_ENV.API_URL}/api/paystack/pay`, {
         email: user?.email, 

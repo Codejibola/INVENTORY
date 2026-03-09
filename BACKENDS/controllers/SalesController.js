@@ -1,5 +1,4 @@
 import * as Sales from "../models/sales_Model.js";
-import html_to_pdf from "html-pdf-node";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -100,185 +99,31 @@ export const getSalesByDate = async (req, res) => {
   }
 };
 
-export const downloadDailySalesExcel = async (req, res) => {
+
+export const downloadDailySalesData = async (req, res) => {
   try {
     let date = req.params.date;
-    if (date === 'today') date = getTodayDate();
+    if (date === 'today') date = new Date().toLocaleDateString('en-CA');
 
     const { rows } = await Sales.fetchSalesByDate(req.userId, date);
-    if (!rows.length) return res.status(404).json({ message: "No sales found for this date." });
-
-    const totalAmount = rows.reduce((acc, r) => acc + Number(r.price), 0);
-    const totalProfit = rows.reduce((acc, r) => acc + Number(r.profit_loss || 0), 0);
-    const totalQuantity = rows.reduce((acc, r) => acc + Number(r.quantity), 0);
-
-    // --- FIX: Define signatureDataUri here ---
-    let signatureDataUri = "";
-    try {
-      const sigPath = path.join(__dirname, "../assets/signature.png");
-      const sigBase64 = fs.readFileSync(sigPath).toString("base64");
-      signatureDataUri = `data:image/png;base64,${sigBase64}`;
-    } catch (error) {
-      console.error("Signature not found, skipping signature stamp", error);
+    
+    if (!rows.length) {
+      return res.status(404).json({ message: "No sales found for this date." });
     }
-    // ------------------------------------------
 
-    // --- HELPER: Title Case ---
-    const toTitleCase = (str) => {
-      return str.toLowerCase().split(' ').map(word => {
-        return (word.charAt(0).toUpperCase() + word.slice(1));
-      }).join(' ');
-    };
-    // -----------------------
-
-    // Assume shop name is in the first row of data
-    const shopName = rows[0].shop_name || "Quantora Stores";
-
-    const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 40px; color: #1e293b; }
-        .watermark {
-          position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg);
-          font-size: 80px; font-weight: 900; 
-          color: rgba(59, 130, 246, 0.08); 
-          z-index: -1; white-space: nowrap;
-          text-transform: uppercase; letter-spacing: 15px;
-        }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; border-bottom: 4px solid #2563eb; padding-bottom: 20px; }
-        
-        /* Smaller, professional logo */
-        .logo-container { width: 100px; } 
-        .logo-container img { width: 100%; height: auto; display: block; }
-        
-        .store-details { text-align: right; }
-        .store-name { font-size: 24px; font-weight: 900; color: #1e293b; margin: 0; text-transform: uppercase; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; table-layout: fixed; }
-        th { background: #0f172a; color: white; padding: 12px; font-size: 10px; text-transform: uppercase; text-align: left; }
-        td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 12px; word-wrap: break-word; }
-        .amount-col { text-align: right; font-family: monospace; font-weight: 600; }
-        .qty-col { text-align: center; }
-        .total-row { background: #f8fafc; font-weight: 900; border-top: 2px solid #2563eb; }
-        
-        /* Summary & Signature Styling */
-        .summary-box { margin-top: 30px; padding: 15px; background: #f1f5f9; border-radius: 8px; width: 300px; float: right; overflow: hidden; }
-        .summary-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px; }
-        .summary-total { font-weight: 900; border-top: 1px solid #cbd5e1; padding-top: 5px; margin-top: 5px; }
-        
-        /* UPDATED Signature Styles for Bottom Left */
-        .signature-container { 
-          margin-top: 30px; 
-          text-align: left; /* Aligns content to left */
-          width: 200px; 
-          float: left; /* Floats to the left */
-        }
-        .signature-image { max-height: 80px; width: auto; display: block; margin-left: 30%; }
-        .signature-line { border-top: 1px solid #1e293b; margin-top: 5px; width: 100%; }
-        .signature-text { font-size: 10px; color: #64748b; margin: 2px 0px 0px 60px; }
-
-        .footer { margin-top: 150px; text-align: center; font-size: 10px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 20px; clear: both;}
-      </style>
-    </head>
-    <body>
-      <div class="watermark">QUANTORA</div>
-      <div class="header">
-        <div class="logo-container">
-          <img src="${logoDataUri}" alt="Quantora Logo">
-        </div> 
-        <div class="store-details">
-          <h1 class="store-name">${shopName}</h1>
-          <p style="font-size: 12px; margin: 5px 0;">Sales Report | Date: <strong>${date}</strong></p>
-        </div>
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th style="width: 5%;">#</th>
-            <th style="width: 35%;">Product</th>
-            <th style="width: 15%;" class="amount-col">Unit Price</th>
-            <th style="width: 10%;" class="qty-col">Qty</th>
-            <th style="width: 15%;" class="amount-col">Total Price</th>
-            <th style="width: 20%;" class="amount-col">Profit / Loss</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows.map((r, i) => {
-            const unitPrice = Number(r.price) / Number(r.quantity);
-            const profitLossValue = Number(r.profit_loss);
-            const sign = profitLossValue >= 0 ? '+' : '-';
-            
-            return `
-            <tr>
-              <td>${i + 1}</td>
-              <td style="font-weight: 600;">${toTitleCase(r.product_name)}</td>
-              <td class="amount-col">₦${unitPrice.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-              <td class="qty-col">${r.quantity}</td>
-              <td class="amount-col">₦${Number(r.price).toLocaleString()}</td>
-              
-              <td class="amount-col" style="color: ${profitLossValue >= 0 ? '#16a34a' : '#dc2626'}">
-                ${sign}₦${Math.abs(profitLossValue).toLocaleString(undefined, {minimumFractionDigits: 2})}
-              </td>
-            </tr>`;
-          }).join('')}
-        </tbody>
-        <tfoot>
-          <tr class="total-row">
-            <td colspan="4" style="text-align: right;">GRAND TOTAL</td>
-            <td class="amount-col">₦${totalAmount.toLocaleString()}</td>
-            <td class="amount-col" style="color: ${totalProfit >= 0 ? '#16a34a' : '#dc2626'}">
-              ${totalProfit >= 0 ? '+' : '-'}₦${Math.abs(totalProfit).toLocaleString()}
-            </td>
-          </tr>
-        </tfoot>
-      </table>
-
-      <div class="summary-box">
-        <div class="summary-row">
-          <span>Total Products Sold:</span>
-          <span>${rows.length}</span>
-        </div>
-        <div class="summary-row summary-total">
-          <span>Total Items Volume:</span>
-          <span>${totalQuantity}</span>
-        </div>
-      </div>
-      
-      ${signatureDataUri ? `
-        <div class="signature-container">
-          <img src="${signatureDataUri}" class="signature-image" alt="Authorized Stamp">
-          <div class="signature-line"></div>
-          <div class="signature-text">Authorized Stamp</div>
-        </div>
-      ` : ''}
-
-      <div class="footer">
-        <p>Generated at ${new Date().toLocaleTimeString()} on ${getTodayDate()}</p>
-        <p>&copy; 2026 Quantora Inventory Systems</p>
-      </div>
-    </body>
-    </html>
-    `;
-
-    const options = { format: "A4" };
-    const file = { content: htmlContent };
-
-    html_to_pdf.generatePdf(file, options).then((pdfBuffer) => {
-      // Filename with timestamp
-      const timestamp = new Date().getTime();
-      const filename = `Invoice-${date}-${timestamp}.pdf`;
-      
-      res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", `attachment; filename=${filename}`);
-      res.send(pdfBuffer);
+    // Just send the raw data. The frontend handles the rest!
+    res.json({
+      shopName: rows[0].shop_name || "Quantora Stores",
+      date: date,
+      sales: rows
     });
 
   } catch (err) {
-    console.error("PDF Export Error:", err);
-    res.status(500).json({ message: "Error generating PDF" });
+    console.error("Data Fetch Error:", err);
+    res.status(500).json({ message: "Error fetching invoice data" });
   }
 };
+
 
 export const getBestSellingProduct = async (req, res) => {
   try {
