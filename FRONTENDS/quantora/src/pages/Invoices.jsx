@@ -195,12 +195,14 @@ const handleDownload = async (date) => {
 
     // Reset for signature
     if (signatureStamp) {
-      doc.addImage(signatureStamp, "PNG", pageWidth - 50, currentY + 10, 35, 15);
-      doc.setFontSize(8);
-      doc.setFont("helvetica", "italic");
-      doc.setTextColor(100);
-      doc.text("Authorized Signature", pageWidth - 32, currentY + 30, { align: "center" });
-    }
+  doc.addImage(signatureStamp, "PNG", pageWidth - 55, currentY + 5, 40, 25);
+  
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "italic");
+  doc.setTextColor(100);
+  
+  doc.text("Authorized Signature", pageWidth - 35, currentY + 35, { align: "center" });
+}
 
     // --- 5. FOOTER ---
     doc.setFontSize(7);
