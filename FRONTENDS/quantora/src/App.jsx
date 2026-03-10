@@ -62,11 +62,15 @@ export default function App() {
         <Route path="/settings" element={<Settings />} />
       </Route>
 
+         
          {/* Worker Group */}
-      <Route path="/worker" element={<PrivateRoute allowedRole="worker" />}>
-        <Route index element={<WorkerRecordSales />} />
-        <Route path="record-sales" element={<WorkerRecordSales />} />
-        <Route path="available-products" element={<AvailableProducts />} />
+     <Route element={<PrivateRoute allowedRole="worker" />}>
+     {/* We wrap the worker routes with the WorkerDashboard layout */}
+      <Route path="/worker" element={<WorkerDashboard />}>
+      <Route index element={<WorkerRecordSales />} />
+      <Route path="record-sales" element={<WorkerRecordSales />} />
+      <Route path="available-products" element={<AvailableProducts />} />
+     </Route>
       </Route>
 
       </Route>
