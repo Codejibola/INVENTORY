@@ -65,7 +65,7 @@ export default function Navbar() {
         {/* Desktop CTA */}
         <div className="hidden md:flex items-center">
             <a
-                href="#cta"
+                href="https://quantora-app.vercel.app"
                 className="bg-white hover:bg-zinc-200 transition px-5 py-2.5 rounded-full font-semibold text-zinc-950 text-sm"
             >
                 Get Started
@@ -119,7 +119,7 @@ export default function Navbar() {
               ))}
 
               <a
-                href="#cta"
+                href="https://quantora-app.vercel.app"
                 onClick={() => setOpen(false)}
                 className="mt-4 bg-blue-600 hover:bg-blue-500 transition px-5 py-3 rounded-full font-semibold text-white text-center"
               >

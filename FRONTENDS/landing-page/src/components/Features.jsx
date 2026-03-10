@@ -152,23 +152,39 @@ export default function Features() {
           </div>
 
           {/* Image Showcase Side */}
-          <div className="lg:col-span-7 order-1 lg:order-2">
-            <div className="relative aspect-[16/10] w-full rounded-3xl border border-zinc-800 bg-zinc-900 p-2 shadow-2xl overflow-hidden">
-              <AnimatePresence mode="wait">
-                <motion.img
-                  key={active.image}
-                  src={active.image}
-                  alt={active.title}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.5, ease: "easeInOut" }}
-                  // CHANGED: object-contain makes the image show in full
-                  className="w-full h-full object-contain rounded-2xl grayscale-[20%] hover:grayscale-0 transition-all duration-700"
-                />
-              </AnimatePresence>
-            </div>
-          </div>
+{/* Image Showcase Side */}
+<div className="lg:col-span-7 order-1 lg:order-2">
+  {/* Mobile-only Label: Ensures users know which feature this image belongs to */}
+  <div className="lg:hidden mb-4 flex items-center gap-3">
+    <span className="h-px flex-1 bg-zinc-800"></span>
+    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-500 whitespace-nowrap">
+      Visualizing: {active.title}
+    </span>
+    <span className="h-px flex-1 bg-zinc-800"></span>
+  </div>
+
+  <section className="relative aspect-[16/10] w-full rounded-3xl border border-zinc-800 bg-zinc-900 p-2 shadow-2xl overflow-hidden">
+    <AnimatePresence mode="wait">
+      <motion.img
+        key={active.image}
+        src={active.image}
+        alt={`${active.title} interface preview`}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 1.05 }}
+        transition={{ duration: 0.5, ease: "easeInOut" }}
+        className="w-full h-full object-contain rounded-2xl grayscale-[20%] hover:grayscale-0 transition-all duration-700"
+      />
+    </AnimatePresence>
+    
+    {/* Subtle Overlay Label for the Image itself */}
+    <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 hidden md:block">
+      <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
+        Quantora OS • {active.subtitle}
+      </p>
+    </div>
+  </section>
+</div>
         </div>
       </div>
     </section>
