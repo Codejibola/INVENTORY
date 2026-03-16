@@ -51,6 +51,15 @@ export default function Features() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
+  // 1. Correct syntax for background pre-loading
+  useEffect(() => {
+    FEATURES.forEach((feature) => {
+      const img = new Image();
+      img.src = feature.image;
+    });
+  }, []); 
+
+  // 2. Timer for auto-rotating features
   useEffect(() => {
     if (isPaused) return;
     const interval = setInterval(() => {
@@ -79,7 +88,7 @@ export default function Features() {
           </p>
         </div>
 
-        {/* Feature Navigation - Adjusted to grid-cols-5 for the 5 items */}
+        {/* Feature Navigation */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-20">
           {FEATURES.map((feature, index) => (
             <button
@@ -135,7 +144,6 @@ export default function Features() {
                   {active.description}
                 </p>
                 
-                {/* Metric Badge with dynamic icon based on feature */}
                 <div className="p-5 rounded-2xl bg-zinc-900/50 border border-zinc-800 flex items-center gap-5 shadow-xl backdrop-blur-sm">
                   <div className="h-12 w-12 rounded-xl bg-blue-600/20 flex items-center justify-center flex-shrink-0">
                     <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -152,39 +160,33 @@ export default function Features() {
           </div>
 
           {/* Image Showcase Side */}
-{/* Image Showcase Side */}
-<div className="lg:col-span-7 order-1 lg:order-2">
-  {/* Mobile-only Label: Ensures users know which feature this image belongs to */}
-  <div className="lg:hidden mb-4 flex items-center gap-3">
-    <span className="h-px flex-1 bg-zinc-800"></span>
-    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-500 whitespace-nowrap">
-      Visualizing: {active.title}
-    </span>
-    <span className="h-px flex-1 bg-zinc-800"></span>
-  </div>
-
-  <section className="relative aspect-[16/10] w-full rounded-3xl border border-zinc-800 bg-zinc-900 p-2 shadow-2xl overflow-hidden">
-    <AnimatePresence mode="wait">
-      <motion.img
-        key={active.image}
-        src={active.image}
-        alt={`${active.title} interface preview`}
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 1.05 }}
-        transition={{ duration: 0.5, ease: "easeInOut" }}
-        className="w-full h-full object-contain rounded-2xl grayscale-[20%] hover:grayscale-0 transition-all duration-700"
-      />
-    </AnimatePresence>
-    
-    {/* Subtle Overlay Label for the Image itself */}
-    <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 hidden md:block">
-      <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
-        Quantora OS • {active.subtitle}
-      </p>
-    </div>
-  </section>
-</div>
+          <div className="lg:col-span-7 order-1 lg:order-2 flex flex-col justify-start">
+            <section className="relative w-full h-auto rounded-3xl border border-zinc-800 bg-zinc-900 shadow-2xl overflow-hidden p-1.5 backdrop-blur-3xl">
+              <AnimatePresence mode="wait">
+                <motion.img
+                  key={active.image}
+                  src={active.image}
+                  alt={`${active.title} interface preview`}
+                  
+                  // SYNTAX CORRECT IMPLEMENTATION
+                  loading="lazy"
+                  decoding="async"
+                  
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 1.05 }}
+                  transition={{ duration: 0.5, ease: "easeInOut" }}
+                  className="w-full h-auto object-contain rounded-[18px] grayscale-[20%] hover:grayscale-0 transition-all duration-700 block"
+                />
+              </AnimatePresence>
+              
+              <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 hidden md:block z-10">
+                <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
+                  Quantora OS • {active.subtitle}
+                </p>
+              </div>
+            </section>
+          </div>
         </div>
       </div>
     </section>

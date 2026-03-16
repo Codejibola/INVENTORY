@@ -25,8 +25,6 @@ export default function Hero() {
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
           <header>
-          
-
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] mb-6 tracking-tight">
               MASTER YOUR STOCK. <br />
               <span className="bg-gradient-to-r from-blue-400 via-blue-500 to-blue-700 bg-clip-text text-transparent italic">
@@ -83,13 +81,18 @@ export default function Hero() {
           animate={{ opacity: 1, scale: 1, rotateY: 0 }}
           transition={{ duration: 1, ease: "easeOut" }}
         >
-          {/* Glassmorphism Background behind image */}
           <div className="absolute -inset-4 bg-blue-600/5 rounded-[2rem] blur-2xl transform rotate-3"></div>
           
           <div className="relative p-2 bg-zinc-900/50 backdrop-blur-sm border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
              <img
               src={hero}
               alt="Quantora inventory management dashboard preview"
+              
+              // PERFORMANCE UPGRADE FOR HERO
+              loading="eager"           // Load immediately
+              fetchpriority="high"      // Prioritize over other assets
+              decoding="async"          // Don't block the main thread
+              
               className="rounded-xl grayscale-[20%] hover:grayscale-0 transition-all duration-700"
             />
           </div>
