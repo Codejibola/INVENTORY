@@ -32,7 +32,7 @@ export default function CTA() {
         </header>
 
        <a
-  href="https://quantora-app.vercel.app/"
+  href="https://quantora.online"
   aria-label="Start free trial of Quantora inventory management software"
   className="inline-block bg-blue-600 hover:bg-blue-500 transition px-10 py-4 rounded-md font-semibold text-lg text-white"
 >
