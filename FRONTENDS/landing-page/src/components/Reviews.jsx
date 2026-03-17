@@ -15,7 +15,7 @@ const REVIEWS = [
   },
   {
     name: "MSSN ABUAD Store",
-    handle: "@mssnabuad",
+    handle: "@mssn.abuad",
     platform: "Instagram",
     icon: Instagram,
     avatar: mssnAbuadLogo, 
