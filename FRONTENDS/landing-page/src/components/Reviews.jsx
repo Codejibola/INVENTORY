@@ -6,7 +6,7 @@ import { Twitter, Instagram, Linkedin, BadgeCheck } from "lucide-react";
 const REVIEWS = [
   {
     name: "Balqees. L",
-    handle: "@Wura's coat",
+    handle: "@Wura's_coat",
     platform: "Instagram",
     icon: Instagram,
     avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Baliqees&top[]=hijab&mouth[]=smile&eyebrows[]=default", 
