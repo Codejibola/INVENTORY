@@ -5,7 +5,7 @@ import { Twitter, Instagram, Linkedin, BadgeCheck } from "lucide-react";
 
 const REVIEWS = [
   {
-    name: "Baliqees. L",
+    name: "Balqees. L",
     handle: "@rahmahKnits",
     platform: "Instagram",
     icon: Instagram,
@@ -18,7 +18,7 @@ const REVIEWS = [
     handle: "@mssnabuad",
     platform: "Instagram",
     icon: Instagram,
-    avatar: mssnAbuadLogo, // Using your imported logo here
+    avatar: mssnAbuadLogo, 
     text: "Quantora is an exceptionally beneficial tool for the MSSN store. The features for tracking sales, monitoring inventory, and calculating profit and loss are exactly what we need for proper record-keeping and accountability. While there is a slight learning curve, the system is robust and effectively supports our management needs. Truly a 10/10 platform!",
     location: "Institutional Store",
   },
