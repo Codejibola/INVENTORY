@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShieldCheck, Briefcase, Eye, EyeOff, AlertCircle, CreditCard } from "lucide-react";
-import logo from "../assets/logo.png";
+import logo from "../assets/logo.webp";
 import LOCAL_ENV from "../../ENV.js"; 
 import { useAuth } from "../context/AuthContext";
 

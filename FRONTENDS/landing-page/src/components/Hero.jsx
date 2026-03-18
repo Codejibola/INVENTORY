@@ -1,6 +1,6 @@
 //eslint-disable-next-line no-unused-vars 
 import { motion } from "framer-motion";
-import hero from "../assets/hero.png";
+import hero from "../assets/hero.webp";
 import { Link } from "react-router-dom";
 
 export default function Hero() {

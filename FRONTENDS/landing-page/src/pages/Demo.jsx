@@ -4,12 +4,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Helmet } from "react-helmet-async";
 
 // Image Imports
-import registration from "../assets/registration.png";
-import dashboard from "../assets/dashboard.png";
-import inventory from "../assets/inventory.png";
-import recordsales from "../assets/recordsales.png";
-import invoices from "../assets/invoices.png";
-import oversight from "../assets/oversight.png";
+import registration from "../assets/registration.webp";
+import dashboard from "../assets/dashboard.webp";
+import inventory from "../assets/inventory.webp";
+import recordsales from "../assets/recordsales.webp";
+import invoices from "../assets/invoices.webp";
+import oversight from "../assets/oversight.webp";
 
 const demoSteps = [
   { image: registration, title: "Secure Onboarding", description: "Create your business account in seconds. Set up your profile and get ready to master your data." },

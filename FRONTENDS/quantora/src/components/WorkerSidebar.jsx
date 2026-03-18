@@ -1,7 +1,7 @@
 /* eslint-disable */
 import { NavLink, useNavigate } from "react-router-dom";
 import { X, LogOut, ShoppingCart, Box, RefreshCw } from "lucide-react";
-import logo from "../assets/logo.png";
+import logo from "../assets/logo.webp";
 
 export default function WorkerSidebar({ isOpen, onClose }) {
   const navigate = useNavigate();

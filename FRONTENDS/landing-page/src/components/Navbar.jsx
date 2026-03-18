@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 import { motion, AnimatePresence } from "framer-motion";
-import logo from "../assets/logo.png";
+import logo from "../assets/logo.webp";
 import { useState, useRef, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 

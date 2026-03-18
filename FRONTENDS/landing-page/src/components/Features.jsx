@@ -3,11 +3,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 
 // Image Imports
-import sc1 from "../assets/Quan1.png";
-import sc2 from "../assets/Quan3.png";
-import sc3 from "../assets/Quan2.png";
-import sc4 from "../assets/quan4.png";
-import sc5 from "../assets/Quan5.png";
+import sc1 from "../assets/Quan1.webp";
+import sc2 from "../assets/Quan3.webp";
+import sc3 from "../assets/Quan2.webp";
+import sc4 from "../assets/quan4.webp";
+import sc5 from "../assets/Quan5.webp";
 
 const FEATURES = [
   {

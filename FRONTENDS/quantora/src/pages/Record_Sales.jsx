@@ -9,8 +9,8 @@ import { Helmet, HelmetProvider } from "react-helmet-async";
 import { ShoppingCart, Package, DollarSign, TrendingUp, History, Receipt, Trash2, Download } from "lucide-react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import logo from "../assets/logo.png";
-import signatureStamp from "../assets/signature.png";
+import logo from "../assets/logo.webp";
+import signatureStamp from "../assets/signature.webp";
 
 const toTitleCase = (str = "") =>
   str.toLowerCase().split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");

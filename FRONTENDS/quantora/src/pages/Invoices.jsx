@@ -7,8 +7,8 @@ import Topbar from "../components/Topbar";
 import apiFetch from "../utils/apiFetch.js";
 import LOCAL_ENV from "../../ENV.js";
 import { Helmet, HelmetProvider } from "react-helmet-async";
-import logo from "../assets/logo.png";
-import signatureStamp from "../assets/signature.png";
+import logo from "../assets/logo.webp";
+import signatureStamp from "../assets/signature.webp";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 

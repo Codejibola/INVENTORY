@@ -4,11 +4,10 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { FiMail, FiLock, FiEye, FiEyeOff, FiArrowRight, FiCheckCircle } from "react-icons/fi";
-import bg from "../assets/admin0.png";
-import logo from "../assets/logo.png";
-// 1. Import your environment configuration
+import bg from "../assets/admin0.webp";
+import logo from "../assets/logo.webp";
 import LOCAL_ENV from "../../ENV.js"; 
-import { useAuth } from "../context/AuthContext"; // 1. Import the hook
+import { useAuth } from "../context/AuthContext"; 
 
 export default function Admin() {
   const navigate = useNavigate();
