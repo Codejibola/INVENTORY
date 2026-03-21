@@ -1,6 +1,7 @@
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
 import mssnAbuadLogo from "../assets/MSSN-ABUAD-logo.webp";
+import almanab from "../assets/almanab.png";
 import { Twitter, Instagram, Linkedin, MessageCircle, BadgeCheck } from "lucide-react";
 
 
@@ -31,6 +32,14 @@ const REVIEWS = [
     avatar: mssnAbuadLogo, 
     text: "Quantora is an exceptionally beneficial tool for the MSSN store. The features for tracking sales, monitoring inventory, and calculating profit and loss are exactly what we need for proper record-keeping and accountability. While there is a slight learning curve, the system is robust and effectively supports our management needs. Truly a 10/10 platform!",
     location: "Institutional Store",
+  },
+  {
+    name: "Al-Manab Apparels",
+    handle: "@almanab.apparels",
+    platform: "Instagram",
+    icon: Instagram,
+    avatar: almanab, 
+    text: "It’s a nice system; it clearly addresses the stress of online orders and manual tracking",
   },
   {
     name: "Bisi Ade",
