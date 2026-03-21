@@ -1,7 +1,8 @@
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
 import mssnAbuadLogo from "../assets/MSSN-ABUAD-logo.webp";
-import { Twitter, Instagram, Linkedin, BadgeCheck } from "lucide-react";
+import { Twitter, Instagram, Linkedin, MessageCircle, BadgeCheck } from "lucide-react";
+
 
 const REVIEWS = [
   {
@@ -12,6 +13,15 @@ const REVIEWS = [
     avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Baliqees&top[]=hijab&mouth[]=smile&eyebrows[]=default", 
     text: "Quantora completely changed how I manage business sales. The profit and loss feature has been of tremendous help to me. Now, I can keep track of the profit or loss I make on each sale, and also per month. It lets me know which products are more profitable, helping me make smarter decisions.",
     location: "Online Boutique",
+  },
+  {
+    name: "Aisha. A",
+    handle: "@+234 814 515 9661",
+    platform: "Whatsapp",
+    icon: MessageCircle,
+    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Baliqees&top[]=hijab&mouth[]=smile&eyebrows[]=default", 
+    text: "It's very nice and not difficult to navigate. It seems like it's really going to help my business. I especially like the receipt idea—it’s something I can definitely pay for",
+    location: "Online Vendor",
   },
   {
     name: "MSSN ABUAD Store",
