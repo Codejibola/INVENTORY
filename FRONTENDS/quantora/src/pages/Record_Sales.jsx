@@ -94,6 +94,7 @@ export default function RecordSales() {
     const successfulItems = [];
 
     try {
+      // 1. Record each item in the backend
       for (const item of basket) {
         const response = await apiFetch(`${LOCAL_ENV.API_URL}/api/sales`, {
           method: "POST",
@@ -112,13 +113,18 @@ export default function RecordSales() {
 
       if (successfulItems.length === 0) throw new Error("Could not record sales.");
 
+      // 2. Calculate Grand Total (Sum of all line items)
+      const grandTotal = successfulItems.reduce((acc, curr) => acc + (curr.quantity * curr.price), 0);
+
+      // 3. Initialize PDF
       const doc = new jsPDF();
       const shopName = currentUser?.shop_name || "Quantora Merchant";
       const accentColor = [37, 99, 235];
 
+      // Header UI
       doc.setFillColor(250, 250, 250);
       doc.rect(0, 0, 210, 45, 'F');
-      doc.addImage(logo, 'PNG', 14, 10, 22, 22);
+      if (logo) doc.addImage(logo, 'PNG', 14, 10, 22, 22);
 
       doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
       doc.setFont("helvetica", "bold");
@@ -126,11 +132,12 @@ export default function RecordSales() {
       doc.text(shopName.toUpperCase(), 200, 22, { align: "right" });
 
       doc.setTextColor(100);
-      doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
       doc.text("Official Transaction Receipt", 200, 28, { align: "right" });
       doc.text(`Ref: QT-${Math.floor(Date.now() / 1000)}`, 200, 33, { align: "right" });
 
+      // Customer Info
       doc.setTextColor(50);
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
@@ -142,47 +149,54 @@ export default function RecordSales() {
       doc.text(customerName || "Walking Customer", 14, 61);
       doc.text(new Date().toLocaleString(), 120, 61);
 
+      // Table Data
       const tableData = successfulItems.map(item => [
         toTitleCase(item.name),
         `${item.quantity}`,
         `N ${item.price.toLocaleString()}`,
-        `N ${(item.price).toLocaleString()}`
+        `N ${(item.quantity * item.price).toLocaleString()}`
       ]);
 
       autoTable(doc, {
         startY: 70,
-        head: [['ITEM DESCRIPTION', 'QTY', 'UNIT PRICE', 'TOTAL']],
+        head: [['ITEM DESCRIPTION', 'QTY', 'UNIT PRICE', 'SUBTOTAL']],
         body: tableData,
         theme: 'grid',
         headStyles: { fillColor: accentColor, fontSize: 9, fontStyle: 'bold', halign: 'center' },
-        columnStyles: { 0: { cellWidth: 80 }, 1: { halign: 'center' }, 2: { halign: 'right' }, 3: { halign: 'right', fontStyle: 'bold' } },
+        columnStyles: { 
+          0: { cellWidth: 80 }, 
+          1: { halign: 'center' }, 
+          2: { halign: 'right' }, 
+          3: { halign: 'right', fontStyle: 'bold' } 
+        },
         styles: { font: 'helvetica', fontSize: 9, cellPadding: 4 },
-        alternateRowStyles: { fillColor: [252, 252, 252] }
       });
 
+      // 4. THE FIX: Rendering the Grand Total Box
       const finalY = doc.lastAutoTable.finalY + 10;
-      const grandTotal = successfulItems.reduce((acc, curr) => acc + curr.price, 0);
-
-      doc.setFillColor(37, 99, 235);
-      doc.rect(130, finalY, 70, 12, 'F');
-      doc.setTextColor(255);
+      
+      doc.setFillColor(37, 99, 235); // Blue background
+      doc.rect(130, finalY, 66, 14, 'F'); // x, y, width, height
+      
+      doc.setTextColor(255, 255, 255); // White text
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
-      doc.text(`TOTAL: N${grandTotal.toLocaleString()}`, 165, finalY + 8, { align: "center" });
+      // This line centers the text inside the blue box
+      doc.text(`TOTAL: N${grandTotal.toLocaleString()}`, 163, finalY + 9, { align: "center" });
 
-      doc.addImage(signatureStamp, 'PNG', 145, finalY + 15, 35, 18);
+      // Signature
+      if (signatureStamp) doc.addImage(signatureStamp, 'PNG', 145, finalY + 20, 35, 18);
+
       doc.save(`Receipt_${customerName || 'Sale'}.pdf`);
 
+      // UI Cleanup
       setShowToast(true);
       setTimeout(() => setShowToast(false), 4000);
-
-      setTimeout(async () => {
-        await fetchProducts();
-        await fetchSales();
-        setBasket([]);
-        setCustomerName("");
-        setLoading(false);
-      }, 1000);
+      await fetchProducts();
+      await fetchSales();
+      setBasket([]);
+      setCustomerName("");
+      setLoading(false);
 
     } catch (err) {
       setError(`Receipt Error: ${err.message}`);
@@ -229,6 +243,7 @@ export default function RecordSales() {
 
   const totalToday = sales.reduce((acc, s) => acc + Number(s.price), 0);
   const suggestedPrice = selected ? products.find(p => p.id === Number(selected))?.selling_price * quantity : 0;
+  const basketTotal = basket.reduce((acc, item) => acc + (item.quantity * item.price), 0);
 
   return (
     <HelmetProvider>
@@ -321,6 +336,18 @@ export default function RecordSales() {
                         ))}
                       </div>
 
+                      {/* --- NEW GRAND TOTAL PREVIEW --- */}
+                      <div className="bg-blue-600/10 border border-blue-500/30 p-4 rounded-2xl flex justify-between items-center">
+                        <div>
+                          <p className="text-[9px] uppercase font-black text-blue-400 tracking-widest">Basket Total</p>
+                          <p className="text-lg font-black text-white">₦{basketTotal.toLocaleString()}</p>
+                        </div>
+                        <div className="p-2 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-600/20">
+                           ₦
+                        </div>
+                      </div>
+                      {/* ------------------------------- */}
+
                       <div className="space-y-3">
                         <input 
                           type="text" 
@@ -341,6 +368,17 @@ export default function RecordSales() {
                   )}
                 </AnimatePresence>
               </motion.div>
+              {/* COLOR LEGEND */}
+<div className="flex gap-4 mb-2">
+  <div className="flex items-center gap-1.5">
+    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+    <span className="text-[10px] uppercase font-bold text-gray-400">Green = Profit</span>
+  </div>
+  <div className="flex items-center gap-1.5">
+    <div className="w-2 h-2 rounded-full bg-red-500"></div>
+    <span className="text-[10px] uppercase font-bold text-gray-400">Red = Loss</span>
+  </div>
+</div>
 
               {/* SALES TABLE SECTION */}
               <div className="lg:col-span-7 space-y-4">
