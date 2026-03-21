@@ -94,7 +94,7 @@ export default function Register() {
               />
               {/* MOBILE TRIAL BADGE */}
               <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 text-blue-400 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider mb-4">
-                <FiGift /> 14-Day Free Trial Included
+                <FiGift /> 30-Day Free Trial Included
               </div>
               <h1 className="text-2xl font-bold text-white tracking-tight">Setup Your Store</h1>
               <p className="text-slate-400 mt-2 text-sm px-4">Create your workspace and secure your inventory.</p>
@@ -137,7 +137,7 @@ export default function Register() {
                   animate={{ opacity: 1, x: 0 }}
                   className="inline-flex items-center gap-2 bg-blue-600/20 border border-blue-400/30 text-blue-300 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest mb-8"
                 >
-                  <FiGift className="text-blue-400" /> Start your 14-day free trial
+                  <FiGift className="text-blue-400" /> Start your 30-day free trial
                 </motion.div>
 
                 <div className="flex items-center gap-3 mb-8">

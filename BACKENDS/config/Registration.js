@@ -38,7 +38,7 @@ router.post("/register", authLimiter, async (req, res) => {
     const trialStatus = 'active';
     const trialPlan = 'trial';
     const trialExpiry = new Date();
-    trialExpiry.setDate(trialExpiry.getDate() + 14); 
+    trialExpiry.setDate(trialExpiry.getDate() + 30); 
 
     // Insert new user with trial subscription
     await pool.query(
@@ -59,7 +59,7 @@ router.post("/register", authLimiter, async (req, res) => {
       ]
     );
 
-    return res.status(201).json({ message: "Account created successfully with 2 weeks free trial!" });
+    return res.status(201).json({ message: "Account created successfully with 30-day free trial!" });
   } catch (err) {
     console.error("Registration error:", err);
     return res.status(500).json({
