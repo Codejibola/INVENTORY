@@ -15,7 +15,7 @@ const REVIEWS = [
     location: "Online Boutique",
   },
   {
-    name: "Aisha. A",
+    name: "Pearlz",
     handle: "@+234 814 515 9661",
     platform: "Whatsapp",
     icon: MessageCircle,
