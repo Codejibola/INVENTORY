@@ -45,8 +45,8 @@ class WebServer {
 
     // --- QUANTORA SECURITY: CORS WHITELIST ---
     const allowedOrigins = [
-      "https://home.quantora.online",
-      "https://quantora.online",
+      "https://www.home.quantora.online",
+      "https://www.quantora.online",
       "http://localhost:5173",
       "http://localhost:5174"
     ];
