@@ -38,12 +38,36 @@ cron.schedule("0 0 * * *", async () => {
 
 class WebServer {
   #port;
-  constructor() {
-    // If PORT is missing, default to 5000 so the process doesn't exit
+ constructor() {
     this.#port = LOCAL_ENV.PORT || 5000;
     this.app = express();
-    this.app.set('trust proxy', 1)
-    this.app.use(cors());
+    this.app.set('trust proxy', 1);
+
+    // --- QUANTORA SECURITY: CORS WHITELIST ---
+    const allowedOrigins = [
+      "https://home.quantora.online",
+      "https://quantora.online",
+      "http://localhost:5173",
+      "http://localhost:5174"
+    ];
+
+    const corsOptions = {
+      origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl) 
+        // if you want to be extra strict, remove "!origin"
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          console.error(`🔴 SECURITY ALERT: CORS blocked for origin: ${origin}`);
+          callback(new Error("Not allowed by Quantora Security Policy"));
+        }
+      },
+      methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+      credentials: true, // Allows cookies/auth headers if needed
+      optionsSuccessStatus: 200
+    };
+
+    this.app.use(cors(corsOptions));
   }
 
   registerDefaultRoutes() {
