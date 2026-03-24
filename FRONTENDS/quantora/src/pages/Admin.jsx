@@ -1,4 +1,5 @@
 /* eslint-disable */
+//This is the Login component
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -189,6 +190,7 @@ function LoginForm({ formData, handleChange, handleSubmit, loading, error, showP
         </motion.div>
       )}
 
+      {/* Input Fields */}
       <div>
         <label className="block text-xs font-semibold text-gray-700 mb-1.5">
           Email address
@@ -238,6 +240,7 @@ function LoginForm({ formData, handleChange, handleSubmit, loading, error, showP
         </div>
       </div>
 
+      {/* Main Login Button */}
       <button
         disabled={loading}
         className={`w-full rounded-xl py-3.5 text-sm font-bold text-white transition-all shadow-lg
@@ -253,7 +256,20 @@ function LoginForm({ formData, handleChange, handleSubmit, loading, error, showP
         ) : "Login to Dashboard"}
       </button>
 
-      <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+      {/* --- REDIRECT TO LANDING PAGE --- */}
+      <div className="mt-4 p-3 bg-blue-50/50 rounded-xl border border-blue-100/50 text-center">
+        <p className="text-[12px] text-slate-600">
+          Want to learn how the app works?{" "}
+          <a 
+            href="https://home.quantora.online" 
+            className="text-blue-600 font-bold hover:underline inline-flex items-center gap-1"
+          >
+            Visit Homepage <FiArrowRight size={12} />
+          </a>
+        </p>
+      </div>
+
+      <div className="mt-4 pt-4 border-t border-gray-100 text-center">
         <p className="text-sm text-gray-500">
           New to the platform?{" "}
           <button
