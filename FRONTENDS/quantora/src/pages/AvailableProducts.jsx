@@ -13,7 +13,6 @@ export default function AvailableProducts() {
   const [formError, setFormError] = useState("");
   const [formData, setFormData] = useState({
     name: "",
-    price: "",
     selling_price: "",
     stock: "",
     category: "",
@@ -21,7 +20,6 @@ export default function AvailableProducts() {
 
   const token = localStorage.getItem("token");
 
-  // 2. Updated to use LOCAL_ENV.API_URL
   const fetchProducts = async () => {
     try {
       const res = await fetch(`${LOCAL_ENV.API_URL}/api/products`, {
@@ -53,7 +51,6 @@ export default function AvailableProducts() {
       const stockNum = Number(formData.stock);
       if (Number.isNaN(stockNum)) throw new Error("Stock must be a number");
       
-      // 3. Updated this fetch call to use LOCAL_ENV.API_URL as well
       const res = await fetch(`${LOCAL_ENV.API_URL}/api/products`, {
         method: "POST",
         headers: {
@@ -63,15 +60,15 @@ export default function AvailableProducts() {
         body: JSON.stringify({
           name: formData.name,
           category: formData.category,
-          price: Number(formData.price),
           selling_price: Number(formData.selling_price),
           stock: stockNum,
+          // We omit 'price' (cost price) here so workers don't set it
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to add product");
       setShowForm(false);
-      setFormData({ name: "", price: "", selling_price: "", stock: "", category: "" });
+      setFormData({ name: "", selling_price: "", stock: "", category: "" });
       fetchProducts();
     } catch (err) {
       setFormError(err.message);
@@ -101,9 +98,9 @@ export default function AvailableProducts() {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-slate-900/40 border border-slate-800 p-6 rounded-3xl backdrop-blur-xl">
         <div>
           <h2 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
-            <Package className="text-blue-500" size={28} /> INVENTORY SYSTEM
+            <Package className="text-blue-500" size={28} /> INVENTORY
           </h2>
-          <p className="text-slate-500 text-sm font-medium">Manage and track available store items</p>
+          <p className="text-slate-500 text-sm font-medium">Check available store items</p>
         </div>
 
         <div className="flex flex-col sm:flex-row items-center gap-3">
@@ -192,7 +189,6 @@ export default function AvailableProducts() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <p className="font-black text-white italic">₦{Number(p.selling_price).toLocaleString()}</p>
-                    <p className="text-[9px] text-slate-600 uppercase font-black">Cost: ₦{Number(p.price).toLocaleString()}</p>
                   </td>
                 </tr>
               ))
@@ -236,13 +232,9 @@ export default function AvailableProducts() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Cost (₦)</label>
-                    <input name="price" type="number" value={formData.price} onChange={handleChange} required className="w-full bg-slate-950 border border-slate-800 text-white rounded-2xl px-5 py-3.5 focus:border-blue-600 outline-none transition-all" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Sell (₦)</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Selling Price (₦)</label>
                     <input name="selling_price" type="number" value={formData.selling_price} onChange={handleChange} required className="w-full bg-slate-950 border border-slate-800 text-white rounded-2xl px-5 py-3.5 focus:border-blue-600 outline-none transition-all" />
                   </div>
                   <div className="space-y-2">

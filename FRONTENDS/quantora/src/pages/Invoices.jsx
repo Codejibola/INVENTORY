@@ -160,7 +160,7 @@ const handleDownload = async (date) => {
         4: { halign: 'right' },
         5: { halign: 'right' },
       },
-      styles: { fontSize: 8, cellPadding: 5, fillColor: false, fillColor: false },
+      styles: { fontSize: 8, cellPadding: 5, fillColor: false },
       didParseCell: function (data) {
         if (data.column.index === 5 && data.section === 'body') {
           const val = data.cell.raw;
