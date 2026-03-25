@@ -56,7 +56,7 @@ export default function Admin() {
   return (
     <>
       <Helmet>
-        <title>Quantora – Admin Login</title>
+        <title>Quantora – User Login</title>
       </Helmet>
 
       <main className="min-h-screen bg-slate-50 lg:bg-[#0A0A0B] relative overflow-x-hidden">
