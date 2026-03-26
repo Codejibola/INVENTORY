@@ -344,7 +344,7 @@ function LeaderboardModal({ isOpen, onClose, data, toTitle }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6 border-b border-white/5 flex justify-between items-center bg-[#151515]">
-          <h2 className="text-xl font-bold flex items-center gap-2">
+          <h2 className="text-xl font-bold flex items-center gap-2 bg-gradient-to-r from-white via-blue-100 to-blue-400 bg-clip-text text-transparent">
             <Award className="text-yellow-500" /> Product Leaderboard
           </h2>
           <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">✕</button>
