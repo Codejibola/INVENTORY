@@ -20,25 +20,31 @@ export default defineConfig({
         start_url: '/',
         orientation: 'portrait',
         icons: [
-          {
-            src: 'pwa-192x192.png',
-            sizes: '192x192',
-            type: 'image/png',
-            purpose: 'any'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any' // This helps the splash screen find the high-res logo
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'maskable' // This helps Android shape the home screen icon
-          },
-        ],
+  {
+    src: 'pwa-192x192.png',
+    sizes: '192x192',
+    type: 'image/png',
+    purpose: 'any' // Standard icon for home screen and task switcher
+  },
+  {
+    src: 'pwa-512x512.png',
+    sizes: '512x512',
+    type: 'image/png',
+    purpose: 'any' // High-res icon used for splash screens
+  },
+  {
+    src: 'pwa-512x512.png',
+    sizes: '512x512',
+    type: 'image/png',
+    purpose: 'maskable' // Allows Android to crop the icon into circles/squares perfectly
+  },
+  {
+    src: 'apple-touch-icon.png',
+    sizes: '180x180',
+    type: 'image/png',
+    purpose: 'any' // Explicitly for iOS home screen shortcuts
+  }
+],
       },
     }),
   ],
