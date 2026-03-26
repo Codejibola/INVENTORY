@@ -62,7 +62,8 @@ export default function Dashboard() {
   const [shopWorth, setShopWorth] = useState(0);
   const [bestSellingProduct, setBestSellingProduct] = useState(null);
   const [leastSellingProduct, setLeastSellingProduct] = useState(null);
-
+  const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+  const [fullLeaderboard, setFullLeaderboard] = useState([]);
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
 
@@ -82,67 +83,85 @@ export default function Dashboard() {
   };
 
   // 1. Wrap fetchData in useCallback to stop the infinite loop
-  const fetchData = useCallback(async () => {
-    if (!token) return;
-    
-    try {
-      const authHeader = { headers: { Authorization: `Bearer ${token}` } };
-      const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonthIdx = now.getMonth();
+const fetchData = useCallback(async () => {
+  if (!token) return;
+  
+  try {
+    const authHeader = { headers: { Authorization: `Bearer ${token}` } };
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonthIdx = now.getMonth();
 
-      const secureFetch = async (url) => {
-        const res = await apiFetch(url, authHeader);
-        if (res.status === 403) {
-          await refreshUser(); 
-          return null;
-        }
-        return res.ok ? await res.json() : null;
-      };
-
-      // Fetch Data Parallelly or Sequentially
-      const salesData = await secureFetch(`${LOCAL_ENV.API_URL}/api/sales`) || [];
-      if (salesData.length > 0) setLatestSale(salesData[0]);
-
-      const dailyData = await secureFetch(`${LOCAL_ENV.API_URL}/api/sales/daily?year=${currentYear}`) || [];
-
-      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      const monthlyTotals = months.map((monthName, idx) => {
-        const monthSales = dailyData
-          .filter(d => new Date(d.date).getUTCMonth() === idx)
-          .reduce((sum, d) => sum + Number(d.total_sales || 0), 0);
-        return { month: monthName, sales: monthSales };
-      });
-
-      setChartData(monthlyTotals);
-      
-      const salesThisMonth = monthlyTotals[currentMonthIdx]?.sales || 0;
-      setMonthlySales(salesThisMonth);
-      setDisplayedSales(salesThisMonth); // Fix: Actually update the displayed value
-
-      const currentMonthProfit = dailyData
-        .filter(d => new Date(d.date).getUTCMonth() === currentMonthIdx)
-        .reduce((sum, d) => sum + Number(d.total_profit_loss || 0), 0);
-      setMonthlyProfitLoss(currentMonthProfit);
-
-      const prodData = await secureFetch(`${LOCAL_ENV.API_URL}/api/products`) || [];
-      setShopWorth(prodData.reduce((sum, p) => sum + (Number(p.selling_price || 0) * Number(p.units || 0)), 0));
-      
-      if (prodData.length > 0) {
-        const sortedProds = [...prodData].sort((a, b) => b.id - a.id);
-        setLatestProduct(sortedProds[0]);
+    const secureFetch = async (url) => {
+      const res = await apiFetch(url, authHeader);
+      if (res.status === 403) {
+        await refreshUser(); 
+        return null;
       }
+      return res.ok ? await res.json() : null;
+    };
 
-      const bestData = await secureFetch(`${LOCAL_ENV.API_URL}/api/sales/best-selling`);
-      const leastData = await secureFetch(`${LOCAL_ENV.API_URL}/api/sales/least-selling`);
+    // 1. Fetch Sales Data
+    const salesData = await secureFetch(`${LOCAL_ENV.API_URL}/api/sales`) || [];
+    if (salesData.length > 0) setLatestSale(salesData[0]);
 
-      if (bestData) setBestSellingProduct(bestData);
-      if (leastData) setLeastSellingProduct(leastData);
+    // --- NEW FRONTEND LEADERBOARD LOGIC START ---
+    // Group sales by product_name and sum up the quantity
+    const productMap = {};
+    salesData.forEach(sale => {
+      const name = sale.product_name;
+      const qty = Number(sale.quantity || 0);
+      const revenue = Number(sale.total_price || 0);
 
-    } catch (err) {
-      console.error("fetchData Error:", err);
+      if (!productMap[name]) {
+        productMap[name] = { productName: name, totalQuantitySold: 0, totalRevenue: 0 };
+      }
+      productMap[name].totalQuantitySold += qty;
+      productMap[name].totalRevenue += revenue;
+    });
+
+    // Convert to array and sort (Highest sales first)
+    const sortedLeaderboard = Object.values(productMap).sort((a, b) => b.totalQuantitySold - a.totalQuantitySold);
+    
+    setFullLeaderboard(sortedLeaderboard); // State for the Modal
+    setBestSellingProduct(sortedLeaderboard[0] || null);
+    setLeastSellingProduct(sortedLeaderboard[sortedLeaderboard.length - 1] || null);
+    // --- NEW FRONTEND LEADERBOARD LOGIC END ---
+
+    const dailyData = await secureFetch(`${LOCAL_ENV.API_URL}/api/sales/daily?year=${currentYear}`) || [];
+
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthlyTotals = months.map((monthName, idx) => {
+      const monthSales = dailyData
+        .filter(d => new Date(d.date).getUTCMonth() === idx)
+        .reduce((sum, d) => sum + Number(d.total_sales || 0), 0);
+      return { month: monthName, sales: monthSales };
+    });
+
+    setChartData(monthlyTotals);
+    
+    const salesThisMonth = monthlyTotals[currentMonthIdx]?.sales || 0;
+    setMonthlySales(salesThisMonth);
+    setDisplayedSales(salesThisMonth);
+
+    const currentMonthProfit = dailyData
+      .filter(d => new Date(d.date).getUTCMonth() === currentMonthIdx)
+      .reduce((sum, d) => sum + Number(d.total_profit_loss || 0), 0);
+    setMonthlyProfitLoss(currentMonthProfit);
+
+    const prodData = await secureFetch(`${LOCAL_ENV.API_URL}/api/products`) || [];
+    setShopWorth(prodData.reduce((sum, p) => sum + (Number(p.selling_price || 0) * Number(p.units || 0)), 0));
+    
+    if (prodData.length > 0) {
+      const sortedProds = [...prodData].sort((a, b) => b.id - a.id);
+      setLatestProduct(sortedProds[0]);
     }
-  }, [token, refreshUser]);
+
+
+  } catch (err) {
+    console.error("fetchData Error:", err);
+  }
+}, [token, refreshUser]);
 
   // 2. Controlled useEffect
   useEffect(() => {
@@ -165,6 +184,14 @@ export default function Dashboard() {
   }, [token, refreshUser, fetchData, navigate]);
 
   return (
+    <>
+    <LeaderboardModal 
+  isOpen={isLeaderboardOpen} 
+  onClose={() => setIsLeaderboardOpen(false)} 
+  data={fullLeaderboard} 
+  toTitle={toTitle}
+/>
+   
     <HelmetProvider>
       <Helmet><title>Dashboard | Quantora</title></Helmet>
       <div className="min-h-screen bg-[#050505] flex relative">
@@ -221,8 +248,21 @@ export default function Dashboard() {
                   </div>
                   <InsightRow label="Latest Sale" title={latestSale ? toTitle(latestSale.product_name) : "No Sales"} sub={`Qty: ${latestSale?.quantity || 0}`} icon={<ShoppingCart size={18} className="text-blue-400" />} />
                   <InsightRow label="New Arrival" title={latestProduct ? toTitle(latestProduct.name) : "No Products"} sub={`Stock: ${latestProduct?.units || 0}`} icon={<Package size={18} className="text-purple-400" />} />
-                  <InsightRow label="Top Performer" title={bestSellingProduct ? toTitle(bestSellingProduct.productName) : "N/A"} sub={`${bestSellingProduct?.totalQuantitySold || 0} sold`} icon={<Award size={18} className="text-yellow-400" />} isBest />
-                  <InsightRow label="Low Performance" title={leastSellingProduct ? toTitle(leastSellingProduct.productName) : "N/A"} sub={`${leastSellingProduct?.totalQuantitySold || 0} sold`} icon={<AlertCircle size={18} className="text-red-400" />} />
+                  <InsightRow 
+  label="Top Performer" 
+  title={bestSellingProduct ? toTitle(bestSellingProduct.productName) : "N/A"} 
+  sub={`${bestSellingProduct?.totalQuantitySold || 0} sold`} 
+  icon={<Award size={18} className="text-yellow-400" />} 
+  isBest 
+  onClick={() => setIsLeaderboardOpen(true)} // Open leaderboard
+/>
+                  <InsightRow 
+  label="Low Performance" 
+  title={leastSellingProduct ? toTitle(leastSellingProduct.productName) : "N/A"} 
+  sub={`${leastSellingProduct?.totalQuantitySold || 0} sold`} 
+  icon={<AlertCircle size={18} className="text-red-400" />} 
+  onClick={() => setIsLeaderboardOpen(true)} // Open leaderboard
+/>
                 </div>
               </aside>
             </div>
@@ -230,6 +270,7 @@ export default function Dashboard() {
         </div>
       </div>
     </HelmetProvider>
+     </>
   );
 }
 
@@ -262,17 +303,73 @@ function ActionCard({ title, desc, icon, isHighlight, to, isAnimatedValue }) {
     );
 }
 
-function InsightRow({ label, title, sub, icon, isBest }) {
-    return (
-      <div className="p-5 flex items-center justify-between group hover:bg-white/[0.02] transition-colors">
-        <div className="flex items-center gap-4">
-          <div className="bg-white/5 p-2 rounded-lg">{icon}</div>
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-tighter text-gray-500">{label}</p>
-            <p className={`text-sm font-bold truncate max-w-[140px] ${isBest ? "text-yellow-500" : "text-gray-200"}`}>{title}</p>
+function InsightRow({ label, title, sub, icon, isBest, onClick }) {
+    return (
+      <div 
+        onClick={onClick} 
+        className={`p-5 flex items-center justify-between group hover:bg-white/[0.05] transition-colors ${onClick ? 'cursor-pointer' : ''}`}
+      >
+        <div className="flex items-center gap-4">
+          <div className="bg-white/5 p-2 rounded-lg group-hover:scale-110 transition-transform">
+            {icon}
           </div>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-tighter text-gray-500">{label}</p>
+            <p className={`text-sm font-bold truncate max-w-[140px] ${isBest ? "text-yellow-500" : "text-gray-200"}`}>
+              {title}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-bold bg-white/5 px-2 py-1 rounded text-gray-400">{sub}</span>
+          {onClick && <ArrowRight size={14} className="text-white/20 group-hover:text-white transition-colors" />}
         </div>
-        <span className="text-[11px] font-bold bg-white/5 px-2 py-1 rounded text-gray-400">{sub}</span>
-      </div>
-    );
+      </div>
+    );
+}
+
+
+function LeaderboardModal({ isOpen, onClose, data, toTitle }) {
+  if (!isOpen) return null;
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.div 
+        initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }}
+        className="bg-[#111] border border-white/10 w-full max-w-2xl max-h-[80vh] rounded-3xl overflow-hidden flex flex-col shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-6 border-b border-white/5 flex justify-between items-center bg-[#151515]">
+          <h2 className="text-xl font-bold flex items-center gap-2">
+            <Award className="text-yellow-500" /> Product Leaderboard
+          </h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">✕</button>
+        </div>
+        
+        <div className="overflow-y-auto p-4 space-y-2">
+          {data.map((item, index) => (
+            <div key={index} className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+              <div className="flex items-center gap-4">
+                <span className={`text-lg font-black w-6 ${index === 0 ? "text-yellow-500" : index === 1 ? "text-gray-400" : "text-gray-600"}`}>
+                  {index + 1}
+                </span>
+                <div>
+                  <p className="font-bold text-gray-200">{toTitle(item.productName)}</p>
+                  <p className="text-xs text-gray-500">Inventory: {item.stockCount || 0}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-black text-blue-400">{item.totalQuantitySold} Sold</p>
+                <p className="text-[10px] uppercase text-gray-600 font-bold">Total Revenue</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
 }
