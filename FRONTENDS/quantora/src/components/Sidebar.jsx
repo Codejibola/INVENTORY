@@ -24,7 +24,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     { name: "Dashboard", icon: <LayoutDashboard size={18} />, to: "/dashboard" },
     { name: "Manage Products", icon: <Package size={18} />, to: "/Manage_Products" },
     { name: "Record Sales", icon: <Edit3 size={18} />, to: "/recordSales" },
-    { name: "Invoices", icon: <Receipt size={18} />, to: "/invoices" },
+    { name: "Reports", icon: <Receipt size={18} />, to: "/reports" },
     { name: "Subscription", icon: <Crown size={18} />, to: "/subscription" },
     { name: "Feedback", icon: <MessageSquare size={18} />, to: "/feedback" },
     { name: "Settings", icon: <SettingsIcon size={18} />, to: "/settings" },

@@ -10,7 +10,7 @@ import ProtectedLayout from "./components/ProtectedLayout";
 // Admin pages
 import Dashboard from "./pages/Dashboard";
 import Manage_Products from "./pages/Manage_Products";
-import Invoices from "./pages/Invoices";
+import Reports from "./pages/Reports";
 import RecordSales from "./pages/Record_Sales";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
@@ -56,7 +56,7 @@ export default function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/manage_products" element={<Manage_Products />} />
         <Route path="/recordSales" element={<RecordSales />} />
-        <Route path="/invoices" element={<Invoices />} />
+        <Route path="/reports" element={<Reports />} />
         <Route path="/notifications" element={<Notification />} />
         <Route path="/feedback" element={<Feedback />} />
         <Route path="/settings" element={<Settings />} />

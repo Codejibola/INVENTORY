@@ -2,8 +2,8 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useCallback } from "react";
 import { Download, Eye, Calendar, FileText, X, Loader2 } from "lucide-react";
-import Sidebar from "../components/Sidebar";
-import Topbar from "../components/Topbar";
+import Sidebar from "../components/Sidebar.jsx";
+import Topbar from "../components/Topbar.jsx";
 import apiFetch from "../utils/apiFetch.js";
 import LOCAL_ENV from "../../ENV.js";
 import { Helmet, HelmetProvider } from "react-helmet-async";
@@ -13,7 +13,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 
-export default function Invoices() {
+export default function Reports() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState("");
   const [years, setYears] = useState([]);
@@ -226,7 +226,7 @@ const handleDownload = async (date) => {
 
   return (
     <HelmetProvider>
-      <Helmet><title>Invoices | Quantora</title></Helmet>
+      <Helmet><title>Reports | Quantora</title></Helmet>
 
       <div className="flex min-h-screen bg-[#050505] text-gray-300">
         <Sidebar isOpen={menuOpen} setIsOpen={setMenuOpen} />
@@ -236,7 +236,7 @@ const handleDownload = async (date) => {
 
           <main className="p-6 lg:p-10 space-y-8 max-w-6xl mx-auto w-full">
             <header>
-              <h1 className="text-3xl font-black text-white tracking-tight">Sales Invoices</h1>
+              <h1 className="text-3xl font-black text-white tracking-tight">Sales Reports</h1>
               <p className="text-gray-500 text-sm">Review and export daily transaction reports. System resets at 12 AM.</p>
             </header>
 
