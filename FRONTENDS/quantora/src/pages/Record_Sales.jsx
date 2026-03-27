@@ -9,6 +9,8 @@ import { Helmet, HelmetProvider } from "react-helmet-async";
 import { ShoppingCart, Package, DollarSign, TrendingUp, History, Receipt, Trash2, Download } from "lucide-react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { Html5QrcodeScanner } from "html5-qrcode";
+import { Scan } from "lucide-react";
 import logo from "../assets/logo.webp";
 import signatureStamp from "../assets/signature.webp";
 
@@ -17,7 +19,7 @@ const toTitleCase = (str = "") =>
 
 export default function RecordSales() {
   const token = localStorage.getItem("token");
-
+  const [isScanning, setIsScanning] = useState(false);
   const [products, setProducts] = useState([]);
   const [selected, setSelected] = useState("");
   const [quantity, setQuantity] = useState(1);
@@ -87,6 +89,55 @@ export default function RecordSales() {
     setQuantity(1);
     setTotalPrice("");
   };
+
+  const handleScanSuccess = async (decodedText) => {
+  setIsScanning(false); // Close camera after success
+  try {
+    const response = await apiFetch(`${LOCAL_ENV.API_URL}/api/products/scan/${decodedText}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    
+    if (!response.ok) throw new Error("Product not found");
+    
+    const product = await response.json();
+    
+    // Auto-fill the form
+    setSelected(product.id);
+    setTotalPrice(product.selling_price);
+    setQuantity(1);
+    
+    // Optional: Add a "beep" sound here
+  } catch (err) {
+    setError("Barcode not recognized. Try again or select manually.");
+  }
+};
+
+// Automatically update price when product or quantity changes
+useEffect(() => {
+  if (selected) {
+    const product = products.find(p => p.id === Number(selected));
+    if (product) {
+      setTotalPrice(product.selling_price * quantity);
+    }
+  } else {
+    setTotalPrice("");
+  }
+}, [selected, quantity, products]);
+
+useEffect(() => {
+  if (isScanning) {
+    const scanner = new Html5QrcodeScanner("reader", { 
+      fps: 10, 
+      qrbox: { width: 250, height: 150 } 
+    });
+
+    scanner.render(handleScanSuccess, (err) => {
+      // Non-critical errors (like "no barcode in frame") are ignored
+    });
+
+    return () => scanner.clear(); // Cleanup on close
+  }
+}, [isScanning]);
 
   const finalizeReceipt = async () => {
     setLoading(true);
@@ -281,20 +332,48 @@ export default function RecordSales() {
                   </div>
 
                   {error && <p className="bg-red-500/10 border border-red-500/20 text-red-500 text-xs p-3 rounded-xl text-center font-bold">{error}</p>}
+                   
+                   <div className="space-y-2">
+  <div className="flex justify-between items-center">
+    <label className="text-[10px] uppercase font-black text-gray-500">Product</label>
+    {/* SCAN TOGGLE */}
+    <button 
+      type="button"
+      onClick={() => setIsScanning(!isScanning)}
+      className="flex items-center gap-1 text-[10px] font-black text-blue-400 uppercase tracking-widest hover:text-blue-300 transition-colors"
+    >
+      <Scan size={14} /> {isScanning ? "Close Camera" : "Scan Barcode"}
+    </button>
+  </div>
 
-                  <div className="space-y-2">
-                    <label className="text-[10px] uppercase font-black text-gray-500">Product</label>
-                    <select
-                      value={selected}
-                      onChange={(e) => { setSelected(e.target.value); setTotalPrice(""); }}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none"
-                    >
-                      <option value="">Choose a product...</option>
-                      {products.map((p) => (
-                        <option key={p.id} value={p.id} className="bg-[#111]">{toTitleCase(p.name)} ({p.units} left)</option>
-                      ))}
-                    </select>
-                  </div>
+  {/* SCANNER WINDOW */}
+  <AnimatePresence>
+    {isScanning && (
+      <motion.div 
+        initial={{ height: 0, opacity: 0 }}
+        animate={{ height: "auto", opacity: 1 }}
+        exit={{ height: 0, opacity: 0 }}
+        className="overflow-hidden"
+      >
+        <div id="reader" className="rounded-2xl border border-blue-500/30 bg-black mb-4 shadow-inner"></div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+
+  {/* SINGLE SELECT FIELD */}
+  <select
+    value={selected}
+    onChange={(e) => setSelected(e.target.value)}
+    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500/50 transition-colors"
+  >
+    <option value="">Choose a product...</option>
+    {products.map((p) => (
+      <option key={p.id} value={p.id} className="bg-[#111]">
+        {toTitleCase(p.name)} ({p.units} left)
+      </option>
+    ))}
+  </select>
+</div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
