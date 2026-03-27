@@ -5,20 +5,25 @@ import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
 import apiFetch from "../utils/apiFetch.js";
 import LOCAL_ENV from "../../ENV.js";
-import { Plus, Edit, Trash2, Search, Package, Tag, Layers } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Package, Scan, X, Tag, Layers, DollarSign } from "lucide-react";
 import { Helmet, HelmetProvider } from "react-helmet-async";
+import { Html5QrcodeScanner } from "html5-qrcode";
 
 export default function ManageProducts() {
   const [products, setProducts] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
   const [editingId, setEditingId] = useState(null);
+
   const [formData, setFormData] = useState({
     name: "",
     price: "",
     selling_price: "",
     stock: "",
     category: "",
+    barcode: "", 
   });
+
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const token = localStorage.getItem("token");
@@ -26,11 +31,7 @@ export default function ManageProducts() {
   const [currentUser, setCurrentUser] = useState(null);
 
   const toTitleCase = (str = "") =>
-    str
-      .toLowerCase()
-      .split(" ")
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(" ");
+    str.toLowerCase().split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
@@ -38,13 +39,28 @@ export default function ManageProducts() {
     fetchProducts();
   }, []);
 
+  // BARCODE SCANNER LOGIC
+  useEffect(() => {
+    if (isScanning && showForm) {
+      const scanner = new Html5QrcodeScanner("modal-reader", { 
+        fps: 10, 
+        qrbox: { width: 250, height: 150 } 
+      });
+
+      scanner.render((decodedText) => {
+        setFormData(prev => ({ ...prev, barcode: decodedText }));
+        setIsScanning(false);
+        scanner.clear();
+      }, (err) => { /* Ignore noise */ });
+
+      return () => scanner.clear().catch(e => console.error("Scanner clear error", e));
+    }
+  }, [isScanning, showForm]);
+
   const fetchProducts = () => {
     if (!token) return;
     apiFetch(`${LOCAL_ENV.API_URL}/api/products`, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => {
         if (!res.ok) throw new Error("Unauthorized or server error");
@@ -62,12 +78,14 @@ export default function ManageProducts() {
   const handleSaveProduct = async (e) => {
     e.preventDefault();
     setError("");
+
     const payload = {
       name: formData.name,
       price: parseFloat(formData.price),
       selling_price: parseFloat(formData.selling_price),
-      stock: Math.max(0, parseInt(formData.stock, 10)),
+      stock: parseInt(formData.stock, 10), 
       category: formData.category,
+      barcode: formData.barcode || null, 
     };
 
     try {
@@ -85,14 +103,23 @@ export default function ManageProducts() {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Failed to save product");
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to save product");
+      }
+      
       fetchProducts();
-      setShowForm(false);
-      setEditingId(null);
-      setFormData({ name: "", price: "", selling_price: "", stock: "", category: "" });
+      closeForm();
     } catch (err) {
       setError(err.message);
     }
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setIsScanning(false);
+    setEditingId(null);
+    setFormData({ name: "", price: "", selling_price: "", stock: "", category: "", barcode: "" });
   };
 
   const handleDelete = async (id) => {
@@ -115,8 +142,9 @@ export default function ManageProducts() {
       name: product.name,
       price: product.price,
       selling_price: product.selling_price,
-      stock: product.units,
+      stock: product.units, 
       category: product.category || "",
+      barcode: product.barcode || "",
     });
     setShowForm(true);
   };
@@ -125,13 +153,21 @@ export default function ManageProducts() {
     const term = searchTerm.toLowerCase();
     return (
       p.name.toLowerCase().includes(term) ||
+      (p.barcode && p.barcode.includes(term)) ||
       (p.category && p.category.toLowerCase().includes(term))
     );
   });
 
-  const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-  const groupedByMonth = months.reduce((acc, m) => {
-    acc[m] = filteredProducts.filter((p) => months[new Date(p.created_at).getMonth()] === m);
+  // UPDATED SORTING LOGIC: Current month to past months
+  const allMonths = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const currentMonthIndex = new Date().getMonth();
+  
+  const displayMonths = allMonths
+    .slice(0, currentMonthIndex + 1)
+    .reverse();
+
+  const groupedByMonth = displayMonths.reduce((acc, m) => {
+    acc[m] = filteredProducts.filter((p) => allMonths[new Date(p.created_at).getMonth()] === m);
     return acc;
   }, {});
 
@@ -146,7 +182,6 @@ export default function ManageProducts() {
           <Topbar onMenuClick={() => setMenuOpen(true)} userName={currentUser?.name} />
 
           <main className="p-6 lg:p-10 space-y-8 max-w-[1400px] mx-auto w-full">
-            {/* Header Area */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div>
                 <h1 className="text-3xl font-black tracking-tight text-white">Inventory</h1>
@@ -158,14 +193,14 @@ export default function ManageProducts() {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-500 transition-colors" size={18} />
                   <input
                     type="text"
-                    placeholder="Search inventory..."
+                    placeholder="Search by name or barcode..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10 pr-4 py-2.5 rounded-xl bg-[#111] border border-white/5 focus:border-blue-500/50 outline-none w-full md:w-64 transition-all text-sm"
                   />
                 </div>
                 <button
-                  onClick={() => { setEditingId(null); setFormData({ name: "", price: "", selling_price: "", stock: "", category: "" }); setShowForm(true); }}
+                  onClick={() => { setEditingId(null); setFormData({ name: "", price: "", selling_price: "", stock: "", category: "", barcode: "" }); setShowForm(true); }}
                   className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-5 py-2.5 rounded-xl text-white font-bold transition-all text-sm shadow-lg shadow-blue-600/20"
                 >
                   <Plus size={18} /> Add Item
@@ -173,9 +208,8 @@ export default function ManageProducts() {
               </div>
             </div>
 
-            {/* Product List */}
             <div className="space-y-10">
-              {months.map((month) => groupedByMonth[month]?.length > 0 && (
+              {displayMonths.map((month) => groupedByMonth[month]?.length > 0 && (
                 <section key={month} className="space-y-4">
                   <h2 className="text-xs font-black uppercase tracking-[0.3em] text-gray-600 border-b border-white/5 pb-2">{month}</h2>
                   
@@ -195,7 +229,10 @@ export default function ManageProducts() {
                           <tr key={p.id} className="hover:bg-white/[0.02] transition-colors group">
                             <td className="px-6 py-4">
                               <p className="font-bold text-white text-sm">{toTitleCase(p.name)}</p>
-                              <p className="text-[10px] text-gray-500 uppercase font-bold mt-0.5">{p.category || "General"}</p>
+                              <div className="flex gap-2 items-center mt-1">
+                                <span className="text-[10px] text-gray-500 uppercase font-bold">{p.category || "General"}</span>
+                                {p.barcode && <span className="text-[9px] bg-white/5 text-gray-400 px-1.5 py-0.5 rounded border border-white/5 font-mono">#{p.barcode}</span>}
+                              </div>
                             </td>
                             <td className="px-6 py-4 text-sm font-medium text-gray-400">₦{Number(p.price).toLocaleString()}</td>
                             <td className="px-6 py-4 text-sm font-bold text-blue-400">₦{Number(p.selling_price).toLocaleString()}</td>
@@ -233,11 +270,11 @@ export default function ManageProducts() {
                         <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
                           <div>
                             <p className="text-[10px] uppercase font-bold text-gray-600">Price</p>
-                            <p className="text-sm font-bold text-blue-400">₦{p.selling_price}</p>
+                            <p className="text-sm font-bold text-blue-400">₦{Number(p.selling_price).toLocaleString()}</p>
                           </div>
                           <div>
                             <p className="text-[10px] uppercase font-bold text-gray-600">Stock</p>
-                            <p className={`text-sm font-bold ${p.units < 5 ? 'text-red-500' : 'text-green-500'}`}>{p.units} units</p>
+                            <p className={`text-sm font-bold ${Number(p.units) < 5 ? 'text-red-500' : 'text-green-500'}`}>{p.units} units</p>
                           </div>
                         </div>
                       </div>
@@ -247,48 +284,85 @@ export default function ManageProducts() {
               ))}
             </div>
 
-            {/* Modal */}
             <AnimatePresence>
               {showForm && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4">
                   <motion.form
                     onSubmit={handleSaveProduct}
-                    initial={{ scale: 0.9, opacity: 0 }}
+                    initial={{ scale: 0.95, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.9, opacity: 0 }}
-                    className="bg-[#111] border border-white/10 p-8 rounded-3xl w-full max-w-lg shadow-2xl space-y-6"
+                    exit={{ scale: 0.95, opacity: 0 }}
+                    className="bg-[#0f0f0f] border border-white/10 p-8 rounded-[2.5rem] w-full max-w-xl shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto custom-scrollbar"
                   >
-                    <div className="flex items-center gap-4 mb-2">
-                      <div className="p-3 bg-blue-600/10 text-blue-500 rounded-2xl"><Package size={24}/></div>
-                      <h2 className="text-2xl font-black text-white">{editingId ? "Update Product" : "New Product"}</h2>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-blue-600/20 text-blue-500 rounded-2xl"><Package size={24}/></div>
+                        <h2 className="text-2xl font-black text-white">{editingId ? "Update Product" : "New Inventory Item"}</h2>
+                      </div>
+                      <button type="button" onClick={closeForm} className="text-gray-500 hover:text-white transition-colors"><X size={24}/></button>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {error && <p className="bg-red-500/10 border border-red-500/20 text-red-500 text-xs p-3 rounded-xl text-center font-bold">{error}</p>}
+
+                    <div className="bg-white/5 p-6 rounded-3xl border border-white/5 space-y-4">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <Scan size={16} className="text-blue-400" />
+                          <label className="text-[10px] uppercase font-black text-blue-400 tracking-widest">Barcode Registration</label>
+                        </div>
+                        <button 
+                          type="button" 
+                          onClick={() => setIsScanning(!isScanning)}
+                          className="text-[10px] font-black uppercase bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-xl text-white transition-all shadow-lg shadow-blue-600/20"
+                        >
+                          {isScanning ? "Cancel Scan" : "Scan to Link"}
+                        </button>
+                      </div>
+
+                      {isScanning && (
+                        <div id="modal-reader" className="overflow-hidden rounded-2xl border-2 border-dashed border-blue-500/30 bg-black"></div>
+                      )}
+
+                      <input 
+                        name="barcode" 
+                        placeholder="Scan or enter item barcode/SKU..." 
+                        value={formData.barcode} 
+                        onChange={handleChange} 
+                        className="w-full px-4 py-3 rounded-xl bg-black border border-white/10 focus:border-blue-500 outline-none text-white text-sm transition-all font-mono"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div className="md:col-span-2 space-y-2">
-                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Product Name</label>
-                        <input name="name" placeholder="Ex: Smartwatch Ultra" value={formData.name} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-blue-500 outline-none text-white transition-all" required />
+                        <label className="text-[10px] uppercase font-bold text-gray-500 ml-1 flex items-center gap-2"><Tag size={12}/> Product Name</label>
+                        <input name="name" placeholder="Ex: Raw Silk Kaftan Fabric" value={formData.name} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-blue-500 outline-none text-white transition-all text-sm" required />
                       </div>
+                      
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Cost Price</label>
-                        <input name="price" type="number" placeholder="₦0.00" value={formData.price} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-blue-500 outline-none text-white transition-all" required />
+                        <label className="text-[10px] uppercase font-bold text-gray-500 ml-1 flex items-center gap-2"><DollarSign size={12}/> Cost Price (₦)</label>
+                        <input name="price" type="number" placeholder="0.00" value={formData.price} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-blue-500 outline-none text-white transition-all text-sm" required />
                       </div>
+
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Selling Price</label>
-                        <input name="selling_price" type="number" placeholder="₦0.00" value={formData.selling_price} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-blue-500 outline-none text-white transition-all" required />
+                        <label className="text-[10px] uppercase font-bold text-gray-500 ml-1 flex items-center gap-2"><DollarSign size={12}/> Selling Price (₦)</label>
+                        <input name="selling_price" type="number" placeholder="0.00" value={formData.selling_price} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-blue-500 outline-none text-blue-400 font-bold transition-all text-sm" required />
                       </div>
+
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Stock Units</label>
-                        <input name="stock" type="number" placeholder="0" value={formData.stock} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-blue-500 outline-none text-white transition-all" required />
+                        <label className="text-[10px] uppercase font-bold text-gray-500 ml-1 flex items-center gap-2"><Layers size={12}/> Stock Units</label>
+                        <input name="stock" type="number" placeholder="0" value={formData.stock} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-blue-500 outline-none text-white transition-all text-sm" required />
                       </div>
+
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Category</label>
-                        <input name="category" placeholder="Ex: Electronics" value={formData.category} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-blue-500 outline-none text-white transition-all" />
+                        <label className="text-[10px] uppercase font-bold text-gray-500 ml-1 flex items-center gap-2"><Layers size={12}/> Category</label>
+                        <input name="category" placeholder="Ex: Apparel" value={formData.category} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-blue-500 outline-none text-white transition-all text-sm" />
                       </div>
                     </div>
 
                     <div className="flex gap-3 pt-4">
-                      <button type="button" onClick={() => setShowForm(false)} className="flex-1 py-3 bg-white/5 hover:bg-white/10 rounded-xl font-bold text-gray-400 transition-all">Cancel</button>
-                      <button type="submit" className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold text-white shadow-lg shadow-blue-600/20 transition-all">Save Changes</button>
+                      <button type="submit" className="flex-1 py-4 bg-blue-600 hover:bg-blue-500 rounded-2xl font-black uppercase tracking-widest text-xs text-white shadow-lg shadow-blue-600/20 transition-all">
+                        {editingId ? "Update Product" : "Register Item"}
+                      </button>
                     </div>
                   </motion.form>
                 </div>
