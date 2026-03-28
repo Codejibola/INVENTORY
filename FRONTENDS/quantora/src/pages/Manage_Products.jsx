@@ -1,19 +1,22 @@
 /* eslint-disable no-unused-vars */
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
 import apiFetch from "../utils/apiFetch.js";
 import LOCAL_ENV from "../../ENV.js";
 import { Plus, Edit, Trash2, Search, Package, Scan, X, Tag, Layers, DollarSign } from "lucide-react";
 import { Helmet, HelmetProvider } from "react-helmet-async";
-import { Html5QrcodeScanner } from "html5-qrcode";
+import { Html5Qrcode } from "html5-qrcode";
 
 export default function ManageProducts() {
   const [products, setProducts] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  
+  // Ref to hold the scanner instance for clean cleanup
+  const scannerRef = useRef(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -39,23 +42,45 @@ export default function ManageProducts() {
     fetchProducts();
   }, []);
 
-  // BARCODE SCANNER LOGIC
+  // STABLE BARCODE SCANNER LOGIC
   useEffect(() => {
     if (isScanning && showForm) {
-      const scanner = new Html5QrcodeScanner("modal-reader", { 
-        fps: 10, 
-        qrbox: { width: 250, height: 150 } 
-      });
+      const html5QrCode = new Html5Qrcode("modal-reader");
+      scannerRef.current = html5QrCode;
 
-      scanner.render((decodedText) => {
-        setFormData(prev => ({ ...prev, barcode: decodedText }));
-        setIsScanning(false);
-        scanner.clear();
-      }, (err) => { /* Ignore noise */ });
+      const config = { fps: 10, qrbox: { width: 250, height: 150 } };
 
-      return () => scanner.clear().catch(e => console.error("Scanner clear error", e));
+      html5QrCode.start(
+        { facingMode: "environment" }, 
+        config,
+        (decodedText) => {
+          setFormData(prev => ({ ...prev, barcode: decodedText }));
+          stopScanner();
+        },
+        (errorMessage) => { /* Ignore noise */ }
+      ).catch(err => console.error("Scanner start error", err));
+
+      return () => {
+        if (html5QrCode.isScanning) {
+          html5QrCode.stop().then(() => html5QrCode.clear()).catch(e => console.log(e));
+        }
+      };
     }
   }, [isScanning, showForm]);
+
+  const stopScanner = async () => {
+    if (scannerRef.current && scannerRef.current.isScanning) {
+      try {
+        await scannerRef.current.stop();
+        setIsScanning(false);
+      } catch (err) {
+        console.error("Failed to stop scanner", err);
+        setIsScanning(false); // Force close UI even if stop fails
+      }
+    } else {
+      setIsScanning(false);
+    }
+  };
 
   const fetchProducts = () => {
     if (!token) return;
@@ -116,8 +141,8 @@ export default function ManageProducts() {
   };
 
   const closeForm = () => {
+    stopScanner();
     setShowForm(false);
-    setIsScanning(false);
     setEditingId(null);
     setFormData({ name: "", price: "", selling_price: "", stock: "", category: "", barcode: "" });
   };
@@ -158,13 +183,9 @@ export default function ManageProducts() {
     );
   });
 
-  // UPDATED SORTING LOGIC: Current month to past months
   const allMonths = ["January","February","March","April","May","June","July","August","September","October","November","December"];
   const currentMonthIndex = new Date().getMonth();
-  
-  const displayMonths = allMonths
-    .slice(0, currentMonthIndex + 1)
-    .reverse();
+  const displayMonths = allMonths.slice(0, currentMonthIndex + 1).reverse();
 
   const groupedByMonth = displayMonths.reduce((acc, m) => {
     acc[m] = filteredProducts.filter((p) => allMonths[new Date(p.created_at).getMonth()] === m);
@@ -253,7 +274,6 @@ export default function ManageProducts() {
                     </table>
                   </div>
 
-                  {/* Mobile View */}
                   <div className="md:hidden grid grid-cols-1 gap-4">
                     {groupedByMonth[month].map((p) => (
                       <div key={p.id} className="bg-[#111] border border-white/5 rounded-2xl p-5 space-y-4">
@@ -312,7 +332,10 @@ export default function ManageProducts() {
                         </div>
                         <button 
                           type="button" 
-                          onClick={() => setIsScanning(!isScanning)}
+                          onClick={() => {
+                            if(isScanning) stopScanner();
+                            else setIsScanning(true);
+                          }}
                           className="text-[10px] font-black uppercase bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-xl text-white transition-all shadow-lg shadow-blue-600/20"
                         >
                           {isScanning ? "Cancel Scan" : "Scan to Link"}
@@ -320,7 +343,7 @@ export default function ManageProducts() {
                       </div>
 
                       {isScanning && (
-                        <div id="modal-reader" className="overflow-hidden rounded-2xl border-2 border-dashed border-blue-500/30 bg-black"></div>
+                        <div id="modal-reader" className="overflow-hidden rounded-2xl border-2 border-dashed border-blue-500/30 bg-black aspect-video"></div>
                       )}
 
                       <input 
