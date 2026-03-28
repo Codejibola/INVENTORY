@@ -5,7 +5,7 @@ import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
 import apiFetch from "../utils/apiFetch.js";
 import LOCAL_ENV from "../../ENV.js";
-import { Plus, Edit, Trash2, Search, Package, Scan, X, Tag, Layers, DollarSign } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Package, Scan, X, Tag, Layers, DollarSign, Info, Zap } from "lucide-react";
 import { Helmet, HelmetProvider } from "react-helmet-async";
 import { Html5Qrcode } from "html5-qrcode";
 
@@ -15,7 +15,6 @@ export default function ManageProducts() {
   const [isScanning, setIsScanning] = useState(false);
   const [editingId, setEditingId] = useState(null);
   
-  // Ref to hold the scanner instance for clean cleanup
   const scannerRef = useRef(null);
 
   const [formData, setFormData] = useState({
@@ -42,14 +41,23 @@ export default function ManageProducts() {
     fetchProducts();
   }, []);
 
-  // STABLE BARCODE SCANNER LOGIC
+  // STABLE & FAST BARCODE SCANNER LOGIC
   useEffect(() => {
     if (isScanning && showForm) {
       const html5QrCode = new Html5Qrcode("modal-reader");
       scannerRef.current = html5QrCode;
 
-      const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+      // Optimizing for speed: Tight box and hardware acceleration
+      const config = { 
+        fps: 15, 
+        qrbox: { width: 280, height: 160 },
+        aspectRatio: 1.777778,
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true
+        }
+      };
 
+      // Forces back camera on mobile (environment)
       html5QrCode.start(
         { facingMode: "environment" }, 
         config,
@@ -57,8 +65,15 @@ export default function ManageProducts() {
           setFormData(prev => ({ ...prev, barcode: decodedText }));
           stopScanner();
         },
-        (errorMessage) => { /* Ignore noise */ }
-      ).catch(err => console.error("Scanner start error", err));
+        (errorMessage) => { /* Ignore background noise */ }
+      ).catch(err => {
+        console.error("Scanner start error", err);
+        // Fallback if 'environment' is too strict on some devices
+        html5QrCode.start({ facingMode: "user" }, config, (text) => {
+           setFormData(prev => ({ ...prev, barcode: text }));
+           stopScanner();
+        }).catch(e => console.error(e));
+      });
 
       return () => {
         if (html5QrCode.isScanning) {
@@ -74,8 +89,7 @@ export default function ManageProducts() {
         await scannerRef.current.stop();
         setIsScanning(false);
       } catch (err) {
-        console.error("Failed to stop scanner", err);
-        setIsScanning(false); // Force close UI even if stop fails
+        setIsScanning(false);
       }
     } else {
       setIsScanning(false);
@@ -234,6 +248,7 @@ export default function ManageProducts() {
                 <section key={month} className="space-y-4">
                   <h2 className="text-xs font-black uppercase tracking-[0.3em] text-gray-600 border-b border-white/5 pb-2">{month}</h2>
                   
+                  {/* Table for Desktop */}
                   <div className="hidden md:block overflow-hidden bg-[#111] border border-white/5 rounded-2xl shadow-2xl">
                     <table className="w-full text-left border-collapse">
                       <thead>
@@ -274,6 +289,7 @@ export default function ManageProducts() {
                     </table>
                   </div>
 
+                  {/* Mobile View */}
                   <div className="md:hidden grid grid-cols-1 gap-4">
                     {groupedByMonth[month].map((p) => (
                       <div key={p.id} className="bg-[#111] border border-white/5 rounded-2xl p-5 space-y-4">
@@ -343,7 +359,22 @@ export default function ManageProducts() {
                       </div>
 
                       {isScanning && (
-                        <div id="modal-reader" className="overflow-hidden rounded-2xl border-2 border-dashed border-blue-500/30 bg-black aspect-video"></div>
+                        <div className="space-y-4">
+                          <div id="modal-reader" className="overflow-hidden rounded-2xl border-2 border-dashed border-blue-500/30 bg-black aspect-video"></div>
+                          
+                          {/* Troubleshooting Section */}
+                          <div className="bg-blue-500/5 border border-blue-500/10 rounded-xl p-4 space-y-2">
+                             <div className="flex items-center gap-2 text-blue-400">
+                                <Zap size={14} />
+                                <span className="text-[10px] font-black uppercase tracking-wider">Fast Scan Tips</span>
+                             </div>
+                             <ul className="text-[11px] text-gray-500 space-y-1 ml-1 list-disc list-inside">
+                                <li><strong>Distance:</strong> Hold item <span className="text-gray-300">15-20cm</span> away (don't get too close).</li>
+                                <li><strong>Lighting:</strong> Ensure the barcode has no bright glare/reflections.</li>
+                                <li><strong>Laptop:</strong> Keep the product steady for 2 seconds to allow focus.</li>
+                             </ul>
+                          </div>
+                        </div>
                       )}
 
                       <input 
