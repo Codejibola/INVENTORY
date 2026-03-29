@@ -23,14 +23,18 @@ export const getProductById = async (req, res) => {
   }
 };
 
-// Create product (including selling_price)
+// Create Product
 export const createProduct = async (req, res) => {
   try {
-    const { name, price, stock, category, selling_price = 0 } = req.body;
+    // FIX: Extract 'barcode' from req.body
+    const { name, price, stock, category, selling_price = 0, barcode = null } = req.body;
+    
     if (stock === undefined || stock === null)
       return res.status(400).json({ message: "Stock/Units is required" });
 
-    await Product.createProduct(req.userId, name, price, stock, category, selling_price);
+    // FIX: Pass 'barcode' as the 7th argument to match your Model
+    await Product.createProduct(req.userId, name, price, stock, category, selling_price, barcode);
+    
     res.status(201).json({ message: "Product created" });
   } catch (err) {
     console.error(err);
@@ -38,20 +42,33 @@ export const createProduct = async (req, res) => {
   }
 };
 
-// Update product 
+// Update Product
 export const updateProduct = async (req, res) => {
   try {
-    // Add barcode here
     const { name, price, stock, category, selling_price = 0, barcode = null } = req.body;
+    const { id } = req.params;
+
+    /** * FIX: Match your Model's argument order exactly:
+     * Model expects: (id, userId, name, price, stock, category, selling_price, barcode)
+     */
+    await Product.updateProduct(
+      id,            // 1
+      req.userId,    // 2
+      name,          // 3
+      price,         // 4
+      stock,         // 5
+      category,      // 6
+      selling_price, // 7
+      barcode        // 8
+    );
     
-    // Pass barcode before req.params.id (match the order in your model)
-    await Product.updateProduct(req.params.id, req.userId, name, price, stock, category, selling_price, barcode);
     res.json({ message: "Product updated" });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 };
+
 // Update stock (no changes)
 export const updateStock = async (req, res) => {
   const { productId, quantity } = req.body;
