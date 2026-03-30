@@ -118,6 +118,11 @@ export default function RecordSales() {
     }
   }, [selected, quantity]);
 
+  // --- PRICING LOGIC ---
+  const currentProduct = products.find(p => p.id === Number(selected));
+  const isBelowCost = currentProduct && Number(customPrice) < (currentProduct.cost_price * quantity);
+  const activeDiscount = currentProduct && !isBelowCost && Number(customPrice) < (currentProduct.selling_price * quantity);
+
   const addToBasket = () => {
     if (!selected || !quantity || !customPrice) return setError("Missing selection or price.");
     const product = products.find(p => p.id === Number(selected));
@@ -129,8 +134,8 @@ export default function RecordSales() {
       quantity: Number(quantity),
       unitPrice: Number(customPrice) / Number(quantity), 
       subtotal: Number(customPrice),
-      originalPrice: product.selling_price * quantity,
-      isDiscounted: Number(customPrice) < (product.selling_price * quantity)
+      isDiscounted: Number(customPrice) < (product.selling_price * quantity),
+      isLoss: Number(customPrice) < (product.cost_price * quantity)
     }]);
     
     setSelected("");
@@ -150,9 +155,7 @@ export default function RecordSales() {
           body: JSON.stringify({ productId: item.productId, quantity: item.quantity, price: item.subtotal }),
         });
       }
-
       if (shouldDownload) generatePDF();
-
       setBasket([]);
       setCustomerName("");
       setShowToast(true);
@@ -170,13 +173,11 @@ export default function RecordSales() {
     const doc = new jsPDF();
     const accent = [37, 99, 235];
     const grandTotal = basket.reduce((acc, i) => acc + i.subtotal, 0);
-
     doc.setFillColor(250, 250, 250);
     doc.rect(0, 0, 210, 40, 'F');
     if (logo) doc.addImage(logo, 'PNG', 15, 10, 20, 20);
     doc.setFont("helvetica", "bold").setFontSize(20).setTextColor(accent[0], accent[1], accent[2]);
     doc.text(currentUser?.shop_name?.toUpperCase() || "QUANTORA", 195, 20, { align: "right" });
-
     autoTable(doc, {
       startY: 50,
       head: [['DESCRIPTION', 'QTY', 'UNIT PRICE', 'AMOUNT']],
@@ -184,21 +185,25 @@ export default function RecordSales() {
       headStyles: { fillColor: accent },
       theme: 'striped'
     });
-
     const finalY = doc.lastAutoTable.finalY + 10;
     doc.setFillColor(accent[0], accent[1], accent[2]).rect(140, finalY, 55, 12, 'F');
     doc.setTextColor(255).setFontSize(12).text(`TOTAL: N${grandTotal.toLocaleString()}`, 167, finalY + 8, { align: "center" });
-    
     doc.save(`Receipt_${customerName || 'Sale'}.pdf`);
   };
 
-  // --- STATS CALCULATIONS ---
   const basketTotal = basket.reduce((acc, item) => acc + item.subtotal, 0);
   const totalRevenue = sales.reduce((acc, s) => acc + Number(s.price), 0);
   const totalProfit = sales.reduce((acc, s) => acc + (Number(s.profit_loss) || 0), 0);
 
-  const currentProduct = products.find(p => p.id === Number(selected));
-  const activeDiscount = currentProduct && Number(customPrice) < (currentProduct.selling_price * quantity);
+  // Profit Status Formatting Logic
+  const profitColorClass = totalProfit > 0 
+    ? "text-green-400 bg-green-600/10 border-green-500/20" 
+    : totalProfit < 0 
+      ? "text-red-400 bg-red-600/10 border-red-500/20" 
+      : "text-amber-400 bg-amber-600/10 border-amber-500/20";
+  
+  const profitIconBg = totalProfit > 0 ? "bg-green-600" : totalProfit < 0 ? "bg-red-600" : "bg-amber-600";
+  const profitSign = totalProfit > 0 ? "+" : totalProfit < 0 ? "-" : "";
 
   return (
     <HelmetProvider>
@@ -209,8 +214,8 @@ export default function RecordSales() {
           <Topbar onMenuClick={() => setMenuOpen(true)} userName={currentUser?.name} />
           
           <main className="p-6 lg:p-10 space-y-8 max-w-[1200px] mx-auto w-full">
-            {/* DUAL STATS HEADER */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* REVENUE CARD */}
               <div className="bg-blue-600/10 border border-blue-500/20 px-6 py-5 rounded-[2rem] flex items-center gap-4">
                 <div className="p-3 bg-blue-600 rounded-2xl"><TrendingUp className="text-white" size={20} /></div>
                 <div>
@@ -218,12 +223,17 @@ export default function RecordSales() {
                   <p className="text-xl font-black text-white">₦{totalRevenue.toLocaleString()}</p>
                 </div>
               </div>
-
-              <div className="bg-green-600/10 border border-green-500/20 px-6 py-5 rounded-[2rem] flex items-center gap-4">
-                <div className="p-3 bg-green-600 rounded-2xl"><Zap className="text-white" size={20} /></div>
+              
+              {/* UPDATED PROFIT CARD */}
+              <div className={`border px-6 py-5 rounded-[2rem] flex items-center gap-4 transition-colors duration-500 ${profitColorClass}`}>
+                <div className={`p-3 rounded-2xl transition-colors duration-500 ${profitIconBg}`}>
+                  <Zap className="text-white" size={20} />
+                </div>
                 <div>
-                  <p className="text-[10px] uppercase font-black text-green-400 tracking-widest">Net Profit Today</p>
-                  <p className="text-xl font-black text-white">₦{totalProfit.toLocaleString()}</p>
+                  <p className="text-[10px] uppercase font-black tracking-widest opacity-80">Net Profit Today</p>
+                  <p className="text-xl font-black text-white">
+                    {profitSign}₦{Math.abs(totalProfit).toLocaleString()}
+                  </p>
                 </div>
               </div>
             </div>
@@ -241,21 +251,33 @@ export default function RecordSales() {
                   <div className="space-y-4">
                     <select value={selected} onChange={(e) => setSelected(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm outline-none">
                       <option value="">Choose product...</option>
-                      {products.map(p => <option key={p.id} value={p.id} className="bg-black">{p.name} (Stock: {p.units || p.stock})</option>)}
+                      {products.map(p => <option key={p.id} value={p.id} className="bg-black">{p.name}</option>)}
                     </select>
 
                     <div className="grid grid-cols-2 gap-4">
                       <input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm" placeholder="Qty" />
                       <div className="relative">
-                        <input type="number" value={customPrice} onChange={(e) => setCustomPrice(e.target.value)} className={`w-full bg-white/5 border rounded-2xl px-5 py-4 text-sm font-bold transition-all ${activeDiscount ? 'border-amber-500 text-amber-500' : 'border-white/10 text-blue-400'}`} placeholder="Price" />
-                        {activeDiscount && (
-                           <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="absolute -top-3 right-2 flex items-center gap-1 bg-amber-500 text-black px-2 py-0.5 rounded-full text-[8px] font-black uppercase">
-                             <AlertCircle size={10}/> Discounting
-                           </motion.div>
-                        )}
+                        <input 
+                          type="number" 
+                          value={customPrice} 
+                          onChange={(e) => setCustomPrice(e.target.value)} 
+                          className={`w-full bg-white/5 border rounded-2xl px-5 py-4 text-sm font-bold transition-all duration-300 ${isBelowCost ? 'border-red-500 text-red-500' : activeDiscount ? 'border-amber-500 text-amber-500' : 'border-white/10 text-blue-400'}`} 
+                          placeholder="Price" 
+                        />
+                        <AnimatePresence>
+                          {isBelowCost && (
+                            <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="absolute -top-3 right-2 flex items-center gap-1 bg-red-600 text-white px-2 py-0.5 rounded-full text-[8px] font-black uppercase shadow-lg">
+                              <AlertCircle size={10}/> Capital Loss
+                            </motion.div>
+                          )}
+                          {activeDiscount && (
+                            <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="absolute -top-3 right-2 flex items-center gap-1 bg-amber-500 text-black px-2 py-0.5 rounded-full text-[8px] font-black uppercase shadow-lg">
+                              <Tag size={10}/> Discounting
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     </div>
-
                     <button onClick={addToBasket} className="w-full py-5 bg-white text-black font-black uppercase text-xs rounded-2xl hover:bg-gray-200 transition-all">Add to Basket</button>
                   </div>
                 </div>
@@ -272,7 +294,7 @@ export default function RecordSales() {
                         <div key={idx} className="flex justify-between items-center text-sm">
                           <div className="flex flex-col">
                             <span className="font-bold">{item.name} <span className="text-white/50 text-[10px]">x{item.quantity}</span></span>
-                            {item.isDiscounted && <span className="text-[8px] font-black bg-white/20 px-1.5 rounded w-fit">DISCOUNTED SALE</span>}
+                            {item.isLoss ? <span className="text-[8px] font-black bg-red-500 px-1.5 rounded w-fit uppercase">Selling at Loss</span> : item.isDiscounted && <span className="text-[8px] font-black bg-white/20 px-1.5 rounded w-fit uppercase">Discounted</span>}
                           </div>
                           <span className="font-black">₦{item.subtotal.toLocaleString()}</span>
                         </div>
@@ -285,7 +307,7 @@ export default function RecordSales() {
                       </div>
                       <input type="text" placeholder="Customer Name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-sm placeholder:text-white/40 outline-none" />
                       <div className="grid grid-cols-1 gap-2">
-                        <button onClick={() => finalizeTransaction(false)} disabled={loading} className="w-full py-3 bg-white/10 border border-white/10 rounded-xl font-bold text-[10px] tracking-widest uppercase">Fast Record</button>
+                        <button onClick={() => finalizeTransaction(false)} disabled={loading} className="w-full py-3 bg-white/10 border border-white/10 rounded-xl font-bold text-[10px] tracking-widest uppercase text-white">Fast Record</button>
                         <button onClick={() => finalizeTransaction(true)} disabled={loading} className="w-full py-4 bg-white text-blue-600 rounded-xl font-black text-[10px] tracking-widest uppercase shadow-xl">Record & Receipt</button>
                       </div>
                     </div>
@@ -293,7 +315,7 @@ export default function RecordSales() {
                 )}
               </div>
 
-              {/* SALES LEDGER */}
+              {/* ACTIVITY LEDGER */}
               <div className="lg:col-span-7">
                 <div className="flex items-center gap-2 mb-4 px-2">
                   <History size={16} className="text-gray-500" />
