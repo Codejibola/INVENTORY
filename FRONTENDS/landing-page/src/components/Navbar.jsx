@@ -119,7 +119,7 @@ export default function Navbar() {
               ))}
 
               <a
-                href="https://quantora-app.vercel.app"
+                href="https://quantora.online"
                 onClick={() => setOpen(false)}
                 className="mt-4 bg-blue-600 hover:bg-blue-500 transition px-5 py-3 rounded-full font-semibold text-white text-center"
               >

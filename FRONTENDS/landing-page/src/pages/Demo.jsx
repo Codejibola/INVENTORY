@@ -1,9 +1,8 @@
 /* eslint-disable no-unused-vars */
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Helmet } from "react-helmet-async";
 
-// Image Imports
+// Image Imports (Keep your existing imports)
 import registration from "../assets/registration.webp";
 import dashboard from "../assets/dashboard.webp";
 import inventory from "../assets/inventory.webp";
@@ -12,18 +11,42 @@ import invoices from "../assets/invoices.webp";
 import oversight from "../assets/oversight.webp";
 
 const demoSteps = [
-  { image: registration, title: "Secure Onboarding", description: "Create your business account in seconds. Set up your profile and get ready to master your data." },
-  { image: dashboard, title: "Dashboard Overview", description: "Your central hub for real-time inventory levels, recent sales activity, and critical stock alerts." },
-  { image: inventory, title: "Adding Products", description: "Easily input new stock, set SKU variants, assign categories, and define pricing structures." },
-  { image: recordsales, title: "Inventory Management", description: "Record sales instantly and see immediate feedback on profit or loss for each transaction, ensuring you know exactly how your business is performing." },
-  { image: oversight, title: "Staff & Role Control", description: "Manage workers by assigning roles. Admin monitors activity, while staff focus on sales without seeing full profit margins." },
-  { image: invoices, title: "Creating Invoices", description: "Generate professional, tax-compliant invoices in one click for your clients directly from the dashboard." },
+  { 
+    image: registration, 
+    title: "Quick Setup", 
+    description: "Start your business account in seconds. No complex paperwork—just enter your shop details and you're ready to go." 
+  },
+  { 
+    image: dashboard, 
+    title: "Everything at a Glance", 
+    description: "See your total sales, current stock, and low-item alerts on one simple screen. Stay in control without the headache." 
+  },
+  { 
+    image: inventory, 
+    title: "Add Products Easily", 
+    description: "List your items, set your prices, and track your stock levels. Quantora makes adding new inventory faster than writing it in a book." 
+  },
+  { 
+    image: recordsales, 
+    title: "Record Sales Instantly", 
+    description: "Every time you sell, Quantora calculates your profit automatically. You’ll always know exactly how much money you’ve made today." 
+  },
+  { 
+    image: oversight, 
+    title: "Manage Your Staff", 
+    description: "Let your workers record sales while you keep the profit details private. Monitor your shop remotely with total peace of mind." 
+  },
+  { 
+    image: invoices, 
+    title: "Professional Receipts", 
+    description: "Create and send professional receipts to your customers with one click. Build trust and keep your records tax-ready." 
+  },
 ];
 
-export default function DemoPage() {
+export default function Demo() {
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // 1. Background Preload: Ensures "Next" is always instant
+  // Background Preload
   useEffect(() => {
     demoSteps.forEach((step) => {
       const img = new Image();
@@ -31,11 +54,11 @@ export default function DemoPage() {
     });
   }, []);
 
-  // 2. Auto-slide Logic
+  // Auto-slide Logic
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % demoSteps.length);
-    }, 6000); 
+    }, 8000); // Slightly slower to let users read the new simpler text
     return () => clearInterval(interval);
   }, []);
 
@@ -45,101 +68,86 @@ export default function DemoPage() {
   const activeStep = demoSteps[currentIndex];
 
   return (
-    <>
-      <Helmet>
-        <title>How Quantora Works | Product Demo | Quantora</title>
-        <meta name="description" content="Step-by-step guided tour of Quantora." />
-      </Helmet>
-
-      {/* --- NAVIGATION HEADER --- */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-zinc-950/80 backdrop-blur-sm border-b border-zinc-800">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <a href="https://inventory-5xr8.vercel.app/" className="text-xl font-bold text-white hover:text-blue-400 transition-colors cursor-pointer">
-            Quantora<span className="text-blue-500">.</span>
-          </a>
-          <a href="https://quantora-app.vercel.app/" className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-md text-sm font-semibold transition">
-            Launch App
-          </a>
-        </div>
-      </nav>
-
-      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-6 text-white pt-28">
-        <header className="text-center mb-16 max-w-3xl">
-          <h1 className="text-4xl md:text-6xl font-black mb-6 tracking-tight">
-            Master Your Business Data <br />
-            <span className="text-blue-500 italic">In Minutes.</span>
-          </h1>
+    <section id="demo" className="py-24 bg-zinc-950 text-white overflow-hidden">
+      <div className="max-w-7xl mx-auto px-6">
+        
+        <header className="text-center mb-16">
+          <h2 className="text-sm font-black text-blue-500 uppercase tracking-[0.3em] mb-4">How it works</h2>
+          <h3 className="text-4xl md:text-5xl font-black tracking-tight">
+            Manage your shop <br /> 
+            <span className="italic text-blue-400">in a few simple steps.</span>
+          </h3>
         </header>
 
         {/* Main Showcase Grid */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-10 w-full max-w-7xl items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           
-          {/* Explanatory Text Side */}
-          <div className="xl:col-span-1 space-y-6 order-2 xl:order-1">
-            <div className="text-sm font-bold text-blue-400 uppercase tracking-widest">
+          {/* Text Content - Spans 5 columns */}
+          <div className="lg:col-span-5 space-y-8 order-2 lg:order-1">
+            <div className="inline-block px-4 py-1 rounded-full bg-blue-600/10 border border-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-widest">
               Step {currentIndex + 1} of {demoSteps.length}
             </div>
-            <h2 className="text-4xl font-bold tracking-tight text-white">{activeStep.title}</h2>
-            <p className="text-zinc-400 text-lg leading-relaxed">{activeStep.description}</p>
-            <a href="https://quantora-app.vercel.app/" className="inline-block bg-zinc-800 hover:bg-zinc-700 text-white px-6 py-3 rounded-md font-semibold transition">
-                Try it Yourself
-            </a>
+            
+            <div className="space-y-4">
+              <h4 className="text-3xl font-bold tracking-tight text-white italic">
+                {activeStep.title}
+              </h4>
+              <p className="text-zinc-400 text-lg leading-relaxed max-w-md">
+                {activeStep.description}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-4 pt-4">
+              <button 
+                onClick={prevSlide}
+                className="p-4 rounded-full border border-zinc-800 hover:bg-zinc-900 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
+              </button>
+              <button 
+                onClick={nextSlide}
+                className="p-4 rounded-full bg-blue-600 hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
+              </button>
+            </div>
           </div>
 
-          {/* Image Showcase Side - FIXED EMPTY SPACE */}
-          <div className="xl:col-span-2 relative w-full h-auto overflow-hidden rounded-2xl shadow-2xl border border-zinc-800 order-1 xl:order-2 bg-zinc-900/50 p-2 md:p-4">
-            <AnimatePresence mode="wait">
-              <motion.img
-                key={currentIndex}
-                src={activeStep.image}
-                alt={activeStep.title}
-                
-                // OPTIMIZED LOADING
-                loading={currentIndex === 0 ? "eager" : "lazy"}
-                decoding="async"
+          {/* Image Showcase Side - Spans 7 columns */}
+          <div className="lg:col-span-7 relative order-1 lg:order-2 group">
+            <div className="absolute -inset-4 bg-blue-600/5 blur-3xl rounded-full opacity-50 group-hover:opacity-100 transition-opacity" />
+            
+            <div className="relative aspect-video bg-zinc-900 rounded-3xl border border-white/5 p-2 shadow-2xl overflow-hidden">
+              <AnimatePresence mode="wait">
+                <motion.img
+                  key={currentIndex}
+                  src={activeStep.image}
+                  alt={activeStep.title}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 1.05 }}
+                  transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+                  className="w-full h-full object-cover rounded-2xl"
+                />
+              </AnimatePresence>
+            </div>
 
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
-                
-                // h-auto ensures the container shrinks to fit the image
-                className="w-full h-auto max-h-[70vh] object-contain rounded-xl block mx-auto shadow-inner"
-              />
-            </AnimatePresence>
-
-            {/* Navigation Arrows */}
-            <button 
-              onClick={prevSlide} 
-              className="absolute top-1/2 left-4 -translate-y-1/2 bg-black/40 hover:bg-blue-600 text-white p-3 rounded-full shadow-lg z-10 backdrop-blur-md transition-all border border-white/10"
-              aria-label="Previous step"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
-            </button>
-            <button 
-              onClick={nextSlide} 
-              className="absolute top-1/2 right-4 -translate-y-1/2 bg-black/40 hover:bg-blue-600 text-white p-3 rounded-full shadow-lg z-10 backdrop-blur-md transition-all border border-white/10"
-              aria-label="Next step"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
-            </button>
+            {/* Pagination Dots */}
+            <div className="flex gap-3 justify-center mt-8">
+              {demoSteps.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentIndex(idx)}
+                  className={`h-1.5 rounded-full transition-all duration-500 ${
+                    idx === currentIndex ? "w-12 bg-blue-500" : "w-3 bg-zinc-800 hover:bg-zinc-700"
+                  }`}
+                />
+              ))}
+            </div>
           </div>
-        </div>
 
-        {/* Dots Tracker */}
-        <div className="flex gap-2 mt-12 mb-10">
-          {demoSteps.map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => setCurrentIndex(idx)}
-              className={`h-2 rounded-full transition-all duration-300 ${
-                idx === currentIndex ? "w-10 bg-blue-500" : "w-2 bg-zinc-700 hover:bg-zinc-500"
-              }`}
-              aria-label={`Go to step ${idx + 1}`}
-            />
-          ))}
         </div>
       </div>
-    </>
+    </section>
   );
 }
