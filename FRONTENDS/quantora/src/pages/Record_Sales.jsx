@@ -6,7 +6,7 @@ import Topbar from "../components/Topbar";
 import apiFetch from "../utils/apiFetch.js";
 import LOCAL_ENV from "../../ENV.js";
 import { Helmet, HelmetProvider } from "react-helmet-async";
-import { ShoppingCart, TrendingUp, History, Trash2, Download, Scan, CheckCircle2, Zap, Tag, AlertCircle } from "lucide-react";
+import { ShoppingCart, TrendingUp, History, Trash2, Download, Scan, CheckCircle2, Zap, Tag, AlertCircle, X } from "lucide-react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Html5Qrcode } from "html5-qrcode";
@@ -106,6 +106,7 @@ export default function RecordSales() {
       setSelected(found.id);
       setQuantity(1);
       setCustomPrice(found.selling_price); 
+      setError("");
     } else {
       setError(`SKU ${code} not found.`);
     }
@@ -118,15 +119,22 @@ export default function RecordSales() {
     }
   }, [selected, quantity]);
 
-  // --- PRICING LOGIC ---
   const currentProduct = products.find(p => p.id === Number(selected));
   const isBelowCost = currentProduct && Number(customPrice) < (currentProduct.cost_price * quantity);
   const activeDiscount = currentProduct && !isBelowCost && Number(customPrice) < (currentProduct.selling_price * quantity);
 
   const addToBasket = () => {
+    setError(""); 
     if (!selected || !quantity || !customPrice) return setError("Missing selection or price.");
+    
     const product = products.find(p => p.id === Number(selected));
-    if (quantity > (product.units || product.stock)) return setError("Insufficient stock.");
+    const currentStock = Number(product.units ?? product.stock ?? 0);
+
+    if (currentStock <= 0) {
+        return setError("This product can't be added because it is not currently available (Out of stock).");
+    }
+
+    if (quantity > currentStock) return setError("Insufficient stock.");
 
     setBasket([...basket, {
       productId: Number(selected),
@@ -195,7 +203,6 @@ export default function RecordSales() {
   const totalRevenue = sales.reduce((acc, s) => acc + Number(s.price), 0);
   const totalProfit = sales.reduce((acc, s) => acc + (Number(s.profit_loss) || 0), 0);
 
-  // Profit Status Formatting Logic
   const profitColorClass = totalProfit > 0 
     ? "text-green-400 bg-green-600/10 border-green-500/20" 
     : totalProfit < 0 
@@ -214,8 +221,26 @@ export default function RecordSales() {
           <Topbar onMenuClick={() => setMenuOpen(true)} userName={currentUser?.name} />
           
           <main className="p-6 lg:p-10 space-y-8 max-w-[1200px] mx-auto w-full">
+            <AnimatePresence>
+                {error && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="bg-red-500/10 border border-red-500/50 p-4 rounded-2xl flex items-center justify-between text-red-500 mb-6"
+                    >
+                        <div className="flex items-center gap-3">
+                            <AlertCircle size={20} />
+                            <p className="text-sm font-bold">{error}</p>
+                        </div>
+                        <button onClick={() => setError("")} className="hover:bg-red-500/20 p-1 rounded-lg">
+                            <X size={16} />
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* REVENUE CARD */}
               <div className="bg-blue-600/10 border border-blue-500/20 px-6 py-5 rounded-[2rem] flex items-center gap-4">
                 <div className="p-3 bg-blue-600 rounded-2xl"><TrendingUp className="text-white" size={20} /></div>
                 <div>
@@ -224,7 +249,6 @@ export default function RecordSales() {
                 </div>
               </div>
               
-              {/* UPDATED PROFIT CARD */}
               <div className={`border px-6 py-5 rounded-[2rem] flex items-center gap-4 transition-colors duration-500 ${profitColorClass}`}>
                 <div className={`p-3 rounded-2xl transition-colors duration-500 ${profitIconBg}`}>
                   <Zap className="text-white" size={20} />
@@ -249,13 +273,28 @@ export default function RecordSales() {
                   {isScanning && <div id="reader" className="aspect-video rounded-3xl overflow-hidden mb-6"></div>}
 
                   <div className="space-y-4">
-                    <select value={selected} onChange={(e) => setSelected(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm outline-none">
+                    <select 
+                        value={selected} 
+                        onChange={(e) => { setSelected(e.target.value); setError(""); }} 
+                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm outline-none appearance-none"
+                    >
                       <option value="">Choose product...</option>
-                      {products.map(p => <option key={p.id} value={p.id} className="bg-black">{p.name}</option>)}
+                      {products.map(p => {
+                        const stockCount = Number(p.units ?? p.stock ?? 0);
+                        return (
+                          <option 
+                            key={p.id} 
+                            value={p.id} 
+                            className={`bg-black ${stockCount <= 0 ? 'text-gray-600' : ''}`}
+                          >
+                            {p.name} ({stockCount} left)
+                          </option>
+                        );
+                      })}
                     </select>
 
                     <div className="grid grid-cols-2 gap-4">
-                      <input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm" placeholder="Qty" />
+                      <input type="number" value={quantity} onChange={(e) => { setQuantity(e.target.value); setError(""); }} className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm" placeholder="Qty" />
                       <div className="relative">
                         <input 
                           type="number" 
@@ -282,7 +321,6 @@ export default function RecordSales() {
                   </div>
                 </div>
 
-                {/* BASKET SECTION */}
                 {basket.length > 0 && (
                   <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-blue-600 p-8 rounded-[2.5rem] text-white">
                     <div className="flex justify-between items-center mb-6">
@@ -315,7 +353,6 @@ export default function RecordSales() {
                 )}
               </div>
 
-              {/* ACTIVITY LEDGER */}
               <div className="lg:col-span-7">
                 <div className="flex items-center gap-2 mb-4 px-2">
                   <History size={16} className="text-gray-500" />

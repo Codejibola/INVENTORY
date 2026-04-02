@@ -50,7 +50,7 @@ export default function ManageProducts() {
       .catch((err) => console.error("Fetch error:", err));
   };
 
-  // 2. IOS & PWA HARDENED SCANNER LOGIC
+  // 2. SCANNER LOGIC
   useEffect(() => {
     let html5QrCode;
     if (isScanning && showForm) {
@@ -70,42 +70,26 @@ export default function ManageProducts() {
             fps: 24, 
             qrbox: { width: 280, height: 160 },
             aspectRatio: 1.777778,
-            videoConstraints: {
-              facingMode: { ideal: "environment" },
-              width: { ideal: 1280 },
-              height: { ideal: 720 }
-            }
           };
 
           await html5QrCode.start(
             { facingMode: "environment" }, 
             config,
             (decodedText) => {
-              // Haptic Feedback for iOS/Android
               if (navigator.vibrate) navigator.vibrate(100);
-              
               setScanSuccess(true);
               setFormData(prev => ({ ...prev, barcode: decodedText }));
-              
               setTimeout(() => {
                 setScanSuccess(false);
                 stopScanner();
               }, 600);
             }
           );
-
-          // Force playsinline for iOS PWA
-          const video = element.querySelector('video');
-          if (video) {
-            video.setAttribute('playsinline', 'true');
-            video.setAttribute('muted', 'true');
-            video.play().catch(() => {});
-          }
         } catch (err) {
-          setError("Camera access denied or hardware busy.");
+          setError("Camera access denied.");
           setIsScanning(false);
         }
-      }, 500); // Animation buffer
+      }, 500);
 
       return () => {
         clearTimeout(timer);
@@ -174,7 +158,7 @@ export default function ManageProducts() {
       name: product.name,
       price: product.price,
       selling_price: product.selling_price,
-      stock: product.units || product.stock || 0, 
+      stock: product.units ?? product.stock ?? 0, 
       category: product.category || "",
       barcode: product.barcode || "",
     });
@@ -188,7 +172,6 @@ export default function ManageProducts() {
     setFormData({ name: "", price: "", selling_price: "", stock: "", category: "", barcode: "" });
   };
 
-  // 4. GROUPING & UI LOGIC
   const filteredProducts = products.filter((p) => {
     const term = searchTerm.toLowerCase();
     return p.name.toLowerCase().includes(term) || (p.barcode && p.barcode.includes(term));
@@ -231,30 +214,36 @@ export default function ManageProducts() {
                 <section key={month} className="space-y-5">
                   <h2 className="text-xs font-black uppercase tracking-[0.4em] text-gray-600 border-b border-white/5 pb-2">{month}</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {groupedByMonth[month].map((p) => (
-                      <div key={p.id} className="bg-[#0c0c0c] border border-white/5 rounded-[2rem] p-6 hover:border-blue-500/30 transition-all group relative overflow-hidden">
-                        <div className="flex justify-between items-start mb-6">
-                          <div>
-                            <h3 className="font-bold text-white text-lg leading-tight">{toTitleCase(p.name)}</h3>
-                            <span className="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-md font-black uppercase mt-2 inline-block tracking-tighter">{p.category || "General"}</span>
+                    {groupedByMonth[month].map((p) => {
+                      const stockCount = Number(p.units ?? p.stock ?? 0);
+                      return (
+                        <div key={p.id} className="bg-[#0c0c0c] border border-white/5 rounded-[2rem] p-6 hover:border-blue-500/30 transition-all group relative overflow-hidden">
+                          <div className="flex justify-between items-start mb-6">
+                            <div>
+                              <h3 className="font-bold text-white text-lg leading-tight">{toTitleCase(p.name)}</h3>
+                              <span className="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-md font-black uppercase mt-2 inline-block tracking-tighter">{p.category || "General"}</span>
+                            </div>
+                            <div className="flex gap-2">
+                              <button onClick={() => handleEdit(p)} className="p-2.5 bg-white/5 hover:bg-blue-500/20 rounded-xl text-gray-400 hover:text-blue-400 transition-all"><Edit size={16}/></button>
+                              <button onClick={() => handleDelete(p.id)} className="p-2.5 bg-white/5 hover:bg-red-500/20 rounded-xl text-gray-400 hover:text-red-500 transition-all"><Trash2 size={16}/></button>
+                            </div>
                           </div>
-                          <div className="flex gap-2">
-                            <button onClick={() => handleEdit(p)} className="p-2.5 bg-white/5 hover:bg-blue-500/20 rounded-xl text-gray-400 hover:text-blue-400 transition-all"><Edit size={16}/></button>
-                            <button onClick={() => handleDelete(p.id)} className="p-2.5 bg-white/5 hover:bg-red-500/20 rounded-xl text-gray-400 hover:text-red-500 transition-all"><Trash2 size={16}/></button>
+                          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
+                            <div>
+                              <p className="text-[9px] text-gray-600 font-black uppercase mb-1">Selling Price</p>
+                              <p className="text-white font-black text-lg">₦{Number(p.selling_price).toLocaleString()}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-[9px] text-gray-600 font-black uppercase mb-1">Availability</p>
+                              {/* FIXED: Explicitly checks for 0 and shows '0 Qty' */}
+                              <p className={`font-black text-lg ${stockCount < 5 ? "text-red-500" : "text-green-500"}`}>
+                                {stockCount} <span className="text-[10px] uppercase opacity-60">Qty</span>
+                              </p>
+                            </div>
                           </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
-                          <div>
-                            <p className="text-[9px] text-gray-600 font-black uppercase mb-1">Selling Price</p>
-                            <p className="text-white font-black text-lg">₦{Number(p.selling_price).toLocaleString()}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-[9px] text-gray-600 font-black uppercase mb-1">Availability</p>
-                            <p className={`font-black text-lg ${Number(p.units || p.stock) < 5 ? "text-red-500" : "text-green-500"}`}>{p.units || p.stock} <span className="text-[10px] uppercase opacity-60">Qty</span></p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </section>
               ))}
@@ -264,7 +253,6 @@ export default function ManageProducts() {
               {showForm && (
                 <div className="fixed inset-0 bg-black/95 backdrop-blur-xl flex items-center justify-center z-50 p-4">
                   <motion.form onSubmit={handleSaveProduct} initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }} className="bg-[#0f0f0f] border border-white/10 p-8 rounded-[3rem] w-full max-w-xl max-h-[90vh] overflow-y-auto space-y-8 custom-scrollbar relative shadow-2xl">
-                    
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                          <div className="w-12 h-12 bg-blue-600/20 rounded-2xl flex items-center justify-center text-blue-500"><Package size={24}/></div>
@@ -273,7 +261,6 @@ export default function ManageProducts() {
                       <button type="button" onClick={closeForm} className="w-10 h-10 flex items-center justify-center bg-white/5 rounded-full text-gray-500 hover:text-white transition-colors"><X size={20}/></button>
                     </div>
 
-                    {/* DYNAMIC SCANNER SECTION */}
                     <div className="bg-white/[0.03] p-6 rounded-[2rem] border border-white/5 space-y-5">
                       <div className="flex justify-between items-center">
                         <label className="text-[10px] uppercase font-black text-blue-400 tracking-[0.2em] flex items-center gap-2"><Scan size={14}/> Barcode Protocol</label>
@@ -285,20 +272,12 @@ export default function ManageProducts() {
                       {isScanning && (
                         <div className="relative aspect-video rounded-3xl overflow-hidden border-2 border-white/5 bg-black group">
                           <div id="modal-reader" className="w-full h-full"></div>
-                          
-                          {/* VIEW GUIDES */}
                           <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                             <div className={`relative w-[260px] h-[150px] border-2 rounded-2xl transition-all duration-300 ${scanSuccess ? 'border-green-500 bg-green-500/20 scale-110 shadow-[0_0_50px_rgba(34,197,94,0.5)]' : 'border-blue-500/40 shadow-[0_0_0_999px_rgba(0,0,0,0.6)]'}`}>
+                             <div className={`relative w-[260px] h-[150px] border-2 rounded-2xl transition-all duration-300 ${scanSuccess ? 'border-green-500 bg-green-500/20 scale-110' : 'border-blue-500/40 shadow-[0_0_0_999px_rgba(0,0,0,0.6)]'}`}>
                                 {!scanSuccess && (
                                   <motion.div initial={{ top: "10%" }} animate={{ top: "90%" }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }} className="absolute left-0 right-0 h-[2px] bg-blue-400 shadow-[0_0_15px_blue]" />
                                 )}
-                                {scanSuccess && (
-                                  <div className="absolute inset-0 flex items-center justify-center"><CheckCircle2 className="text-green-500" size={48} /></div>
-                                )}
                              </div>
-                          </div>
-                          <div className="absolute bottom-4 inset-x-0 text-center">
-                            <p className="text-[10px] font-black uppercase text-white/60 tracking-widest">{scanSuccess ? "Barcode Captured!" : "Align Barcode in Frame"}</p>
                           </div>
                         </div>
                       )}
@@ -309,7 +288,6 @@ export default function ManageProducts() {
                       </div>
                     </div>
 
-                    {/* INPUT FIELDS */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="md:col-span-2 space-y-2">
                         <label className="text-[10px] uppercase font-bold text-gray-500 ml-1">Item Designation</label>
