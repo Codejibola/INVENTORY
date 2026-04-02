@@ -1,7 +1,7 @@
 import { Helmet } from "react-helmet-async";
 import Hero from "../components/Hero";
 import Features from "../components/Features";
-import DemoPage from "./Demo";
+// import DemoPage from "./Demo";
 import CTA from "../components/CTA";
 import Footer from "../components/Footer";
 import FAQ from "../components/FAQ";
@@ -123,7 +123,7 @@ export default function Home() {
       <Hero />
       <WhyQuantora />
       <Features />
-      <DemoPage/>
+      {/* <DemoPage/> */}
       <Audience />
       <Review />
       <FAQ />
