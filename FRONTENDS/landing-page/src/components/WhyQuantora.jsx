@@ -6,7 +6,7 @@ import {
   ShoppingBag, 
   BarChart3, 
   Moon, 
-  FileCheck, 
+  ReceiptText, 
   FileText 
 } from "lucide-react";
 
@@ -30,9 +30,9 @@ const REASONS = [
     gradient: "from-blue-500 to-cyan-500",
   },
   {
-    title: "Tax-Ready Invoicing",
-    description: "Take the stress out of tax season. Quantora generates structured invoices that keep your records clean and compliant.",
-    icon: FileCheck, 
+    title: "Daily Performance Reports",
+    description: "Track every Naira with precision. Get automated breakdowns of daily sales, profit margins per product, and total revenue to keep your business compliant.",
+    icon: ReceiptText, 
     gradient: "from-zinc-600 to-zinc-800",
   },
   {

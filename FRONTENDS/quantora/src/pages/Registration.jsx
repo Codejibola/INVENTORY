@@ -186,7 +186,7 @@ export default function Register() {
                   className="space-y-4 mb-12"
                 >
                   {[
-                    { icon: <FiCheckCircle />, text: '14 Days of Premium Access', color: 'text-blue-400' },
+                    { icon: <FiCheckCircle />, text: '30 Days of free access', color: 'text-blue-400' },
                     { icon: <FiCheckCircle />, text: 'Unlimited inventory SKUs', color: 'text-indigo-400' },
                     { icon: <FiCheckCircle />, text: 'Multi-level role management', color: 'text-cyan-400' },
                     { icon: <FiCheckCircle />, text: 'Encrypted security & PINs', color: 'text-green-400' },
@@ -214,11 +214,11 @@ export default function Register() {
                   <p className="text-xs text-white/60 uppercase tracking-widest mb-4">Trusted by businesses worldwide</p>
                   <div className="grid grid-cols-3 gap-4 text-center">
                     <div>
-                      <p className="text-2xl font-bold text-blue-400">50+</p>
+                      <p className="text-2xl font-bold text-blue-400">20+</p>
                       <p className="text-xs text-white/50 mt-1">Active Shops</p>
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-indigo-400">700+</p>
+                      <p className="text-2xl font-bold text-indigo-400">100+</p>
                       <p className="text-xs text-white/50 mt-1">Products</p>
                     </div>
                     <div>

@@ -6,83 +6,124 @@ import {
   Instagram, 
   Twitter, 
   Facebook, 
-  Linkedin 
+  Linkedin,
+  ArrowUpRight
 } from "lucide-react";
 
 export default function Footer() {
-  return (
-    <footer className="bg-zinc-950 border-t border-zinc-800 py-16">
-      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 text-sm text-zinc-400">
+  const currentYear = new Date().getFullYear();
 
-        {/* Brand & Mission */}
-        <div>
-          <div className="text-xl font-semibold mb-4 text-white">
-            <span className="text-blue-500 font-bold">Q</span>uantora
+  return (
+    <footer className="relative bg-zinc-950 border-t border-zinc-900 pt-20 pb-10 overflow-hidden">
+      {/* Decorative Glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent" />
+      
+      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 mb-16">
+        
+        {/* Brand Section - Takes 4 columns */}
+        <div className="lg:col-span-4 space-y-6">
+          <div className="text-2xl font-bold text-white tracking-tighter">
+            <span className="text-blue-500">Q</span>uantora
           </div>
-          <p className="leading-relaxed">
+          <p className="text-zinc-400 text-sm leading-relaxed max-w-sm">
             The digital terminal for modern commerce. Engineered to help 
-            Nigerian SMEs scale with data-driven precision.
+            Nigerian SMEs scale with data-driven precision and cloud-native reliability.
           </p>
+          <div className="flex gap-4">
+            <SocialIcon icon={<Instagram size={18} />} href="https://instagram.com/quantora.nigeria" />
+            <SocialIcon icon={<Twitter size={18} />} href="https://x.com/QuantoraNigeria" />
+            <SocialIcon icon={<Linkedin size={18} />} href="https://www.linkedin.com/in/quantora-nigeria-79b7733b6" />
+          </div>
         </div>
 
-        {/* Quick Links */}
-        <div>
-          <h4 className="text-zinc-200 font-semibold mb-4 underline decoration-blue-500/50 underline-offset-8">Platform</h4>
+        {/* Quick Links - 2 columns */}
+        <div className="lg:col-span-2">
+          <FooterHeader>Platform</FooterHeader>
           <ul className="space-y-3">
-            <li><a href="#features" className="hover:text-white transition-colors">System Features</a></li>
-            <li><a href="#audience" className="hover:text-white transition-colors">Target Sectors</a></li>
-            <li><a href="#faq" className="hover:text-white transition-colors">Help Center</a></li>
-            <li><a href="#cta" className="hover:text-white transition-colors">Initialize Terminal</a></li>
+            <FooterLink href="#features">Features</FooterLink>
+            <FooterLink href="#audience">Sectors</FooterLink>
+            <FooterLink href="#faq">Help Center</FooterLink>
+            <FooterLink href="#cta">Terminal Login</FooterLink>
           </ul>
         </div>
 
-        {/* Support & Contact */}
-        <div>
-          <h4 className="text-zinc-200 font-semibold mb-4 underline decoration-blue-500/50 underline-offset-8">Support</h4>
+        {/* Contact Info - 3 columns */}
+        <div className="lg:col-span-3">
+          <FooterHeader>Support</FooterHeader>
           <ul className="space-y-4">
             <li>
-              <a href="tel:09117886797" className="flex items-center gap-3 hover:text-white transition-colors">
-                <Phone size={16} className="text-blue-500" />
+              <a href="tel:09117886797" className="group flex items-center gap-3 text-zinc-400 hover:text-white transition-colors text-sm">
+                <div className="p-2 bg-zinc-900 rounded-lg group-hover:bg-blue-500/10 group-hover:text-blue-500 transition-colors">
+                  <Phone size={16} />
+                </div>
                 09117886797
               </a>
             </li>
             <li>
-              <a href="mailto:quantora.nigeria@gmail.com" className="flex items-center gap-3 hover:text-white transition-colors">
-                <Mail size={16} className="text-blue-500" />
+              <a href="mailto:quantora.nigeria@gmail.com" className="group flex items-center gap-3 text-zinc-400 hover:text-white transition-colors text-sm">
+                <div className="p-2 bg-zinc-900 rounded-lg group-hover:bg-blue-500/10 group-hover:text-blue-500 transition-colors">
+                  <Mail size={16} />
+                </div>
                 quantora.nigeria@gmail.com
               </a>
             </li>
           </ul>
         </div>
 
-        {/* Social Presence */}
-        <div>
-          <h4 className="text-zinc-200 font-semibold mb-4 underline decoration-blue-500/50 underline-offset-8">Connect</h4>
-          <div className="grid grid-cols-2 gap-y-4 gap-x-2">
-            <a href="https://instagram.com/quantora.nigeria" target="_blank" rel="noreferrer" className="flex items-center gap-2 hover:text-white transition-colors">
-              <Instagram size={16} /> Instagram
-            </a>
-            <a href="https://x.com/QuantoraNigeria" target="_blank" rel="noreferrer" className="flex items-center gap-2 hover:text-white transition-colors">
-              <Twitter size={16} /> X (Twitter)
-            </a>
-            <a href="https://facebook.com/quantoraNigeria" target="_blank" rel="noreferrer" className="flex items-center gap-2 hover:text-white transition-colors">
-              <Facebook size={16} /> Facebook
-            </a>
-            <a href="https://www.linkedin.com/in/quantora-nigeria-79b7733b6" target="_blank" rel="noreferrer" className="flex items-center gap-2 hover:text-white transition-colors">
-              <Linkedin size={16} /> LinkedIn
-            </a>
+        {/* Newsletter / Status - 3 columns */}
+        <div className="lg:col-span-3">
+          <FooterHeader>System Status</FooterHeader>
+          <div className="bg-zinc-900/50 border border-zinc-800 p-4 rounded-2xl">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <span className="text-xs font-bold text-zinc-200 uppercase tracking-widest">Systems Nominal</span>
+            </div>
+            <p className="text-[11px] text-zinc-500 leading-tight">
+              Quantora is up and running smoothly for all shops at 99.9%. efficiency.
+            </p>
           </div>
         </div>
       </div>
 
       {/* Bottom Bar */}
-      <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-zinc-900 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-zinc-500">
-        <p>© {new Date().getFullYear()} Quantora Operations. All rights reserved.</p>
-        <div className="flex gap-8">
-          <Link to="/privacy" className="hover:text-zinc-300">Privacy Policy</Link>
-          <Link to="/terms" className="hover:text-zinc-300">Terms of Service</Link>
+      <div className="max-w-7xl mx-auto px-6 pt-8 border-t border-zinc-900 flex flex-col md:flex-row justify-between items-center gap-6">
+        <p className="text-[11px] text-zinc-500 font-medium">
+          © {currentYear} Quantora Operations. <span className="hidden md:inline">Built for the future of Nigerian Trade.</span>
+        </p>
+        <div className="flex gap-6 text-[11px] font-bold uppercase tracking-widest">
+          <Link to="/privacy" className="text-zinc-500 hover:text-blue-500 transition-colors">Privacy</Link>
+          <Link to="/terms" className="text-zinc-500 hover:text-blue-500 transition-colors">Terms</Link>
         </div>
       </div>
     </footer>
+  );
+}
+
+// Sub-components for cleaner code
+function FooterHeader({ children }) {
+  return <h4 className="text-white text-xs font-bold uppercase tracking-[0.2em] mb-6">{children}</h4>;
+}
+
+function FooterLink({ href, children }) {
+  return (
+    <li>
+      <a href={href} className="group flex items-center gap-1 text-zinc-400 hover:text-blue-400 transition-all text-sm">
+        {children}
+        <ArrowUpRight size={12} className="opacity-0 group-hover:opacity-100 transition-all -translate-y-1" />
+      </a>
+    </li>
+  );
+}
+
+function SocialIcon({ icon, href }) {
+  return (
+    <a 
+      href={href} 
+      target="_blank" 
+      rel="noreferrer" 
+      className="p-2.5 bg-zinc-900 text-zinc-400 rounded-xl hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+    >
+      {icon}
+    </a>
   );
 }

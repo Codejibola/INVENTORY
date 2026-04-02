@@ -1,5 +1,4 @@
 import { Helmet } from "react-helmet-async";
-
 import Hero from "../components/Hero";
 import Features from "../components/Features";
 import DemoPage from "./Demo";

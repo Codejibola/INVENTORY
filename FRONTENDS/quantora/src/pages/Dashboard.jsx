@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useCallback } from "react"; 
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
@@ -89,39 +89,43 @@ export default function Dashboard() {
         return res.ok ? await res.json() : null;
       };
 
-      // 1. Fetch Sales and Products simultaneously
       const [salesData, prodData] = await Promise.all([
         secureFetch(`${LOCAL_ENV.API_URL}/api/sales`) || [],
         secureFetch(`${LOCAL_ENV.API_URL}/api/products`) || []
       ]);
 
-      if (salesData.length > 0) setLatestSale(salesData[0]);
+      if (salesData && salesData.length > 0) setLatestSale(salesData[0]);
 
-      // Map stock from products for lookup
       const stockMap = {};
-      prodData.forEach(p => {
-        stockMap[p.name.toLowerCase()] = Number(p.units || 0);
-      });
+      if (prodData) {
+        prodData.forEach(p => {
+          stockMap[p.name.toLowerCase()] = Number(p.units || 0);
+        });
+      }
 
-      // Build Leaderboard
+      // LEADERBOARD LOGIC UPDATED
       const productMap = {};
-      salesData.forEach(sale => {
-        const name = sale.product_name;
-        const lowerName = name.toLowerCase();
-        const qty = Number(sale.quantity || 0);
-        const revenue = Number(sale.total_price || 0);
+      if (salesData) {
+        salesData.forEach(sale => {
+          const name = sale.product_name;
+          const lowerName = name.toLowerCase();
+          const qty = Number(sale.quantity || 0);
+          
+          // Check for total_price, if not there, calculate it from unit price
+          const revenue = Number(sale.total_price) || (Number(sale.price || sale.amount || 0) * qty);
 
-        if (!productMap[lowerName]) {
-          productMap[lowerName] = { 
-            productName: name, 
-            totalQuantitySold: 0, 
-            totalRevenue: 0,
-            stockCount: stockMap[lowerName] || 0 
-          };
-        }
-        productMap[lowerName].totalQuantitySold += qty;
-        productMap[lowerName].totalRevenue += revenue;
-      });
+          if (!productMap[lowerName]) {
+            productMap[lowerName] = { 
+              productName: name, 
+              totalQuantitySold: 0, 
+              totalRevenue: 0,
+              stockCount: stockMap[lowerName] || 0 
+            };
+          }
+          productMap[lowerName].totalQuantitySold += qty;
+          productMap[lowerName].totalRevenue += revenue;
+        });
+      }
 
       const sortedLeaderboard = Object.values(productMap).sort((a, b) => b.totalQuantitySold - a.totalQuantitySold);
       
@@ -129,7 +133,6 @@ export default function Dashboard() {
       setBestSellingProduct(sortedLeaderboard[0] || null);
       setLeastSellingProduct(sortedLeaderboard[sortedLeaderboard.length - 1] || null);
 
-      // Fetch Daily/Monthly Analytics
       const dailyData = await secureFetch(`${LOCAL_ENV.API_URL}/api/sales/daily?year=${currentYear}`) || [];
       const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
       const monthlyTotals = months.map((monthName, idx) => {
@@ -147,9 +150,8 @@ export default function Dashboard() {
         .reduce((sum, d) => sum + Number(d.total_profit_loss || 0), 0);
       setMonthlyProfitLoss(currentMonthProfit);
 
-      setShopWorth(prodData.reduce((sum, p) => sum + (Number(p.selling_price || 0) * Number(p.units || 0)), 0));
-      
-      if (prodData.length > 0) {
+      if (prodData) {
+        setShopWorth(prodData.reduce((sum, p) => sum + (Number(p.selling_price || 0) * Number(p.units || 0)), 0));
         const sortedProds = [...prodData].sort((a, b) => b.id - a.id);
         setLatestProduct(sortedProds[0]);
       }
@@ -187,7 +189,7 @@ export default function Dashboard() {
             <Topbar onMenuClick={() => setMenuOpen(true)} userName={currentUser?.name} />
             <main className="flex-1 p-6 lg:p-10 space-y-10 max-w-[1600px] mx-auto w-full">
               
-              <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              <section className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5">
                 <ActionCard title={`${new Date().toLocaleString('default', { month: 'long' })} Sales`} icon="payments" desc={monthlySales} isAnimatedValue={true} isHighlight />
                 <ActionCard title="Shop Worth" icon="inventory" desc={`₦${formatShortNumber(shopWorth)}`} />
                 <ActionCard title="Manage Products" icon="edit_note" to="/Manage_Products" />
@@ -244,24 +246,23 @@ export default function Dashboard() {
   );
 }
 
-// Sub-components
 function ActionCard({ title, desc, icon, isHighlight, to, isAnimatedValue }) {
     const navigate = useNavigate();
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileHover={{ y: -5 }}
         onClick={() => to && navigate(to)}
-        className={`p-6 rounded-2xl cursor-pointer transition-all border ${
+        className={`p-4 sm:p-6 rounded-2xl cursor-pointer transition-all border h-full flex flex-col justify-between ${
           isHighlight ? "bg-blue-600 border-blue-500 shadow-lg shadow-blue-900/20" : "bg-[#111] border-white/5 hover:border-white/20"
         }`}
       >
         <div className="flex justify-between items-start">
-          <span className="material-icons text-white/50 text-3xl">{icon}</span>
-          {to && <ArrowRight size={16} className="text-white/30" />}
+          <span className="material-icons text-white/50 text-2xl sm:text-3xl">{icon}</span>
+          {to && <ArrowRight size={14} className="text-white/30" />}
         </div>
-        <div className="mt-4">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-white/60">{title}</h3>
-          <div className="text-2xl font-black mt-1">
+        <div className="mt-3 sm:mt-4">
+          <h3 className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-white/60 leading-tight">{title}</h3>
+          <div className="text-lg sm:text-2xl font-black mt-1 break-words">
             {isAnimatedValue ? <NumberTicker value={desc} /> : (desc || "Manage")}
           </div>
         </div>
@@ -276,7 +277,7 @@ function InsightRow({ label, title, sub, icon, isBest, onClick }) {
           <div className="bg-white/5 p-2 rounded-lg group-hover:scale-110 transition-transform">{icon}</div>
           <div>
             <p className="text-[10px] font-bold uppercase tracking-tighter text-gray-500">{label}</p>
-            <p className={`text-sm font-bold truncate max-w-[140px] ${isBest ? "text-yellow-500" : "text-gray-200"}`}>{title}</p>
+            <p className={`text-sm font-bold truncate max-w-[100px] sm:max-w-[140px] ${isBest ? "text-yellow-500" : "text-gray-200"}`}>{title}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -310,7 +311,8 @@ function LeaderboardModal({ isOpen, onClose, data, toTitle }) {
               </div>
               <div className="text-right">
                 <p className="text-sm font-black text-blue-400">{item.totalQuantitySold} Sold</p>
-                <p className="text-[10px] uppercase text-gray-600 font-bold">₦{item.totalRevenue.toLocaleString()}</p>
+                {/* REVENUE FIX: Ensure totalRevenue is not zero */}
+                <p className="text-[10px] uppercase text-gray-400 font-bold">₦{Number(item.totalRevenue || 0).toLocaleString()}</p>
               </div>
             </div>
           ))}
