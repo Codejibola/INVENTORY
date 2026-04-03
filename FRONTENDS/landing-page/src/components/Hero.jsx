@@ -52,7 +52,9 @@ export default function Hero() {
       
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center relative z-10">
         
+        {/* TEXT SECTION: Moved to order-2 on mobile, lg:order-1 on desktop */}
         <motion.div
+          className="order-2 lg:order-1"
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
@@ -103,9 +105,9 @@ export default function Hero() {
           </div>
         </motion.div>
 
-        {/* Updated Hero Image Section with Dynamic Stats */}
+        {/* IMAGE SECTION: Moved to order-1 on mobile, lg:order-2 on desktop */}
         <motion.div
-          className="relative lg:ml-auto"
+          className="relative lg:ml-auto order-1 lg:order-2"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1 }}
