@@ -1,7 +1,8 @@
 /* eslint-disable */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Plus, Package, Tag, Layers, ArrowUpRight, X, AlertCircle } from "lucide-react";
+import { Search, Plus, Package, Tag, Layers, ArrowUpRight, X, AlertCircle, Scan } from "lucide-react";
+import { Html5Qrcode } from "html5-qrcode";
 import LOCAL_ENV from "../../ENV.js"; 
 
 export default function AvailableProducts() {
@@ -11,11 +12,16 @@ export default function AvailableProducts() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [formError, setFormError] = useState("");
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanSuccess, setScanSuccess] = useState(false);
+  const [barcodeError, setBarcodeError] = useState("");
+  const scannerRef = useRef(null);
   const [formData, setFormData] = useState({
     name: "",
     selling_price: "",
     stock: "",
     category: "",
+    barcode: "",
   });
 
   const token = localStorage.getItem("token");
@@ -39,18 +45,102 @@ export default function AvailableProducts() {
 
   useEffect(() => { fetchProducts(); }, []);
 
+  useEffect(() => {
+    let html5QrCode;
+
+    if (isScanning) {
+      const runScanner = async () => {
+        try {
+          html5QrCode = new Html5Qrcode("available-reader");
+          scannerRef.current = html5QrCode;
+
+          await html5QrCode.start(
+            { facingMode: "environment" },
+            { fps: 20, qrbox: { width: 250, height: 150 }, aspectRatio: 1.77 },
+            (decodedText) => {
+              if (navigator.vibrate) navigator.vibrate(100);
+              setScanSuccess(true);
+              setFormData((p) => ({ ...p, barcode: decodedText }));
+              setTimeout(() => {
+                setScanSuccess(false);
+                stopScanner();
+              }, 800);
+            },
+            (error) => {}
+          );
+        } catch (err) {
+          setFormError("Camera access denied.");
+          setIsScanning(false);
+        }
+      };
+      runScanner();
+    }
+
+    return () => {
+      if (html5QrCode?.isScanning) {
+        html5QrCode.stop().then(() => html5QrCode.clear()).catch(() => {});
+      }
+    };
+  }, [isScanning]);
+
+  const stopScanner = async () => {
+    if (scannerRef.current) {
+      try {
+        if (scannerRef.current.isScanning) await scannerRef.current.stop();
+        await scannerRef.current.clear();
+        setIsScanning(false);
+      } catch (err) {
+        setIsScanning(false);
+      }
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((p) => ({ ...p, [name]: value }));
+  };
+
+  const handleBarcodeChange = (e) => {
+    const value = e.target.value;
+    setFormData((p) => ({ ...p, barcode: value }));
+
+    if (!value) {
+      setBarcodeError("");
+      return;
+    }
+
+    if (/[a-zA-Z]/.test(value)) {
+      setBarcodeError("Barcode is numeric only. Please scan or enter barcode, not product name.");
+      return;
+    }
+
+    if (!/^[0-9]+$/.test(value)) {
+      setBarcodeError("Invalid barcode format. Use digits only, no spaces or symbols.");
+      return;
+    }
+
+    setBarcodeError("");
+  };
+
+  const handleCloseForm = () => {
+    stopScanner();
+    setShowForm(false);
+    setFormError("");
+    setBarcodeError("");
   };
 
   const handleAddProduct = async (e) => {
     e.preventDefault();
     setFormError("");
     try {
+      if (barcodeError) throw new Error("Fix barcode entry before submitting.");
       const stockNum = Number(formData.stock);
       if (Number.isNaN(stockNum)) throw new Error("Stock must be a number");
       
+      if (barcodeError) {
+        throw new Error("Fix barcode entry before submitting.");
+      }
+
       const res = await fetch(`${LOCAL_ENV.API_URL}/api/products`, {
         method: "POST",
         headers: {
@@ -62,13 +152,14 @@ export default function AvailableProducts() {
           category: formData.category,
           selling_price: Number(formData.selling_price),
           stock: stockNum,
+          barcode: formData.barcode || null,
           // We omit 'price' (cost price) here so workers don't set it
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to add product");
-      setShowForm(false);
-      setFormData({ name: "", selling_price: "", stock: "", category: "" });
+      handleCloseForm();
+      setFormData({ name: "", selling_price: "", stock: "", category: "", barcode: "" });
       fetchProducts();
     } catch (err) {
       setFormError(err.message);
@@ -201,7 +292,7 @@ export default function AvailableProducts() {
       <AnimatePresence>
         {showForm && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowForm(false)} className="absolute inset-0 bg-black/90 backdrop-blur-sm" />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={handleCloseForm} className="absolute inset-0 bg-black/90 backdrop-blur-sm" />
             
             <motion.div
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
@@ -211,7 +302,7 @@ export default function AvailableProducts() {
             >
               <div className="flex justify-between items-center mb-8">
                 <h3 className="text-2xl font-black text-white tracking-tight italic">NEW ITEM</h3>
-                <button onClick={() => setShowForm(false)} className="p-2 hover:bg-slate-800 rounded-full transition-colors"><X className="text-slate-500" /></button>
+                <button onClick={handleCloseForm} className="p-2 hover:bg-slate-800 rounded-full transition-colors"><X className="text-slate-500" /></button>
               </div>
 
               <form onSubmit={handleAddProduct} className="space-y-6">
@@ -230,6 +321,40 @@ export default function AvailableProducts() {
                       <input name="category" placeholder="E.g. Drinks" value={formData.category} onChange={handleChange} className="w-full bg-slate-950 border border-slate-800 text-white rounded-2xl pl-12 pr-4 py-3.5 focus:border-blue-600 outline-none transition-all placeholder:text-slate-700" />
                     </div>
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Barcode</label>
+                    <button
+                      type="button"
+                      onClick={() => setIsScanning((prev) => !prev)}
+                      className={`inline-flex items-center gap-2 px-3 py-1.5 text-[10px] font-black rounded-xl uppercase ${isScanning ? 'bg-red-500 text-white' : 'bg-blue-600 text-white'}`}
+                    >
+                      <Scan size={14} /> {isScanning ? 'Stop Scanner' : 'Scan Barcode'}
+                    </button>
+                  </div>
+
+                  {isScanning && (
+                    <div className="relative aspect-video rounded-2xl overflow-hidden border border-white/10 bg-black">
+                      <div id="available-reader" className="w-full h-full" />
+                      <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                        <div className={`relative w-[220px] h-[120px] border-2 rounded-2xl ${scanSuccess ? 'border-green-500 bg-green-500/20' : 'border-blue-500/60'}`}>
+                          {!scanSuccess && <div className="absolute left-0 right-0 h-0.5 bg-blue-400 animate-[scanline_2s_linear_infinite]" />}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <input
+                    name="barcode"
+                    placeholder="Digits only (e.g., 1234567890)"
+                    value={formData.barcode}
+                    onChange={handleBarcodeChange}
+                    className="w-full bg-slate-950 border border-slate-800 text-white rounded-2xl px-5 py-3.5 focus:border-blue-600 outline-none transition-all"
+                  />
+                  {barcodeError && <p className="text-red-400 text-[10px] font-semibold">{barcodeError}</p>}
+                  <p className="text-[10px] text-slate-400">Barcode must be numeric only. Product name not allowed in barcode field.</p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">

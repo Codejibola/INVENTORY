@@ -11,6 +11,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Html5Qrcode } from "html5-qrcode";
 import logo from "../assets/logo.webp";
+import signature from "../assets/signature.webp"
 
 const toTitleCase = (str = "") =>
   str.toLowerCase().split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
@@ -177,28 +178,80 @@ export default function RecordSales() {
     }
   };
 
-  const generatePDF = () => {
+const generatePDF = () => {
     const doc = new jsPDF();
-    const accent = [37, 99, 235];
+    const accent = [37, 99, 235]; // Quantora Blue
     const grandTotal = basket.reduce((acc, i) => acc + i.subtotal, 0);
-    doc.setFillColor(250, 250, 250);
-    doc.rect(0, 0, 210, 40, 'F');
-    if (logo) doc.addImage(logo, 'PNG', 15, 10, 20, 20);
-    doc.setFont("helvetica", "bold").setFontSize(20).setTextColor(accent[0], accent[1], accent[2]);
-    doc.text(currentUser?.shop_name?.toUpperCase() || "QUANTORA", 195, 20, { align: "right" });
+
+    // 1. Header & Branding
+    doc.setFillColor(252, 252, 252);
+    doc.rect(0, 0, 210, 50, 'F');
+    if (logo) doc.addImage(logo, 'PNG', 15, 12, 25, 25);
+
+    doc.setFont("helvetica", "bold").setFontSize(28).setTextColor(accent[0], accent[1], accent[2]);
+    doc.text(currentUser?.shop_name?.toUpperCase() || "BELLO STORES", 195, 25, { align: "right" });
+    
+    doc.setFontSize(10).setTextColor(100).setFont("helvetica", "normal");
+    doc.text("Official Transaction Receipt", 195, 32, { align: "right" });
+    doc.text(`Ref: QT-${Math.floor(Math.random() * 1000000000)}`, 195, 38, { align: "right" });
+
+    // 2. Info Section
+    doc.setFont("helvetica", "bold").setFontSize(11).setTextColor(50);
+    doc.text("BILLED TO", 15, 65);
+    doc.text("DATE & TIME", 120, 65);
+    
+    doc.setFont("helvetica", "normal").setTextColor(100);
+    doc.text(customerName || "Walk-in Customer", 15, 72);
+    doc.text(new Date().toLocaleString(), 120, 72);
+
+    // 3. Properly Aligned Table
     autoTable(doc, {
-      startY: 50,
-      head: [['DESCRIPTION', 'QTY', 'UNIT PRICE', 'AMOUNT']],
-      body: basket.map(i => [toTitleCase(i.name), i.quantity, `N${i.unitPrice.toLocaleString()}`, `N${i.subtotal.toLocaleString()}`]),
-      headStyles: { fillColor: accent },
-      theme: 'striped'
+      startY: 80,
+      head: [['ITEM DESCRIPTION', 'QTY', 'UNIT PRICE', 'SUBTOTAL']],
+      body: basket.map(i => [
+        toTitleCase(i.name), 
+        i.quantity, 
+        `N ${i.unitPrice.toLocaleString()}`, 
+        `N ${i.subtotal.toLocaleString()}`
+      ]),
+      headStyles: { fillColor: accent, textColor: [255, 255, 255], fontSize: 10, halign: 'center' },
+      columnStyles: {
+        0: { halign: 'left' },
+        1: { halign: 'center' },
+        2: { halign: 'center' },
+        3: { halign: 'right' }
+      },
+      theme: 'grid',
+      styles: { lineColor: [240, 240, 240], textColor: 80, cellPadding: 4 }
     });
-    const finalY = doc.lastAutoTable.finalY + 10;
-    doc.setFillColor(accent[0], accent[1], accent[2]).rect(140, finalY, 55, 12, 'F');
-    doc.setTextColor(255).setFontSize(12).text(`TOTAL: N${grandTotal.toLocaleString()}`, 167, finalY + 8, { align: "center" });
+
+    const finalY = doc.lastAutoTable.finalY + 15;
+
+    // 4. Total Price Box
+    doc.setFillColor(accent[0], accent[1], accent[2]).rect(125, finalY, 70, 15, 'F');
+    doc.setTextColor(255).setFontSize(14).setFont("helvetica", "bold");
+    doc.text(`TOTAL: N${grandTotal.toLocaleString()}`, 160, finalY + 9.5, { align: "center" });
+
+    // 5. THE SIGNATURE SECTION (Exact Match to your Design)
+    if (signature) {
+      const sigCenterX = 160; // Aligned with the center of the Total box
+      const sigY = finalY + 25;
+      
+      // The Stamp/Signature Image
+      // Positioned to be centered relative to the Total box above it
+      doc.addImage(signature, 'PNG', sigCenterX - 17.5, sigY, 35, 18); 
+      
+      // Thick Blue Underline
+      doc.setDrawColor(accent[0], accent[1], accent[2]).setLineWidth(0.8);
+      doc.line(sigCenterX - 20, sigY + 21, sigCenterX + 20, sigY + 21); 
+      
+      // Bold Blue Label
+      doc.setTextColor(accent[0], accent[1], accent[2]).setFontSize(8).setFont("helvetica", "bold");
+      doc.text("AUTHORIZED SIGNATURE", sigCenterX, sigY + 26, { align: "center" });
+    }
+
     doc.save(`Receipt_${customerName || 'Sale'}.pdf`);
   };
-
   const basketTotal = basket.reduce((acc, item) => acc + item.subtotal, 0);
   const totalRevenue = sales.reduce((acc, s) => acc + Number(s.price), 0);
   const totalProfit = sales.reduce((acc, s) => acc + (Number(s.profit_loss) || 0), 0);
@@ -344,9 +397,19 @@ export default function RecordSales() {
                         <span className="text-3xl font-black tracking-tighter">₦{basketTotal.toLocaleString()}</span>
                       </div>
                       <input type="text" placeholder="Customer Name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-sm placeholder:text-white/40 outline-none" />
-                      <div className="grid grid-cols-1 gap-2">
-                        <button onClick={() => finalizeTransaction(false)} disabled={loading} className="w-full py-3 bg-white/10 border border-white/10 rounded-xl font-bold text-[10px] tracking-widest uppercase text-white">Fast Record</button>
-                        <button onClick={() => finalizeTransaction(true)} disabled={loading} className="w-full py-4 bg-white text-blue-600 rounded-xl font-black text-[10px] tracking-widest uppercase shadow-xl">Record & Receipt</button>
+                      
+                      <div className="space-y-2">
+                        <p className="text-[9px] text-gray-400 font-semibold uppercase tracking-wide">Choose finalization option:</p>
+                        <div className="grid grid-cols-1 gap-2">
+                          <div className="space-y-1">
+                            <button onClick={() => finalizeTransaction(false)} disabled={loading} className="w-full py-3 bg-white/10 border border-white/10 rounded-xl font-bold text-[10px] tracking-widest uppercase text-white hover:bg-white/20 transition-all">⚡ Fast Record (No Receipt)</button>
+                            <p className="text-[8px] text-gray-400 px-2">Finalize sale instantly without printing a receipt</p>
+                          </div>
+                          <div className="space-y-1">
+                            <button onClick={() => finalizeTransaction(true)} disabled={loading} className="w-full py-4 bg-white text-blue-600 rounded-xl font-black text-[10px] tracking-widest uppercase shadow-xl hover:bg-gray-100 transition-all">📄 Record & Print Receipt</button>
+                            <p className="text-[8px] text-gray-400 px-2">Finalize sale and generate receipt for customer</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </motion.div>

@@ -22,6 +22,7 @@ export default function ManageProducts() {
   });
 
   const [error, setError] = useState("");
+  const [barcodeError, setBarcodeError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const token = localStorage.getItem("token");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -116,9 +117,36 @@ export default function ManageProducts() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleBarcodeChange = (e) => {
+    const { value } = e.target;
+    setFormData((prev) => ({ ...prev, barcode: value }));
+
+    if (!value) {
+      setBarcodeError("");
+      return;
+    }
+
+    if (/[a-zA-Z]/.test(value)) {
+      setBarcodeError("Barcode is numeric only.");
+      return;
+    }
+
+    if (!/^[0-9]+$/.test(value)) {
+      setBarcodeError("Invalid barcode format.");
+      return;
+    }
+
+    setBarcodeError("");
+  };
+
   const handleSaveProduct = async (e) => {
     e.preventDefault();
     setError("");
+    if (barcodeError) {
+      setError("Please fix barcode issues before saving.");
+      return;
+    }
+
     const payload = {
       ...formData,
       price: parseFloat(formData.price),
@@ -195,6 +223,7 @@ export default function ManageProducts() {
           <Topbar onMenuClick={() => setMenuOpen(true)} userName={currentUser?.name} />
           
           <main className="p-6 lg:p-10 space-y-8 max-w-[1400px] mx-auto w-full">
+            {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div>
                 <h1 className="text-3xl font-black text-white tracking-tighter">Inventory</h1>
@@ -209,6 +238,7 @@ export default function ManageProducts() {
               </div>
             </div>
 
+            {/* Monthly Groups */}
             <div className="space-y-12">
               {displayMonths.map((month) => groupedByMonth[month]?.length > 0 && (
                 <section key={month} className="space-y-5">
@@ -228,16 +258,21 @@ export default function ManageProducts() {
                               <button onClick={() => handleDelete(p.id)} className="p-2.5 bg-white/5 hover:bg-red-500/20 rounded-xl text-gray-400 hover:text-red-500 transition-all"><Trash2 size={16}/></button>
                             </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
+
+                          {/* Data Grid: Added Cost Price Column */}
+                          <div className="grid grid-cols-3 gap-2 pt-4 border-t border-white/5">
                             <div>
-                              <p className="text-[9px] text-gray-600 font-black uppercase mb-1">Selling Price</p>
-                              <p className="text-white font-black text-lg">₦{Number(p.selling_price).toLocaleString()}</p>
+                              <p className="text-[9px] text-gray-600 font-black uppercase mb-1">Cost</p>
+                              <p className="text-gray-400 font-bold text-xs md:text-sm">₦{Number(p.price).toLocaleString()}</p>
+                            </div>
+                            <div className="border-x border-white/5 px-2">
+                              <p className="text-[9px] text-gray-600 font-black uppercase mb-1">Retail</p>
+                              <p className="text-white font-black text-xs md:text-sm">₦{Number(p.selling_price).toLocaleString()}</p>
                             </div>
                             <div className="text-right">
-                              <p className="text-[9px] text-gray-600 font-black uppercase mb-1">Availability</p>
-                              {/* FIXED: Explicitly checks for 0 and shows '0 Qty' */}
-                              <p className={`font-black text-lg ${stockCount < 5 ? "text-red-500" : "text-green-500"}`}>
-                                {stockCount} <span className="text-[10px] uppercase opacity-60">Qty</span>
+                              <p className="text-[9px] text-gray-600 font-black uppercase mb-1">Qty</p>
+                              <p className={`font-black text-xs md:text-sm ${stockCount < 5 ? "text-red-500" : "text-green-500"}`}>
+                                {stockCount}
                               </p>
                             </div>
                           </div>
@@ -249,6 +284,7 @@ export default function ManageProducts() {
               ))}
             </div>
 
+            {/* Modal Form */}
             <AnimatePresence>
               {showForm && (
                 <div className="fixed inset-0 bg-black/95 backdrop-blur-xl flex items-center justify-center z-50 p-4">
@@ -284,7 +320,8 @@ export default function ManageProducts() {
 
                       <div className="space-y-2">
                         <label className="text-[9px] font-bold text-gray-600 uppercase ml-1">Manual SKU / Scanned Result</label>
-                        <input name="barcode" placeholder="Waiting for scan..." value={formData.barcode} onChange={handleChange} className="w-full px-5 py-4 rounded-2xl bg-black border border-white/10 text-white font-mono text-sm focus:border-blue-500 outline-none transition-colors" />
+                        <input name="barcode" placeholder="Enter barcode or scan" value={formData.barcode} onChange={handleBarcodeChange} className="w-full px-5 py-4 rounded-2xl bg-black border border-white/10 text-white font-mono text-sm focus:border-blue-500 outline-none transition-colors" />
+                        {barcodeError && <p className="text-red-400 text-[10px] font-bold">{barcodeError}</p>}
                       </div>
                     </div>
 

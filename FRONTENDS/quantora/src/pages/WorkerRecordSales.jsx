@@ -18,6 +18,7 @@ export default function WorkerRecordSales() {
   const [isScanning, setIsScanning] = useState(false);
   const [products, setProducts] = useState([]);
   const [selected, setSelected] = useState("");
+  const [barcodeInput, setBarcodeInput] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [customPrice, setCustomPrice] = useState(""); 
   const [sales, setSales] = useState([]);
@@ -102,9 +103,57 @@ export default function WorkerRecordSales() {
       setSelected(found.id);
       setQuantity(1);
       setCustomPrice(found.selling_price); 
+      setError("");
     } else {
       setError(`SKU ${code} not found.`);
     }
+  };
+
+  const handleBarcodeInputChange = (value) => {
+    setBarcodeInput(value);
+
+    if (!value) {
+      setError("");
+      return;
+    }
+
+    if (/[a-zA-Z]/.test(value)) {
+      setError("Barcode is numeric only. Please scan or enter barcode, not product name.");
+      return;
+    }
+
+    if (!/^[0-9]+$/.test(value)) {
+      setError("Invalid barcode format. Barcodes should not contain spaces or symbols.");
+      return;
+    }
+
+    setError("");
+  };
+
+  const lookupBarcode = () => {
+    const code = barcodeInput.trim();
+
+    if (!code) {
+      setError("Please enter a barcode.");
+      return;
+    }
+
+    if (/[a-zA-Z]/.test(code)) {
+      setError("Please use the barcode field for numeric barcode values, not product name.");
+      return;
+    }
+
+    const found = products.find((p) => p.barcode === code);
+    if (!found) {
+      setError("Barcode not found. Ensure this is a valid product barcode, not a product name.");
+      return;
+    }
+
+    setSelected(found.id);
+    setQuantity(1);
+    setCustomPrice(found.selling_price);
+    setBarcodeInput("");
+    setError("");
   };
 
   useEffect(() => {
@@ -158,26 +207,59 @@ export default function WorkerRecordSales() {
     }
   };
 
-  const generatePDF = () => {
+const generatePDF = () => {
     const doc = new jsPDF();
-    const accent = [37, 99, 235];
+    const accent = [37, 99, 235]; // Quantora Blue
     const grandTotal = basket.reduce((acc, i) => acc + i.subtotal, 0);
-    doc.setFillColor(250, 250, 250).rect(0, 0, 210, 40, 'F');
-    if (logo) doc.addImage(logo, 'PNG', 15, 10, 20, 20);
-    doc.setFont("helvetica", "bold").setFontSize(20).setTextColor(accent[0], accent[1], accent[2]);
-    doc.text(currentUser?.shop_name?.toUpperCase() || "QUANTORA", 195, 20, { align: "right" });
+
+    // 1. Header & Branding
+    doc.setFillColor(252, 252, 252);
+    doc.rect(0, 0, 210, 50, 'F');
+    if (logo) doc.addImage(logo, 'PNG', 15, 12, 25, 25);
+
+    doc.setFont("helvetica", "bold").setFontSize(28).setTextColor(accent[0], accent[1], accent[2]);
+    doc.text(currentUser?.shop_name?.toUpperCase() || "BELLO STORES", 195, 25, { align: "right" });
+    
+    doc.setFontSize(10).setTextColor(100).setFont("helvetica", "normal");
+    doc.text("Official Transaction Receipt", 195, 32, { align: "right" });
+    doc.text(`Ref: QT-${Math.floor(Math.random() * 1000000000)}`, 195, 38, { align: "right" });
+
+    // 2. Info Section
+    doc.setFont("helvetica", "bold").setFontSize(11).setTextColor(50);
+    doc.text("BILLED TO", 15, 65);
+    doc.text("DATE & TIME", 120, 65);
+    
+    doc.setFont("helvetica", "normal").setTextColor(100);
+    doc.text(customerName || "Walk-in Customer", 15, 72);
+    doc.text(new Date().toLocaleString(), 120, 72);
+
+    // 3. Properly Aligned Table
     autoTable(doc, {
-      startY: 50,
-      head: [['DESCRIPTION', 'QTY', 'UNIT PRICE', 'AMOUNT']],
-      body: basket.map(i => [toTitleCase(i.name), i.quantity, `N${i.unitPrice.toLocaleString()}`, `N${i.subtotal.toLocaleString()}`]),
-      headStyles: { fillColor: accent },
-      theme: 'striped'
+      startY: 80,
+      head: [['ITEM DESCRIPTION', 'QTY', 'UNIT PRICE', 'SUBTOTAL']],
+      body: basket.map(i => [
+        toTitleCase(i.name), 
+        i.quantity, 
+        `N ${i.unitPrice.toLocaleString()}`, 
+        `N ${i.subtotal.toLocaleString()}`
+      ]),
+      headStyles: { fillColor: accent, textColor: [255, 255, 255], fontSize: 10, halign: 'center' },
+      columnStyles: {
+        0: { halign: 'left' },
+        1: { halign: 'center' },
+        2: { halign: 'center' },
+        3: { halign: 'right' }
+      },
+      theme: 'grid',
+      styles: { lineColor: [240, 240, 240], textColor: 80, cellPadding: 4 }
     });
-    const finalY = doc.lastAutoTable.finalY + 10;
-    doc.setFillColor(accent[0], accent[1], accent[2]).rect(140, finalY, 55, 12, 'F');
-    doc.setTextColor(255).setFontSize(12).text(`TOTAL: N${grandTotal.toLocaleString()}`, 167, finalY + 8, { align: "center" });
-    doc.save(`Receipt_${customerName || 'Sale'}.pdf`);
-  };
+
+    // 4. Total summary and save
+    doc.setFont('helvetica', 'bold').setFontSize(12);
+    doc.text(`Grand Total: N ${grandTotal.toLocaleString()}`, 15, doc.lastAutoTable.finalY + 15 || 110);
+
+    doc.save(`Quantora_RECEIPT_${Date.now()}.pdf`);
+  }
 
   const basketTotal = basket.reduce((acc, item) => acc + item.subtotal, 0);
   const totalRevenue = sales.reduce((acc, s) => acc + Number(s.price), 0);
@@ -221,6 +303,21 @@ export default function WorkerRecordSales() {
                 {isScanning && <div id="reader" className="aspect-video rounded-3xl overflow-hidden mb-6"></div>}
 
                 <div className="space-y-4">
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={barcodeInput}
+                      onChange={(e) => handleBarcodeInputChange(e.target.value)}
+                      placeholder="Enter barcode (not product name)"
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm outline-none"
+                    />
+                    <div className="flex gap-2">
+                      <button onClick={lookupBarcode} className="flex-1 py-3 bg-blue-600 text-white rounded-xl text-xs uppercase font-black tracking-wide">Lookup Barcode</button>
+                      <button onClick={() => setBarcodeInput("")} className="flex-1 py-3 border border-white/20 text-white rounded-xl text-xs uppercase font-black tracking-wide">Clear</button>
+                    </div>
+                    <p className="text-[10px] text-gray-400">If you type a product name, you will get a warning since this field expects barcode value only.</p>
+                  </div>
+
                   <select value={selected} onChange={(e) => setSelected(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm outline-none">
                     <option value="">Select Item...</option>
                     {products.map(p => <option key={p.id} value={p.id} className="bg-black">{p.name} ({p.units} in stock)</option>)}
@@ -231,6 +328,8 @@ export default function WorkerRecordSales() {
                     <input type="number" value={customPrice} onChange={(e) => setCustomPrice(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm font-bold text-blue-400 outline-none" placeholder="Price" />
                   </div>
                   <button onClick={addToBasket} className="w-full py-5 bg-white text-black font-black uppercase text-xs rounded-2xl hover:bg-gray-200 transition-all">Add to Basket</button>
+
+                  {error && <p className="text-red-400 text-xs font-bold">{error}</p>}
                 </div>
               </div>
 
@@ -255,7 +354,20 @@ export default function WorkerRecordSales() {
                       <span className="text-3xl font-black tracking-tighter">₦{basketTotal.toLocaleString()}</span>
                     </div>
                     <input type="text" placeholder="Customer Name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-sm placeholder:text-white/40 outline-none" />
-                    <button onClick={() => finalizeTransaction(true)} disabled={loading} className="w-full py-4 bg-white text-blue-600 rounded-xl font-black text-[10px] tracking-widest uppercase shadow-xl">Complete & Print Receipt</button>
+                    
+                    <div className="space-y-2">
+                      <p className="text-[9px] text-gray-400 font-semibold uppercase tracking-wide">Choose finalization option:</p>
+                      <div className="grid grid-cols-1 gap-2">
+                        <div className="space-y-1">
+                          <button onClick={() => finalizeTransaction(false)} disabled={loading} className="w-full py-3 bg-white/10 border border-white/10 rounded-xl font-bold text-[10px] tracking-widest uppercase text-white hover:bg-white/20 transition-all">⚡ Fast Record (No Receipt)</button>
+                          <p className="text-[8px] text-gray-400 px-2">Finalize sale instantly without printing a receipt</p>
+                        </div>
+                        <div className="space-y-1">
+                          <button onClick={() => finalizeTransaction(true)} disabled={loading} className="w-full py-4 bg-white text-blue-600 rounded-xl font-black text-[10px] tracking-widest uppercase shadow-xl hover:bg-gray-100 transition-all">📄 Record & Print Receipt</button>
+                          <p className="text-[8px] text-gray-400 px-2">Finalize sale and generate receipt for customer</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </motion.div>
               )}
