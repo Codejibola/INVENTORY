@@ -10,7 +10,6 @@ export default function Demo() {
   const [isMuted, setIsMuted] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
 
-  // The link for redirection
   const VIDEO_LINK = "https://www.youtube.com/watch?v=dWvAnlxYYHQ";
 
   useEffect(() => {
@@ -110,25 +109,26 @@ export default function Demo() {
               )}
             </AnimatePresence>
 
-            {/* Controls */}
-            <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity z-20">
-              <div className="flex items-center gap-5">
+            {/* Controls - Added flex-wrap for mobile safety */}
+            <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex items-center justify-between gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+              
+              <div className="flex items-center gap-3 md:gap-5">
                 <button onClick={togglePlay} className="text-white/80 hover:text-white transition-colors">
-                  {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+                  {isPlaying ? <Pause size={18} /> : <Play size={18} />}
                 </button>
                 
                 <button onClick={restartVideo} className="text-white/80 hover:text-white transition-colors">
-                  <RotateCcw size={18} />
+                  <RotateCcw size={16} />
                 </button>
 
                 <button onClick={skipForward} className="text-white/80 hover:text-white transition-colors flex items-center gap-1">
-                  <FastForward size={18} />
-                  <span className="text-[10px] font-black">10s</span>
+                  <FastForward size={16} />
+                  <span className="text-[9px] font-black hidden xs:inline">10s</span>
                 </button>
 
-                <button onClick={cycleSpeed} className="text-white/80 hover:text-blue-400 transition-colors flex items-center gap-1.5">
-                  <Gauge size={18} />
-                  <span className="text-[10px] font-black w-6">{playbackRate}x</span>
+                <button onClick={cycleSpeed} className="text-white/80 hover:text-blue-400 transition-colors flex items-center gap-1">
+                  <Gauge size={16} />
+                  <span className="text-[9px] font-black w-6">{playbackRate}x</span>
                 </button>
 
                 <button onClick={toggleMute} className="text-white/80 hover:text-white transition-colors">
@@ -136,14 +136,17 @@ export default function Demo() {
                 </button>
               </div>
               
-              {/* Added Redirection Link */}
+              {/* Responsive Watch Full Video Button */}
               <a 
                 href={VIDEO_LINK}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-blue-400 bg-blue-400/10 px-3 py-1.5 rounded-full border border-blue-400/20 hover:bg-blue-400 hover:text-white transition-all"
+                className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-blue-400 bg-blue-400/10 px-3 py-2 rounded-full border border-blue-400/20 hover:bg-blue-400 hover:text-white transition-all active:scale-95"
               >
-                Watch Full Video <ExternalLink size={12} />
+                {/* Text hidden on very small screens, shown on md and up */}
+                <span className="hidden sm:inline">Watch Full Video</span>
+                <span className="sm:hidden">Full Video</span>
+                <ExternalLink size={12} />
               </a>
             </div>
           </div>
