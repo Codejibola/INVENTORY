@@ -5,13 +5,15 @@ import {
   Phone, 
   Instagram, 
   Twitter, 
-  Facebook, 
   Linkedin,
-  ArrowUpRight
+  ArrowUpRight,
+  MessageCircle // Added for WhatsApp
 } from "lucide-react";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const phoneNumber = "09117886797";
+  const whatsappLink = `https://wa.me/234${phoneNumber.substring(1)}`; // Formats to international standard
 
   return (
     <footer className="relative bg-zinc-950 border-t border-zinc-900 pt-20 pb-10 overflow-hidden">
@@ -33,6 +35,8 @@ export default function Footer() {
             <SocialIcon icon={<Instagram size={18} />} href="https://instagram.com/quantora.nigeria" />
             <SocialIcon icon={<Twitter size={18} />} href="https://x.com/QuantoraNigeria" />
             <SocialIcon icon={<Linkedin size={18} />} href="https://www.linkedin.com/in/quantora-nigeria-79b7733b6" />
+            {/* Added WhatsApp to Social Row */}
+            <SocialIcon icon={<MessageCircle size={18} />} href={whatsappLink} />
           </div>
         </div>
 
@@ -51,12 +55,21 @@ export default function Footer() {
         <div className="lg:col-span-3">
           <FooterHeader>Support</FooterHeader>
           <ul className="space-y-4">
+            {/* WhatsApp Item */}
             <li>
-              <a href="tel:09117886797" className="group flex items-center gap-3 text-zinc-400 hover:text-white transition-colors text-sm">
+              <a href={whatsappLink} target="_blank" rel="noreferrer" className="group flex items-center gap-3 text-zinc-400 hover:text-white transition-colors text-sm">
+                <div className="p-2 bg-zinc-900 rounded-lg group-hover:bg-green-500/10 group-hover:text-green-500 transition-colors">
+                  <MessageCircle size={16} />
+                </div>
+                WhatsApp Support
+              </a>
+            </li>
+            <li>
+              <a href={`tel:${phoneNumber}`} className="group flex items-center gap-3 text-zinc-400 hover:text-white transition-colors text-sm">
                 <div className="p-2 bg-zinc-900 rounded-lg group-hover:bg-blue-500/10 group-hover:text-blue-500 transition-colors">
                   <Phone size={16} />
                 </div>
-                09117886797
+                {phoneNumber}
               </a>
             </li>
             <li>
@@ -79,7 +92,7 @@ export default function Footer() {
               <span className="text-xs font-bold text-zinc-200 uppercase tracking-widest">Systems Nominal</span>
             </div>
             <p className="text-[11px] text-zinc-500 leading-tight">
-              Quantora is up and running smoothly for all shops at 99.9%. efficiency.
+              Quantora is up and running smoothly for all shops at 99.9% efficiency.
             </p>
           </div>
         </div>
@@ -99,7 +112,7 @@ export default function Footer() {
   );
 }
 
-// Sub-components for cleaner code
+// Sub-components stay the same...
 function FooterHeader({ children }) {
   return <h4 className="text-white text-xs font-bold uppercase tracking-[0.2em] mb-6">{children}</h4>;
 }
