@@ -28,7 +28,7 @@ const SUPERPOWERS = [
 export default function BusinessSuperpowers() {
   return (
     <section
-      id="superpowers"
+      id="audience"
       aria-labelledby="superpowers-heading"
       className="bg-zinc-950 py-28 text-zinc-100"
     >

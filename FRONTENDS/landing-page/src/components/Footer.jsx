@@ -45,7 +45,7 @@ export default function Footer() {
           <FooterHeader>Platform</FooterHeader>
           <ul className="space-y-3">
             <FooterLink href="#features">Features</FooterLink>
-            <FooterLink href="#audience">Sectors</FooterLink>
+            <FooterLink href="#audience">Audience</FooterLink>
             <FooterLink href="#faq">Help Center</FooterLink>
             <FooterLink href="#cta">Terminal Login</FooterLink>
           </ul>
