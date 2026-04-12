@@ -9,6 +9,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Html5Qrcode } from "html5-qrcode";
 import logo from "../assets/logo.webp";
+import signature from "../assets/signature.webp";
 
 const toTitleCase = (str = "") =>
   str.toLowerCase().split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
@@ -207,6 +208,7 @@ export default function WorkerRecordSales() {
     }
   };
 
+
 const generatePDF = () => {
     const doc = new jsPDF();
     const accent = [37, 99, 235]; // Quantora Blue
@@ -243,23 +245,60 @@ const generatePDF = () => {
         `N ${i.unitPrice.toLocaleString()}`, 
         `N ${i.subtotal.toLocaleString()}`
       ]),
-      headStyles: { fillColor: accent, textColor: [255, 255, 255], fontSize: 10, halign: 'center' },
+      // Match head alignment with column alignment for balance
+      headStyles: { 
+        fillColor: accent, 
+        textColor: [255, 255, 255], 
+        fontSize: 10,
+        cellPadding: 4
+      },
       columnStyles: {
-        0: { halign: 'left' },
-        1: { halign: 'center' },
-        2: { halign: 'center' },
-        3: { halign: 'right' }
+        0: { halign: 'left', cellWidth: 'auto' }, // Item name gets most space
+        1: { halign: 'center', cellWidth: 25 }, 
+        2: { halign: 'right', cellWidth: 35 }, 
+        3: { halign: 'right', cellWidth: 35 }
+      },
+      // Ensure headers align with columns
+      didParseCell: (data) => {
+        if (data.section === 'head') {
+            if (data.column.index === 1) data.cell.styles.halign = 'center';
+            if (data.column.index === 2 || data.column.index === 3) data.cell.styles.halign = 'right';
+        }
       },
       theme: 'grid',
       styles: { lineColor: [240, 240, 240], textColor: 80, cellPadding: 4 }
     });
 
-    // 4. Total summary and save
-    doc.setFont('helvetica', 'bold').setFontSize(12);
-    doc.text(`Grand Total: N ${grandTotal.toLocaleString()}`, 15, doc.lastAutoTable.finalY + 15 || 110);
+    // 4. Totals & Signature Section
+    const finalY = doc.lastAutoTable.finalY + 10;
+
+    // Right-aligned Grand Total
+    doc.setFont('helvetica', 'bold').setFontSize(12).setTextColor(40);
+    doc.text(`Grand Total:`, 140, finalY);
+    doc.text(`N ${grandTotal.toLocaleString()}`, 195, finalY, { align: "right" });
+
+    // Signature Stamp
+    const sigY = finalY + 15;
+    if (signature) {
+        // Label for signature
+        doc.setFontSize(9).setFont("helvetica", "italic").setTextColor(150);
+        doc.text("Authorized Signature", 195, sigY + 25, { align: "right" });
+        
+        // The Signature Image
+        // (image, format, x, y, width, height)
+        doc.addImage(signature, 'WEBP', 160, sigY, 35, 20); 
+        
+        // Optional: A small line under signature
+        doc.setDrawColor(200);
+        doc.line(160, sigY + 21, 195, sigY + 21);
+    }
+
+    // 5. Footer Note
+    doc.setFontSize(9).setTextColor(150).setFont("helvetica", "normal");
+    doc.text("Thank you for your business!", 105, 285, { align: "center" });
 
     doc.save(`Quantora_RECEIPT_${Date.now()}.pdf`);
-  }
+};
 
   const basketTotal = basket.reduce((acc, item) => acc + item.subtotal, 0);
   const totalRevenue = sales.reduce((acc, s) => acc + Number(s.price), 0);
