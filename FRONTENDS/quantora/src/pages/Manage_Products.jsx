@@ -215,7 +215,7 @@ export default function ManageProducts() {
                   />
                 </div>
                 <button onClick={() => setShowPreview(true)} className="flex items-center justify-center gap-2 bg-white/5 border border-white/10 hover:bg-white/10 px-4 py-2.5 rounded-xl text-white font-bold text-xs sm:text-sm transition-colors">
-                  <Eye size={16} /> <span className="hidden sm:inline">Preview Stock</span><span className="sm:hidden">Preview</span>
+                  <Eye size={16} /> <span className="hidden sm:inline">Available products</span><span className="sm:hidden">Available products</span>
                 </button>
                 <button onClick={() => setShowForm(true)} className="flex items-center justify-center gap-2 bg-blue-600 px-4 py-2.5 rounded-xl text-white font-bold text-xs sm:text-sm shadow-lg active:scale-95 transition-transform">
                   <Plus size={16} /> Add Item

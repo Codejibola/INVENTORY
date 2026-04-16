@@ -1,11 +1,13 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+/* eslint-disable */
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import Register from "./pages/Registration";
 import Admin from "./pages/Admin";
 import SelectMode from "./pages/SelectMode";
 import ForgotPassword from "./pages/Forgot-Password";
 import ResetPassword from "./pages/ResetPassword";
-import { AuthProvider } from "./context/AuthContext";
+import { AuthProvider, useAuth } from "./context/AuthContext"; // Import useAuth
 import ProtectedLayout from "./components/ProtectedLayout"; 
+import LoginPopup from "./components/LoginPop"; // Your new popup component
 
 // Admin pages
 import Dashboard from "./pages/Dashboard";
@@ -26,14 +28,31 @@ import AvailableProducts from "./pages/AvailableProducts";
 
 import PrivateRoute from "./components/PrivateRoute";
 
+/**
+ * A wrapper component that only renders the LoginPopup listener
+ * if the currently logged-in user has the 'admin' activeRole.
+ */
+const AdminNotificationWrapper = () => {
+  const { user } = useAuth();
+  
+  return (
+    <>
+      {/* The popup only exists in the DOM for the Owner/Admin. 
+          It listens to LocalStorage for 'jibs' or other worker logins.
+      */}
+      {user?.activeRole === "admin" && <LoginPopup />}
+      <Outlet />
+    </>
+  );
+};
+
 export default function App() {
   return (
     <AuthProvider>
       <Router>
         <Routes>
+          {/* --- PUBLIC ROUTES --- */}
           <Route path="/" element={<Navigate to="/login" replace />} />
-
-          {/* Public routes */}
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Admin />} />
           <Route path="/privacy" element={<Privacy />} />
@@ -41,7 +60,7 @@ export default function App() {
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          
+          {/* --- AUTHENTICATED (BUT NO ROLE YET) --- */}
           <Route element={<PrivateRoute />}> 
             <Route path="/select-mode" element={<SelectMode />} />
             <Route path="/subscription" element={<Subscription />} />
@@ -50,32 +69,36 @@ export default function App() {
           {/* --- PROTECTED ROUTES WITH SUBSCRIPTION GUARD --- */}
           <Route element={<ProtectedLayout />}>
 
-          
-          {/* Admin Group */}
-      <Route element={<PrivateRoute allowedRole="admin" />}>
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/manage_products" element={<Manage_Products />} />
-        <Route path="/recordSales" element={<RecordSales />} />
-        <Route path="/reports" element={<Reports />} />
-        <Route path="/notifications" element={<Notification />} />
-        <Route path="/feedback" element={<Feedback />} />
-        <Route path="/settings" element={<Settings />} />
-      </Route>
+            {/* --- ADMIN GROUP (ONLY OWNER SEES POPUPS) --- */}
+            <Route element={<PrivateRoute allowedRole="admin" />}>
+              <Route element={<AdminNotificationWrapper />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/manage_products" element={<Manage_Products />} />
+                <Route path="/recordSales" element={<RecordSales />} />
+                <Route path="/reports" element={<Reports />} />
+                <Route path="/notifications" element={<Notification />} />
+                <Route path="/feedback" element={<Feedback />} />
+                <Route path="/settings" element={<Settings />} />
+              </Route>
+            </Route>
 
-         
-         {/* Worker Group */}
-     <Route element={<PrivateRoute allowedRole="worker" />}>
-     {/* We wrap the worker routes with the WorkerDashboard layout */}
-      <Route path="/worker" element={<WorkerDashboard />}>
-      <Route index element={<WorkerRecordSales />} />
-      <Route path="record-sales" element={<WorkerRecordSales />} />
-      <Route path="available-products" element={<AvailableProducts />} />
-     </Route>
-      </Route>
+            {/* --- WORKER GROUP (CLEAN INTERFACE, NO POPUPS) --- */}
+            <Route element={<PrivateRoute allowedRole="worker" />}>
+              <Route path="/worker" element={<WorkerDashboard />}>
+                <Route index element={<WorkerRecordSales />} />
+                <Route path="record-sales" element={<WorkerRecordSales />} />
+                <Route path="available-products" element={<AvailableProducts />} />
+              </Route>
+            </Route>
 
-      </Route>
+          </Route>
 
-          <Route path="*" element={<h1 className="text-center text-white mt-20">404 – Page Not Found</h1>} />
+          {/* --- 404 CATCH-ALL --- */}
+          <Route path="*" element={
+            <div className="min-h-screen bg-black flex items-center justify-center">
+               <h1 className="text-center text-white text-xl font-bold">404 – Page Not Found</h1>
+            </div>
+          } />
         </Routes>
       </Router>
     </AuthProvider>
