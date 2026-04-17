@@ -3,12 +3,10 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-
 // --- LOGO LOGIC ---
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// This reads the image file and converts it to a string the PDF can understand
 const getLogoDataUri = () => {
   try {
     const logoPath = path.join(__dirname, "../assets/logo.png");
@@ -36,8 +34,12 @@ export const getAllSales = async (req, res) => {
   }
 };
 
+/**
+ * UPDATED: Captures soldBy from the frontend terminal
+ */
 export const recordSale = async (req, res) => {
-  const { productId, quantity, price } = req.body;
+  // Extract soldBy along with other details
+  const { productId, quantity, price, soldBy } = req.body;
   const userId = req.userId;
 
   if (!productId || !quantity || !price) {
@@ -47,12 +49,15 @@ export const recordSale = async (req, res) => {
   }
 
   try {
-    const saleRes = await Sales.insertSale(userId, productId, quantity, price);
+    // Pass soldBy as the 5th argument to the model
+    const saleRes = await Sales.insertSale(userId, productId, quantity, price, soldBy);
+    
     res.status(201).json({
       message: "Sale recorded successfully",
       sale: {
         id: saleRes.rows[0].id,
         profit: Number(saleRes.rows[0].profit_loss ?? 0),
+        soldBy: saleRes.rows[0].sold_by, // Return the name in response
         created_at: saleRes.rows[0].created_at
       },
     });
@@ -99,19 +104,19 @@ export const getSalesByDate = async (req, res) => {
   }
 };
 
-
 export const downloadDailySalesData = async (req, res) => {
   try {
     let date = req.params.date;
     if (date === 'today') date = new Date().toLocaleDateString('en-CA');
 
+    // The model updated earlier now returns 'sold_by' in this query
     const { rows } = await Sales.fetchSalesByDate(req.userId, date);
     
     if (!rows.length) {
       return res.status(404).json({ message: "No sales found for this date." });
     }
 
-    // Just send the raw data. The frontend handles the rest!
+    // Raw data sent to frontend includes the worker name automatically now
     res.json({
       shopName: rows[0].shop_name || "Quantora Stores",
       date: date,
@@ -123,7 +128,6 @@ export const downloadDailySalesData = async (req, res) => {
     res.status(500).json({ message: "Error fetching invoice data" });
   }
 };
-
 
 export const getBestSellingProduct = async (req, res) => {
   try {

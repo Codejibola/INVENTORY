@@ -2,6 +2,7 @@ import pool from "../config/db.js";
 
 /**
  * Fetch all sales for a user
+ * Updated: Now includes s.sold_by for tracking
  */
 export const fetchAllSales = (userId) => {
   return pool.query(
@@ -11,6 +12,7 @@ export const fetchAllSales = (userId) => {
         s.quantity,
         s.price,          -- TOTAL price
         s.profit_loss,
+        s.sold_by,        -- Track which worker made the sale
         s.created_at
      FROM sales s
      JOIN products p ON p.id = s.product_id
@@ -22,8 +24,9 @@ export const fetchAllSales = (userId) => {
 
 /**
  * Insert a sale with correct profit/loss calculation
+ * Updated: Added soldBy parameter and inclusion in INSERT query
  */
-export const insertSale = async (userId, productId, quantity, sellingPrice) => {
+export const insertSale = async (userId, productId, quantity, sellingPrice, soldBy) => {
   // 1. Fetch unit cost and stock
   const productRes = await pool.query(
     `SELECT price, units
@@ -49,18 +52,19 @@ export const insertSale = async (userId, productId, quantity, sellingPrice) => {
   // ✅ CORRECT PROFIT / LOSS
   const profitLoss = totalSellingPrice - totalCost;
 
-  // 3. Insert sale
+  // 3. Insert sale with staff tracking
   const saleRes = await pool.query(
     `INSERT INTO sales (
         user_id,
         product_id,
         quantity,
         price,
-        profit_loss
+        profit_loss,
+        sold_by
      )
-     VALUES ($1, $2, $3, $4, $5)
-     RETURNING id, profit_loss`,
-    [userId, productId, quantity, totalSellingPrice, profitLoss]
+     VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING id, profit_loss, sold_by`,
+    [userId, productId, quantity, totalSellingPrice, profitLoss, soldBy || 'Worker']
   );
 
   // 4. Reduce stock
@@ -81,7 +85,7 @@ export const fetchDailySales = (userId, year) => {
   return pool.query(
     `SELECT
         DATE(created_at) AS date,
-        SUM(price) AS total_sales,          -- FIXED
+        SUM(price) AS total_sales,
         SUM(profit_loss) AS total_profit_loss
      FROM sales
      WHERE user_id = $1
@@ -94,6 +98,7 @@ export const fetchDailySales = (userId, year) => {
 
 /**
  * Fetch sales for a specific date
+ * Updated: Now includes s.sold_by for owner reporting
  */
 export const fetchSalesByDate = (userId, date) => {
   return pool.query(
@@ -103,6 +108,7 @@ export const fetchSalesByDate = (userId, date) => {
         s.quantity,
         s.price,          -- TOTAL price
         s.profit_loss,
+        s.sold_by,        -- Track worker name
         u.shop_name,
         s.created_at
      FROM sales s
@@ -110,7 +116,7 @@ export const fetchSalesByDate = (userId, date) => {
      JOIN users u ON u.id = s.user_id
      WHERE s.user_id = $1
        AND (s.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Africa/Lagos')::DATE = $2::DATE
-     ORDER BY s.created_at ASC`, // Removed the comma from inside the string and added backtick
+     ORDER BY s.created_at ASC`,
     [userId, date]
   );
 };

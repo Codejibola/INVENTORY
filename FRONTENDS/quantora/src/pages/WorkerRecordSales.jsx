@@ -16,6 +16,11 @@ const toTitleCase = (str = "") =>
 
 export default function WorkerRecordSales() {
   const token = localStorage.getItem("token");
+  
+  // --- SILENT ACCOUNTABILITY ---
+  // We grab the name but we DO NOT display it in the UI return below.
+  const [activeStaffName, setActiveStaffName] = useState("Unknown Staff");
+
   const [isScanning, setIsScanning] = useState(false);
   const [products, setProducts] = useState([]);
   const [selected, setSelected] = useState("");
@@ -36,6 +41,11 @@ export default function WorkerRecordSales() {
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
     if (savedUser) setCurrentUser(JSON.parse(savedUser));
+    
+    // Get the active staff name from localStorage
+    const staffName = localStorage.getItem("quantora_active_user") || "Unknown Staff";
+    setActiveStaffName(staffName);
+    
     fetchProducts();
     fetchSales();
   }, [token]);
@@ -112,44 +122,16 @@ export default function WorkerRecordSales() {
 
   const handleBarcodeInputChange = (value) => {
     setBarcodeInput(value);
-
-    if (!value) {
-      setError("");
-      return;
-    }
-
-    if (/[a-zA-Z]/.test(value)) {
-      setError("Barcode is numeric only. Please scan or enter barcode, not product name.");
-      return;
-    }
-
-    if (!/^[0-9]+$/.test(value)) {
-      setError("Invalid barcode format. Barcodes should not contain spaces or symbols.");
-      return;
-    }
-
+    if (!value) { setError(""); return; }
+    if (/[a-zA-Z]/.test(value)) { setError("Barcode is numeric only."); return; }
     setError("");
   };
 
   const lookupBarcode = () => {
     const code = barcodeInput.trim();
-
-    if (!code) {
-      setError("Please enter a barcode.");
-      return;
-    }
-
-    if (/[a-zA-Z]/.test(code)) {
-      setError("Please use the barcode field for numeric barcode values, not product name.");
-      return;
-    }
-
+    if (!code) return;
     const found = products.find((p) => p.barcode === code);
-    if (!found) {
-      setError("Barcode not found. Ensure this is a valid product barcode, not a product name.");
-      return;
-    }
-
+    if (!found) { setError("Barcode not found."); return; }
     setSelected(found.id);
     setQuantity(1);
     setCustomPrice(found.selling_price);
@@ -165,9 +147,12 @@ export default function WorkerRecordSales() {
   }, [selected, quantity]);
 
   const addToBasket = () => {
-    if (!selected || !quantity || !customPrice) return setError("Missing selection or price.");
+    if (!selected || !quantity || !customPrice) return setError("Missing selection.");
     const product = products.find(p => p.id === Number(selected));
-    if (quantity > (product.units || product.stock)) return setError("Insufficient stock.");
+    const availableStock = Number(product.units || product.stock || 0);
+    
+    if (availableStock <= 0) return setError("Product is out of stock and cannot be added.");
+    if (quantity > availableStock) return setError("Insufficient stock.");
 
     setBasket([...basket, {
       productId: Number(selected),
@@ -188,10 +173,17 @@ export default function WorkerRecordSales() {
     setLoading(true);
     try {
       for (const item of basket) {
+        const payload = { 
+          productId: item.productId, 
+          quantity: item.quantity, 
+          price: item.subtotal,
+          // SENDING THE NAME SILENTLY TO THE BACKEND COLUMN
+          soldBy: activeStaffName && activeStaffName !== "Unknown Staff" ? activeStaffName : "Worker"
+        };
         await apiFetch(`${LOCAL_ENV.API_URL}/api/sales`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ productId: item.productId, quantity: item.quantity, price: item.subtotal }),
+          body: JSON.stringify(payload),
         });
       }
       if (shouldDownload) generatePDF();
@@ -207,7 +199,6 @@ export default function WorkerRecordSales() {
       setLoading(false);
     }
   };
-
 
 const generatePDF = () => {
     const doc = new jsPDF();
@@ -300,7 +291,6 @@ const generatePDF = () => {
     doc.save(`Quantora_RECEIPT_${Date.now()}.pdf`);
 };
 
-  const basketTotal = basket.reduce((acc, item) => acc + item.subtotal, 0);
   const totalRevenue = sales.reduce((acc, s) => acc + Number(s.price), 0);
 
   return (
@@ -308,137 +298,116 @@ const generatePDF = () => {
       <Helmet><title>Worker Terminal | Quantora</title></Helmet>
       <div className="min-h-screen bg-[#050505] text-gray-200">
         <main className="p-6 lg:p-10 space-y-8 max-w-7xl mx-auto w-full">
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* REVENUE CARD */}
             <div className="bg-blue-600/10 border border-blue-500/20 px-6 py-5 rounded-[2rem] flex items-center gap-4">
-              <div className="p-3 bg-blue-600 rounded-2xl"><TrendingUp className="text-white" size={20} /></div>
+              <div className="p-3 bg-blue-600 rounded-2xl"><TrendingUp size={20} /></div>
               <div>
-                <p className="text-[10px] uppercase font-black text-blue-400 tracking-widest">Revenue Collected Today</p>
+                <p className="text-[10px] uppercase font-black text-blue-400 tracking-widest">Today's Revenue</p>
                 <p className="text-xl font-black text-white">₦{totalRevenue.toLocaleString()}</p>
               </div>
             </div>
 
-            {/* ACTIVE SESSION CARD */}
             <div className="bg-white/5 border border-white/5 px-6 py-5 rounded-[2rem] flex items-center gap-4">
-              <div className="p-3 bg-gray-700 rounded-2xl"><CheckCircle2 className="text-white" size={20} /></div>
+              <div className="p-3 bg-gray-700 rounded-2xl"><CheckCircle2 size={20} /></div>
               <div>
-                <p className="text-[10px] uppercase font-black text-gray-400 tracking-widest leading-tight">Active Session</p>
-                <p className="text-xl font-black text-white uppercase tracking-tight">
-                  {currentUser?.shop_name || "QUANTORA"} AUTHORIZED STAFF
-                </p>
+                <p className="text-[10px] uppercase font-black text-gray-400 tracking-widest leading-tight">System Status</p>
+                <p className="text-lg font-black text-white uppercase tracking-tight">{currentUser?.shopName || currentUser?.shop_name || "Shop"} Worker</p>
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className="lg:col-span-5 space-y-6">
-              {/* TERMINAL ENTRY */}
-              <div className="bg-[#0c0c0c] border border-white/5 p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
+              <div className="bg-[#0c0c0c] border border-white/5 p-8 rounded-[2.5rem] shadow-2xl">
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-sm font-black text-gray-400 uppercase tracking-widest">Terminal Entry</h2>
-                  <button onClick={() => setIsScanning(!isScanning)} className="bg-blue-600 p-2 rounded-xl text-white hover:scale-105 transition-all"><Scan size={18} /></button>
+                  <h2 className="text-sm font-black text-gray-400 uppercase tracking-widest">Sales Entry</h2>
+                  <button onClick={() => setIsScanning(!isScanning)} className="bg-blue-600 p-2 rounded-xl"><Scan size={18} /></button>
                 </div>
 
                 {isScanning && <div id="reader" className="aspect-video rounded-3xl overflow-hidden mb-6"></div>}
 
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <input
-                      type="text"
-                      value={barcodeInput}
-                      onChange={(e) => handleBarcodeInputChange(e.target.value)}
-                      placeholder="Enter barcode (not product name)"
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm outline-none"
-                    />
-                    <div className="flex gap-2">
-                      <button onClick={lookupBarcode} className="flex-1 py-3 bg-blue-600 text-white rounded-xl text-xs uppercase font-black tracking-wide">Lookup Barcode</button>
-                      <button onClick={() => setBarcodeInput("")} className="flex-1 py-3 border border-white/20 text-white rounded-xl text-xs uppercase font-black tracking-wide">Clear</button>
-                    </div>
-                    <p className="text-[10px] text-gray-400">If you type a product name, you will get a warning since this field expects barcode value only.</p>
+                  <div>
+                    <input type="text" value={barcodeInput} onChange={(e) => handleBarcodeInputChange(e.target.value)} placeholder="Barcode" className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none" />
+                    <p className="text-[10px] text-amber-400 font-medium mt-1 px-1">⚠️ Barcode only - not product name or any other text</p>
                   </div>
-
-                  <select value={selected} onChange={(e) => setSelected(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm outline-none">
-                    <option value="">Select Item...</option>
-                    {products.map(p => <option key={p.id} value={p.id} className="bg-black">{p.name} ({p.units} in stock)</option>)}
+                  <select value={selected} onChange={(e) => setSelected(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none">
+                    <option value="">Select Product...</option>
+                    {products.map(p => {
+                      const stock = Number(p.units || p.stock || 0);
+                      const isOutOfStock = stock <= 0;
+                      return <option key={p.id} value={p.id} disabled={isOutOfStock} className="bg-black">{p.name} ({stock} left){isOutOfStock ? ' - OUT OF STOCK' : ''}</option>;
+                    })}
                   </select>
-
                   <div className="grid grid-cols-2 gap-4">
-                    <input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm outline-none" placeholder="Qty" />
-                    <input type="number" value={customPrice} onChange={(e) => setCustomPrice(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm font-bold text-blue-400 outline-none" placeholder="Price" />
+                    <input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none" placeholder="Qty" />
+                    <input type="number" value={customPrice} onChange={(e) => setCustomPrice(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 font-bold text-blue-400 outline-none" />
                   </div>
-                  <button onClick={addToBasket} className="w-full py-5 bg-white text-black font-black uppercase text-xs rounded-2xl hover:bg-gray-200 transition-all">Add to Basket</button>
-
+                  <button onClick={addToBasket} className="w-full py-5 bg-white text-black font-black uppercase text-xs rounded-2xl">Add to Basket</button>
                   {error && <p className="text-red-400 text-xs font-bold">{error}</p>}
                 </div>
               </div>
 
-              {/* BASKET / CHECKOUT */}
               {basket.length > 0 && (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-blue-600 p-8 rounded-[2.5rem] text-white">
+                <div className="bg-blue-600 p-8 rounded-[2.5rem]">
                   <div className="flex justify-between items-center mb-6">
-                    <h3 className="font-black uppercase text-[10px] tracking-widest opacity-70">Checkout List</h3>
-                    <button onClick={() => setBasket([])}><Trash2 size={16} className="opacity-50 hover:opacity-100"/></button>
+                    <h3 className="font-black uppercase text-[10px] tracking-widest">Current Basket</h3>
+                    <button onClick={() => setBasket([])} className="text-white/70 hover:text-white transition-colors">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 6h18"></path>
+                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                      </svg>
+                    </button>
                   </div>
-                  <div className="space-y-3 mb-6 max-h-40 overflow-y-auto pr-2">
+                  <div className="space-y-3 mb-6">
                     {basket.map((item, idx) => (
-                      <div key={idx} className="flex justify-between items-center text-sm">
-                        <span className="font-bold">{item.name} <span className="text-white/50 text-[10px]">x{item.quantity}</span></span>
+                      <div key={idx} className="flex justify-between text-sm">
+                        <span>{item.name} x{item.quantity}</span>
                         <span className="font-black">₦{item.subtotal.toLocaleString()}</span>
                       </div>
                     ))}
                   </div>
-                  <div className="border-t border-white/20 pt-6 space-y-4">
+                  <div className="border-t border-white/20 pt-4 mb-6">
                     <div className="flex justify-between items-center">
-                      <span className="text-xs uppercase font-medium opacity-70">Total Amount</span>
-                      <span className="text-3xl font-black tracking-tighter">₦{basketTotal.toLocaleString()}</span>
-                    </div>
-                    <input type="text" placeholder="Customer Name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-sm placeholder:text-white/40 outline-none" />
-                    
-                    <div className="space-y-2">
-                      <p className="text-[9px] text-gray-400 font-semibold uppercase tracking-wide">Choose finalization option:</p>
-                      <div className="grid grid-cols-1 gap-2">
-                        <div className="space-y-1">
-                          <button onClick={() => finalizeTransaction(false)} disabled={loading} className="w-full py-3 bg-white/10 border border-white/10 rounded-xl font-bold text-[10px] tracking-widest uppercase text-white hover:bg-white/20 transition-all">⚡ Fast Record (No Receipt)</button>
-                          <p className="text-[8px] text-gray-400 px-2">Finalize sale instantly without printing a receipt</p>
-                        </div>
-                        <div className="space-y-1">
-                          <button onClick={() => finalizeTransaction(true)} disabled={loading} className="w-full py-4 bg-white text-blue-600 rounded-xl font-black text-[10px] tracking-widest uppercase shadow-xl hover:bg-gray-100 transition-all">📄 Record & Print Receipt</button>
-                          <p className="text-[8px] text-gray-400 px-2">Finalize sale and generate receipt for customer</p>
-                        </div>
-                      </div>
+                      <span className="text-xs font-bold uppercase opacity-80">Basket Total</span>
+                      <span className="text-2xl font-black">₦{basket.reduce((acc, item) => acc + item.subtotal, 0).toLocaleString()}</span>
                     </div>
                   </div>
-                </motion.div>
+                  <input type="text" placeholder="Customer Name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-sm mb-4 outline-none" />
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <button onClick={() => finalizeTransaction(false)} disabled={loading} className="w-full py-3 bg-white/10 border border-white/10 rounded-xl font-bold text-[10px] tracking-widest uppercase text-white hover:bg-white/20 transition-all">⚡ Fast Record (No Receipt)</button>
+                      <p className="text-[8px] text-gray-400 px-2">Finalize sale instantly without printing a receipt</p>
+                    </div>
+                    <div className="space-y-1">
+                      <button onClick={() => finalizeTransaction(true)} disabled={loading} className="w-full py-4 bg-white text-blue-600 rounded-xl font-black text-[10px] tracking-widest uppercase shadow-xl hover:bg-gray-100 transition-all">📄 Record & Print Receipt</button>
+                      <p className="text-[8px] text-gray-400 px-2">Finalize sale and generate receipt for customer</p>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
 
-            {/* RECENT SALES TABLE */}
             <div className="lg:col-span-7">
-              <div className="flex items-center gap-2 mb-4 px-2">
-                <History size={16} className="text-gray-500" />
-                <h2 className="text-[10px] font-black uppercase text-gray-500 tracking-[0.3em]">Session Activity</h2>
-              </div>
               <div className="bg-[#0c0c0c] border border-white/5 rounded-[2rem] overflow-hidden">
                 <table className="w-full text-left">
                   <thead className="bg-white/[0.02] text-[9px] font-black uppercase text-gray-500 tracking-widest border-b border-white/5">
                     <tr>
-                      <th className="px-6 py-5">Item</th>
-                      <th className="px-6 py-5 text-right">Amount Sold</th>
+                      <th className="px-6 py-5">Product</th>
+                      <th className="px-6 py-5 text-right">Price</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
                     {sales.map((s) => (
-                      <tr key={s.id} className="hover:bg-white/[0.01]">
-                        <td className="px-6 py-4">
-                          <p className="text-sm font-bold text-white">{toTitleCase(s.product_name)}</p>
-                          <p className="text-[9px] text-gray-600">QTY: {s.quantity} | {new Date(s.created_at).toLocaleTimeString()}</p>
-                        </td>
-                        <td className="px-6 py-4 text-right text-sm font-black text-white">₦{Number(s.price).toLocaleString()}</td>
+                      <tr key={s.id}>
+                        <td className="px-6 py-4 text-sm font-bold">{toTitleCase(s.product_name)}</td>
+                        <td className="px-6 py-4 text-right text-sm font-black">₦{Number(s.price).toLocaleString()}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-                {sales.length === 0 && <p className="p-10 text-center text-xs text-gray-600 italic">No sales recorded yet this session.</p>}
               </div>
             </div>
           </div>
@@ -447,3 +416,7 @@ const generatePDF = () => {
     </HelmetProvider>
   );
 }
+
+
+
+

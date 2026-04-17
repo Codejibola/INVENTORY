@@ -177,12 +177,12 @@ export default function RecordSales() {
       setLoading(false);
     }
   };
-
+ 
 const generatePDF = () => {
     const doc = new jsPDF();
     const accent = [37, 99, 235]; // Quantora Blue
     const grandTotal = basket.reduce((acc, i) => acc + i.subtotal, 0);
-
+    
     // 1. Header & Branding
     doc.setFillColor(252, 252, 252);
     doc.rect(0, 0, 210, 50, 'F');
@@ -434,8 +434,11 @@ const generatePDF = () => {
                       {sales.map((s) => (
                         <tr key={s.id} className="hover:bg-white/[0.01]">
                           <td className="px-6 py-4">
-                            <p className="text-sm font-bold text-white">{toTitleCase(s.product_name)}</p>
-                            <p className="text-[9px] text-gray-600">QTY: {s.quantity}</p>
+                            <div className="flex flex-col gap-1">
+                              <p className="text-sm font-bold text-white">{toTitleCase(s.product_name)}</p>
+                              <p className="text-[9px] text-gray-600">QTY: {s.quantity}</p>
+                              <p className="text-[9px] text-gray-500">Sold by: {toTitleCase(s.sold_by || 'Admin')}</p>
+                            </div>
                           </td>
                           <td className="px-6 py-4 text-sm font-black text-white">₦{Number(s.price).toLocaleString()}</td>
                           <td className={`px-6 py-4 text-right text-[10px] font-black ${Number(s.profit_loss) >= 0 ? "text-green-500" : "text-red-500"}`}>
