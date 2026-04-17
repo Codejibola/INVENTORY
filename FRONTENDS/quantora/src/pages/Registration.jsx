@@ -289,8 +289,8 @@ function FormContent({ formData, handleChange, acceptedTerms, setAcceptedTerms, 
         <div className="pt-2">
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4">Access Security (PINs)</p>
             <div className="grid grid-cols-2 gap-4">
-              <Input label="Admin PIN" type="password" name="adminPassword" icon={<FiShield/>} placeholder="1234" value={formData.adminPassword} onChange={handleChange} />
-              <Input label="Worker PIN" type="password" name="workerPassword" icon={<FiBriefcase/>} placeholder="5678" value={formData.workerPassword} onChange={handleChange} />
+              <Input label="Shop Owner Security PIN" type="password" name="adminPassword" icon={<FiShield/>} placeholder="1234" value={formData.adminPassword} onChange={handleChange} />
+              <Input label="Staff Member PIN" type="password" name="workerPassword" icon={<FiBriefcase/>} placeholder="5678" value={formData.workerPassword} onChange={handleChange} />
             </div>
         </div>
 

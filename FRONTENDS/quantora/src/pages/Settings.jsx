@@ -133,7 +133,7 @@ export default function Settings() {
                   toggle={() => toggleVisibility('shop')}
                 />
                 <PasswordField 
-                  label="New Admin PIN" 
+                  label="New Shop Owner Security PIN" 
                   name="adminPassword" 
                   value={formData.adminPassword} 
                   onChange={handleChange}
@@ -141,7 +141,7 @@ export default function Settings() {
                   toggle={() => toggleVisibility('admin')}
                 />
                 <PasswordField 
-                  label="New Worker PIN" 
+                  label="New Staff Member PIN" 
                   name="workerPassword" 
                   value={formData.workerPassword} 
                   onChange={handleChange}
