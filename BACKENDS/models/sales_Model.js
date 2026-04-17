@@ -64,7 +64,7 @@ export const insertSale = async (userId, productId, quantity, sellingPrice, sold
      )
      VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING id, profit_loss, sold_by`,
-    [userId, productId, quantity, totalSellingPrice, profitLoss, soldBy || 'Worker']
+    [userId, productId, quantity, totalSellingPrice, profitLoss, soldBy || 'Admin']
   );
 
   // 4. Reduce stock
