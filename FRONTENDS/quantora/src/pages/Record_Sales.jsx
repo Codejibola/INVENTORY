@@ -437,7 +437,7 @@ const generatePDF = () => {
                             <div className="flex flex-col gap-1">
                               <p className="text-sm font-bold text-white">{toTitleCase(s.product_name)}</p>
                               <p className="text-[9px] text-gray-600">QTY: {s.quantity}</p>
-                              <p className="text-[9px] text-gray-500">Sold by: {toTitleCase(s.sold_by || 'Admin')}</p>
+                              <p className="text-[9px] text-gray-500">Sold by: {toTitleCase((!s.sold_by || ['unknown', 'uknown'].includes(String(s.sold_by).toLowerCase())) ? 'Admin' : s.sold_by)}</p>
                             </div>
                           </td>
                           <td className="px-6 py-4 text-sm font-black text-white">₦{Number(s.price).toLocaleString()}</td>
