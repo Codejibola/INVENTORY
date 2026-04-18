@@ -229,12 +229,12 @@ const generatePDF = () => {
     // 3. Properly Aligned Table
     autoTable(doc, {
       startY: 80,
-      head: [['ITEM DESCRIPTION', 'QTY', 'UNIT PRICE (₦)', 'SUBTOTAL (₦)']],
+      head: [['ITEM DESCRIPTION', 'QTY', 'UNIT PRICE (N)', 'SUBTOTAL (N)']],
       body: basket.map(i => [
         toTitleCase(i.name), 
         i.quantity, 
-        `₦${i.unitPrice.toLocaleString()}`, 
-        `₦${i.subtotal.toLocaleString()}`
+        `N${i.unitPrice.toLocaleString()}`, 
+        `N${i.subtotal.toLocaleString()}`
       ]),
       // Match head alignment with column alignment for balance
       headStyles: { 
@@ -266,7 +266,7 @@ const generatePDF = () => {
     // Right-aligned Grand Total
     doc.setFont('helvetica', 'bold').setFontSize(12).setTextColor(40);
     doc.text(`Grand Total:`, 140, finalY);
-    doc.text(`₦${grandTotal.toLocaleString()}`, 195, finalY, { align: "right" });
+    doc.text(`N${grandTotal.toLocaleString()}`, 195, finalY, { align: "right" });
 
     // Signature Stamp
     const sigY = finalY + 15;
