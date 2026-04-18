@@ -207,12 +207,12 @@ const generatePDF = () => {
     // 3. Properly Aligned Table
     autoTable(doc, {
       startY: 80,
-      head: [['ITEM DESCRIPTION', 'QTY', 'UNIT PRICE', 'SUBTOTAL']],
+      head: [['ITEM DESCRIPTION', 'QTY', 'UNIT PRICE (₦)', 'SUBTOTAL (₦)']],
       body: basket.map(i => [
         toTitleCase(i.name), 
         i.quantity, 
-        `N ${i.unitPrice.toLocaleString()}`, 
-        `N ${i.subtotal.toLocaleString()}`
+        `₦${i.unitPrice.toLocaleString()}`, 
+        `₦${i.subtotal.toLocaleString()}`
       ]),
       headStyles: { fillColor: accent, textColor: [255, 255, 255], fontSize: 10, halign: 'center' },
       columnStyles: {
@@ -230,7 +230,7 @@ const generatePDF = () => {
     // 4. Total Price Box
     doc.setFillColor(accent[0], accent[1], accent[2]).rect(125, finalY, 70, 15, 'F');
     doc.setTextColor(255).setFontSize(14).setFont("helvetica", "bold");
-    doc.text(`TOTAL: N${grandTotal.toLocaleString()}`, 160, finalY + 9.5, { align: "center" });
+    doc.text(`TOTAL: ₦${grandTotal.toLocaleString()}`, 160, finalY + 9.5, { align: "center" });
 
     // 5. THE SIGNATURE SECTION (Exact Match to your Design)
     if (signature) {
