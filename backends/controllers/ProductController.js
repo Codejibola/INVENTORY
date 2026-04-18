@@ -32,8 +32,11 @@ export const createProduct = async (req, res) => {
     if (stock === undefined || stock === null)
       return res.status(400).json({ message: "Stock/Units is required" });
 
+    // FIX: Convert empty barcode to null to avoid unique constraint violations
+    const processedBarcode = barcode && barcode.trim() !== '' ? barcode.trim() : null;
+
     // FIX: Pass 'barcode' as the 7th argument to match your Model
-    await Product.createProduct(req.userId, name, price, stock, category, selling_price, barcode);
+    await Product.createProduct(req.userId, name, price, stock, category, selling_price, processedBarcode);
     
     res.status(201).json({ message: "Product created" });
   } catch (err) {
@@ -48,6 +51,9 @@ export const updateProduct = async (req, res) => {
     const { name, price, stock, category, selling_price = 0, barcode = null } = req.body;
     const { id } = req.params;
 
+    // FIX: Convert empty barcode to null to avoid unique constraint violations
+    const processedBarcode = barcode && barcode.trim() !== '' ? barcode.trim() : null;
+
     /** * FIX: Match your Model's argument order exactly:
      * Model expects: (id, userId, name, price, stock, category, selling_price, barcode)
      */
@@ -59,7 +65,7 @@ export const updateProduct = async (req, res) => {
       stock,         // 5
       category,      // 6
       selling_price, // 7
-      barcode        // 8
+      processedBarcode // 8
     );
     
     res.json({ message: "Product updated" });

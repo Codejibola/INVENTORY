@@ -23,6 +23,7 @@ export default function ManageProducts() {
   const [isScanning, setIsScanning] = useState(false);
   const [scanSuccess, setScanSuccess] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const scannerRef = useRef(null);
 
   const [formData, setFormData] = useState({
@@ -142,7 +143,34 @@ export default function ManageProducts() {
 
   const handleSaveProduct = async (e) => {
     e.preventDefault();
-    const payload = { ...formData, price: parseFloat(formData.price), selling_price: parseFloat(formData.selling_price), stock: parseInt(formData.stock, 10) };
+    setError(""); // Clear previous errors
+    setIsSubmitting(true); // Start loading
+    
+    // Basic validation
+    if (!formData.name.trim()) {
+      setError("Product name is required");
+      setIsSubmitting(false);
+      return;
+    }
+    if (!formData.price || parseFloat(formData.price) <= 0) {
+      setError("Valid price is required");
+      setIsSubmitting(false);
+      return;
+    }
+    if (!formData.stock || parseInt(formData.stock, 10) < 0) {
+      setError("Valid stock quantity is required");
+      setIsSubmitting(false);
+      return;
+    }
+
+    const payload = { 
+      ...formData, 
+      price: parseFloat(formData.price), 
+      selling_price: parseFloat(formData.selling_price) || 0, 
+      stock: parseInt(formData.stock, 10),
+      barcode: formData.barcode.trim() || null // Ensure empty barcodes are null
+    };
+    
     try {
       const url = editingId ? `${LOCAL_ENV.API_URL}/api/products/${editingId}` : `${LOCAL_ENV.API_URL}/api/products`;
       const res = await fetch(url, {
@@ -150,8 +178,20 @@ export default function ManageProducts() {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload),
       });
-      if (res.ok) { fetchProducts(); closeForm(); }
-    } catch (err) { console.error(err); }
+      
+      if (res.ok) { 
+        fetchProducts(); 
+        closeForm(); 
+      } else {
+        const errorData = await res.json().catch(() => ({ message: "Unknown error occurred" }));
+        setError(errorData.message || `Failed to ${editingId ? 'update' : 'create'} product`);
+      }
+    } catch (err) { 
+      console.error("Product save error:", err);
+      setError("Network error. Please check your connection and try again.");
+    } finally {
+      setIsSubmitting(false); // Stop loading
+    }
   };
 
   const handleEdit = (product) => {
@@ -304,6 +344,12 @@ export default function ManageProducts() {
                       <button type="button" onClick={closeForm} className="p-2 bg-white/5 rounded-full text-gray-500"><X size={18}/></button>
                     </div>
 
+                    {error && (
+                      <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
+                        <p className="text-red-400 text-sm font-bold">{error}</p>
+                      </div>
+                    )}
+
                     <div className="bg-white/[0.03] p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] border border-white/5 space-y-4">
                       <div className="flex justify-between items-center">
                         <label className="text-[9px] sm:text-[10px] uppercase font-black text-blue-400 tracking-widest flex items-center gap-2"><Scan size={14}/> Barcode</label>
@@ -323,8 +369,23 @@ export default function ManageProducts() {
                       <div><input name="category" placeholder="Category" value={formData.category} onChange={handleChange} className="w-full px-4 sm:px-5 py-3 sm:py-4 rounded-xl bg-white/5 border border-white/10 text-white text-sm" /></div>
                     </div>
 
-                    <button type="submit" className="w-full py-4 sm:py-5 bg-blue-600 rounded-[1.2rem] sm:rounded-[1.5rem] font-black uppercase text-[10px] sm:text-xs text-white shadow-xl hover:bg-blue-500 active:scale-[0.98] transition-all">
-                      {editingId ? "Update System Records" : "Commit to Inventory"}
+                    <button 
+                      type="submit" 
+                      disabled={isSubmitting}
+                      className={`w-full py-4 sm:py-5 rounded-[1.2rem] sm:rounded-[1.5rem] font-black uppercase text-[10px] sm:text-xs text-white shadow-xl transition-all flex items-center justify-center gap-2 ${
+                        isSubmitting 
+                          ? "bg-blue-800 cursor-not-allowed opacity-80" 
+                          : "bg-blue-600 hover:bg-blue-500 active:scale-[0.98]"
+                      }`}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 size={16} className="animate-spin" />
+                          {editingId ? "Updating..." : "Committing..."}
+                        </>
+                      ) : (
+                        editingId ? "Update System Records" : "Commit to Inventory"
+                      )}
                     </button>
                   </motion.form>
                 </div>
