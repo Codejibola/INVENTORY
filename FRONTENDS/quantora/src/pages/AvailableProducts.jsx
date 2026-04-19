@@ -1,7 +1,7 @@
 /* eslint-disable */
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Plus, Package, Tag, Layers, ArrowUpRight, X, AlertCircle, Scan } from "lucide-react";
+import { Search, Plus, Package, Tag, Layers, ArrowUpRight, X, AlertCircle, Scan, Loader2 } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
 import LOCAL_ENV from "../../ENV.js"; 
 
@@ -15,9 +15,11 @@ export default function AvailableProducts() {
   const [isScanning, setIsScanning] = useState(false);
   const [scanSuccess, setScanSuccess] = useState(false);
   const [barcodeError, setBarcodeError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const scannerRef = useRef(null);
   const [formData, setFormData] = useState({
     name: "",
+    price: "",
     selling_price: "",
     stock: "",
     category: "",
@@ -60,7 +62,7 @@ export default function AvailableProducts() {
             (decodedText) => {
               if (navigator.vibrate) navigator.vibrate(100);
               setScanSuccess(true);
-              setFormData((p) => ({ ...p, barcode: decodedText }));
+              setFormData((p) => ({ ...p, barcode: decodedText.trim() }));
               setTimeout(() => {
                 setScanSuccess(false);
                 stopScanner();
@@ -132,10 +134,15 @@ export default function AvailableProducts() {
   const handleAddProduct = async (e) => {
     e.preventDefault();
     setFormError("");
+    setIsSubmitting(true);
     try {
       if (barcodeError) throw new Error("Fix barcode entry before submitting.");
       const stockNum = Number(formData.stock);
+      const costNum = Number(formData.price);
+      const sellingNum = Number(formData.selling_price);
       if (Number.isNaN(stockNum)) throw new Error("Stock must be a number");
+      if (Number.isNaN(costNum) || costNum <= 0) throw new Error("Cost price must be a valid number");
+      if (Number.isNaN(sellingNum) || sellingNum <= 0) throw new Error("Selling price must be a valid number");
       
       if (barcodeError) {
         throw new Error("Fix barcode entry before submitting.");
@@ -149,20 +156,22 @@ export default function AvailableProducts() {
         },
         body: JSON.stringify({
           name: formData.name,
+          price: Number(formData.price),
           category: formData.category,
           selling_price: Number(formData.selling_price),
           stock: stockNum,
           barcode: formData.barcode || null,
-          // We omit 'price' (cost price) here so workers don't set it
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to add product");
       handleCloseForm();
-      setFormData({ name: "", selling_price: "", stock: "", category: "", barcode: "" });
+      setFormData({ name: "", price: "", selling_price: "", stock: "", category: "", barcode: "" });
       fetchProducts();
     } catch (err) {
       setFormError(err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -174,7 +183,11 @@ export default function AvailableProducts() {
   const filteredProducts = products.filter((p) => {
     const term = searchTerm.trim().toLowerCase();
     if (!term) return true;
-    return (p.name?.toString().toLowerCase().includes(term) || p.category?.toString().toLowerCase().includes(term));
+    return (
+      p.name?.toString().toLowerCase().includes(term) ||
+      p.category?.toString().toLowerCase().includes(term) ||
+      p.barcode?.toString().toLowerCase().includes(term)
+    );
   });
 
   if (loading) return (
@@ -238,7 +251,11 @@ export default function AvailableProducts() {
                 </div>
                 <div>
                   <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest text-right">Selling Price</p>
-                  <p className="text-right font-black text-blue-400">₦{Number(p.selling_price).toLocaleString()}</p>
+                  <p className="text-right font-black text-blue-400">₦{p.selling_price ? Number(p.selling_price).toLocaleString() : "—"}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Cost Price</p>
+                  <p className="font-bold text-slate-300">₦{p.price ? Number(p.price).toLocaleString() : "—"}</p>
                 </div>
               </div>
             </motion.div>
@@ -253,13 +270,12 @@ export default function AvailableProducts() {
             <tr className="bg-slate-950/50">
               <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Product Details</th>
               <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Category</th>
-              <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Stock Level</th>
-              <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Unit Price</th>
+              <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Stock Level</th>                <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Cost Price</th>              <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Unit Price</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/50">
             {filteredProducts.length === 0 ? (
-              <tr><td colSpan={4} className="px-6 py-20 text-center text-slate-600 font-medium tracking-tight">Your inventory is empty.</td></tr>
+              <tr><td colSpan={5} className="px-6 py-20 text-center text-slate-600 font-medium tracking-tight">Your inventory is empty.</td></tr>
             ) : (
               filteredProducts.map((p) => (
                 <tr key={p.id} className="hover:bg-blue-600/5 transition-colors group">
@@ -279,7 +295,10 @@ export default function AvailableProducts() {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <p className="font-black text-white italic">₦{Number(p.selling_price).toLocaleString()}</p>
+                    <p className="font-black text-slate-300 italic">₦{p.price ? Number(p.price).toLocaleString() : "—"}</p>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <p className="font-black text-white italic">₦{p.selling_price ? Number(p.selling_price).toLocaleString() : "—"}</p>
                   </td>
                 </tr>
               ))
@@ -357,21 +376,38 @@ export default function AvailableProducts() {
                   <p className="text-[10px] text-slate-400">Barcode must be numeric only. Product name not allowed in barcode field.</p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Cost Price (₦)</label>
+                    <input name="price" type="number" min="0" value={formData.price} onChange={handleChange} required className="w-full bg-slate-950 border border-slate-800 text-white rounded-2xl px-5 py-3.5 focus:border-blue-600 outline-none transition-all" />
+                  </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Selling Price (₦)</label>
-                    <input name="selling_price" type="number" value={formData.selling_price} onChange={handleChange} required className="w-full bg-slate-950 border border-slate-800 text-white rounded-2xl px-5 py-3.5 focus:border-blue-600 outline-none transition-all" />
+                    <input name="selling_price" type="number" min="0" value={formData.selling_price} onChange={handleChange} required className="w-full bg-slate-950 border border-slate-800 text-white rounded-2xl px-5 py-3.5 focus:border-blue-600 outline-none transition-all" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Initial Stock</label>
-                    <input name="stock" type="number" value={formData.stock} onChange={handleChange} required className="w-full bg-slate-950 border border-slate-800 text-white rounded-2xl px-5 py-3.5 focus:border-blue-600 outline-none transition-all" />
+                    <input name="stock" type="number" min="0" value={formData.stock} onChange={handleChange} required className="w-full bg-slate-950 border border-slate-800 text-white rounded-2xl px-5 py-3.5 focus:border-blue-600 outline-none transition-all" />
                   </div>
                 </div>
 
                 {formError && <div className="flex items-center gap-2 text-red-400 text-[10px] font-black uppercase bg-red-500/10 p-3 rounded-xl border border-red-500/20"><AlertCircle size={14} /> {formError}</div>}
 
                 <div className="flex gap-4 pt-4">
-                  <button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl shadow-xl shadow-blue-600/20 active:scale-95 transition-all uppercase tracking-widest text-xs">Save Inventory Item</button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className={`flex-1 flex items-center justify-center gap-2 ${isSubmitting ? "bg-blue-800 cursor-not-allowed opacity-80" : "bg-blue-600 hover:bg-blue-500"} text-white font-black py-4 rounded-2xl shadow-xl shadow-blue-600/20 active:scale-95 transition-all uppercase tracking-widest text-xs`}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      "Save Inventory Item"
+                    )}
+                  </button>
                 </div>
               </form>
             </motion.div>

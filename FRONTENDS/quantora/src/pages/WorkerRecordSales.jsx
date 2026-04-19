@@ -108,15 +108,18 @@ export default function WorkerRecordSales() {
     }
   };
 
+  const normalizeBarcode = (value) => String(value ?? "").trim();
+
   const handleBarcodeMatch = (code) => {
-    const found = products.find(p => p.barcode === code);
+    const normalizedCode = normalizeBarcode(code);
+    const found = products.find((p) => normalizeBarcode(p.barcode) === normalizedCode);
     if (found) {
       setSelected(found.id);
       setQuantity(1);
-      setCustomPrice(found.selling_price); 
+      setCustomPrice(found.selling_price);
       setError("");
     } else {
-      setError(`SKU ${code} not found.`);
+      setError(`SKU ${normalizedCode} not found.`);
     }
   };
 
@@ -128,10 +131,13 @@ export default function WorkerRecordSales() {
   };
 
   const lookupBarcode = () => {
-    const code = barcodeInput.trim();
+    const code = normalizeBarcode(barcodeInput);
     if (!code) return;
-    const found = products.find((p) => p.barcode === code);
-    if (!found) { setError("Barcode not found."); return; }
+    const found = products.find((p) => normalizeBarcode(p.barcode) === code);
+    if (!found) {
+      setError("Barcode not found.");
+      return;
+    }
     setSelected(found.id);
     setQuantity(1);
     setCustomPrice(found.selling_price);
@@ -328,8 +334,29 @@ const generatePDF = () => {
                 {isScanning && <div id="reader" className="aspect-video rounded-3xl overflow-hidden mb-6"></div>}
 
                 <div className="space-y-4">
-                  <div>
-                    <input type="text" value={barcodeInput} onChange={(e) => handleBarcodeInputChange(e.target.value)} placeholder="Barcode" className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none" />
+                  <div className="space-y-3">
+                    <div className="flex gap-3">
+                      <input
+                        type="text"
+                        value={barcodeInput}
+                        onChange={(e) => handleBarcodeInputChange(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            lookupBarcode();
+                          }
+                        }}
+                        placeholder="Barcode"
+                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={lookupBarcode}
+                        className="px-5 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-blue-500 transition-all"
+                      >
+                        Find
+                      </button>
+                    </div>
                     <p className="text-[10px] text-amber-400 font-medium mt-1 px-1">⚠️ Barcode only - not product name or any other text</p>
                   </div>
                   <select value={selected} onChange={(e) => setSelected(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none">
