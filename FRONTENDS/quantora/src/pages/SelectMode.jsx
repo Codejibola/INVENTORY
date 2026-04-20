@@ -79,6 +79,7 @@ export default function SelectMode() {
   };
 
   const handleVerify = async () => {
+    // Validation
     if (selectedRole.id === "worker" && !workerName.trim()) {
       setError("Worker name is required");
       return;
@@ -99,6 +100,8 @@ export default function SelectMode() {
           userId: user.id,
           role: selectedRole.id,
           password,
+          // Sending workerName to backend for the notification table
+          workerName: selectedRole.id === "worker" ? workerName.trim() : "Admin",
         }),
       });
 
@@ -117,8 +120,11 @@ export default function SelectMode() {
 
       if (res.ok && data.valid && data.subscribed) {
         const activeIdentity = selectedRole.id === "worker" ? workerName.trim() : "Admin";
+        
+        // Save identity for UI personalized greetings
         localStorage.setItem("quantora_active_user", activeIdentity);
 
+        // Local activity log for history tab
         const existingLogs = JSON.parse(localStorage.getItem("quantora_activity_log") || "[]");
         const newLog = {
           id: Date.now(),
@@ -129,15 +135,7 @@ export default function SelectMode() {
         };
         localStorage.setItem("quantora_activity_log", JSON.stringify([newLog, ...existingLogs].slice(0, 50)));
 
-        if (selectedRole.id === "worker") {
-          const pingData = {
-            name: activeIdentity,
-            role: selectedRole.id,
-            timestamp: new Date().toISOString(),
-          };
-          localStorage.setItem("quantora_new_login_ping", JSON.stringify(pingData));
-        }
-
+        // Update Global Auth State
         const updatedUser = { ...user, activeRole: selectedRole.id };
         localStorage.setItem("user", JSON.stringify(updatedUser));
         setUser(updatedUser); 
@@ -185,7 +183,6 @@ export default function SelectMode() {
                 transition={{ delay: i * 0.1 }}
                 className="relative group rounded-2xl p-[1px] bg-white/10"
               >
-                {/* --- INFO BUTTON --- */}
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
@@ -196,7 +193,6 @@ export default function SelectMode() {
                   <Info size={18} />
                 </button>
 
-                {/* --- INFO TOOLTIP OVERLAY --- */}
                 <AnimatePresence>
                   {activeInfo === role.id && (
                     <motion.div 
@@ -220,9 +216,6 @@ export default function SelectMode() {
                           </li>
                         ))}
                       </ul>
-                      <p className="mt-5 text-[10px] text-slate-500 font-bold italic uppercase tracking-widest pt-3 border-t border-white/5">
-                        {role.id === 'admin' ? "Boss Account Only" : "Daily Floor Operations"}
-                      </p>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -247,11 +240,9 @@ export default function SelectMode() {
         {showModal && (
           <motion.div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/90 backdrop-blur-md px-4 pb-10 md:pb-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <motion.div initial={{ scale: 0.95, y: 50 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 50 }} className="w-full max-w-sm rounded-[2.5rem] bg-slate-900 border border-white/10 p-6 md:p-8 shadow-2xl">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-black uppercase tracking-tight">
-                  {selectedRole?.id === "worker" ? "Verify Staff" : "Owner Verification"}
-                </h3>
-              </div>
+              <h3 className="text-xl font-black uppercase tracking-tight mb-6">
+                {selectedRole?.id === "worker" ? "Verify Staff" : "Owner Verification"}
+              </h3>
               
               <div className="space-y-4">
                 {selectedRole?.id === "worker" && (
@@ -290,34 +281,6 @@ export default function SelectMode() {
                   {loading ? "Verifying..." : "Access Mode"}
                 </button>
                 <button onClick={() => setShowModal(false)} className="w-full py-3 rounded-2xl bg-transparent text-slate-500 font-bold text-xs uppercase hover:text-white transition-colors">Cancel</button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-
-        {showSubModal && (
-          <motion.div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/95 backdrop-blur-2xl px-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="w-full max-w-md rounded-[3rem] bg-slate-900 border border-yellow-500/20 p-10 shadow-2xl text-center">
-              <div className="w-20 h-20 bg-yellow-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <AlertCircle className="text-yellow-500" size={40} />
-              </div>
-              <h3 className="text-3xl font-black mb-3 text-white uppercase tracking-tighter">Service Paused</h3>
-              <p className="text-sm text-slate-400 mb-8 leading-relaxed font-medium">
-                The shop subscription has expired. 
-                {selectedRole?.id === "admin" 
-                  ? " As the owner, please renew your plan to restore full shop management." 
-                  : " Please alert the shop owner to renew the plan so you can continue recording sales."}
-              </p>
-              
-              <div className="space-y-3">
-                {selectedRole?.id === "admin" && (
-                  <button onClick={() => navigate("/subscription")} className="w-full py-5 rounded-2xl bg-blue-600 text-white font-black uppercase tracking-widest text-xs shadow-xl shadow-blue-600/20">
-                    Renew Now
-                  </button>
-                )}
-                <button onClick={() => setShowSubModal(false)} className="w-full py-4 rounded-2xl bg-slate-800 text-slate-400 font-black text-xs uppercase">
-                  Back
-                </button>
               </div>
             </motion.div>
           </motion.div>

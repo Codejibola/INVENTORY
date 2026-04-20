@@ -148,6 +148,17 @@ export default function AvailableProducts() {
         throw new Error("Fix barcode entry before submitting.");
       }
 
+      // Check for duplicate barcode
+      if (formData.barcode) {
+        const normalizedBarcode = String(formData.barcode).trim();
+        const duplicateProduct = products.find((p) => String(p.barcode || "").trim() === normalizedBarcode);
+        if (duplicateProduct) {
+          throw new Error(
+            `Barcode "${normalizedBarcode}" already exists for "${duplicateProduct.name}". To restock this product, edit it instead. This is an owner-controlled action and cannot be added again.`
+          );
+        }
+      }
+
       const res = await fetch(`${LOCAL_ENV.API_URL}/api/products`, {
         method: "POST",
         headers: {

@@ -35,6 +35,16 @@ export const createProduct = async (req, res) => {
     // FIX: Convert empty barcode to null to avoid unique constraint violations
     const processedBarcode = barcode && barcode.trim() !== '' ? barcode.trim() : null;
 
+    // NEW: Check for duplicate barcode
+    if (processedBarcode) {
+      const existingProduct = await Product.getProductByBarcode(processedBarcode, req.userId);
+      if (existingProduct) {
+        return res.status(409).json({ 
+          message: `Barcode "${processedBarcode}" already exists for "${existingProduct.name}". To restock this product, edit it instead. This is an owner-controlled action and cannot be added again.`
+        });
+      }
+    }
+
     // FIX: Pass 'barcode' as the 7th argument to match your Model
     await Product.createProduct(req.userId, name, price, stock, category, selling_price, processedBarcode);
     

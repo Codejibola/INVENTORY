@@ -13,79 +13,52 @@ router.post("/register", authLimiter, async (req, res) => {
   try {
     const { name, email, password, shopName, adminPassword, workerPassword } = req.body;
 
-    // Validate fields
     if (!name || !email || !password || !shopName || !adminPassword || !workerPassword) {
-      return res.status(400).json({
-        message: "All fields are required",
-      });
+      return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Check if email already exists
     const checkEmail = await pool.query("SELECT id FROM users WHERE email = $1", [email]);
     if (checkEmail.rows.length > 0) {
-      return res.status(409).json({
-        message: "This email is already registered.",
-      });
+      return res.status(409).json({ message: "This email is already registered." });
     }
 
-    // Hash passwords
     const hashedPassword = await bcrypt.hash(password, 10);
     const hashedAdminPassword = await bcrypt.hash(adminPassword, 10);
     const hashedWorkerPassword = await bcrypt.hash(workerPassword, 10);
 
-    // --- NEW TRIAL LOGIC ---
-    // Set status to 'active', plan to 'trial', and expiry to 14 days from now
     const trialStatus = 'active';
     const trialPlan = 'trial';
     const trialExpiry = new Date();
     trialExpiry.setDate(trialExpiry.getDate() + 30); 
 
-    // Insert new user with trial subscription
     await pool.query(
       `INSERT INTO users (
         name, email, password, shop_name, admin_password, worker_password, 
         subscription_status, subscription_plan, subscription_expiry
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-      [
-        name, 
-        email, 
-        hashedPassword, 
-        shopName, 
-        hashedAdminPassword, 
-        hashedWorkerPassword,
-        trialStatus,
-        trialPlan,
-        trialExpiry
-      ]
+      [name, email, hashedPassword, shopName, hashedAdminPassword, hashedWorkerPassword, trialStatus, trialPlan, trialExpiry]
     );
 
     return res.status(201).json({ message: "Account created successfully with 30-day free trial!" });
   } catch (err) {
     console.error("Registration error:", err);
-    return res.status(500).json({
-      message: "An unexpected server error occurred",
-      error: err.message,
-    });
+    return res.status(500).json({ message: "An unexpected server error occurred" });
   }
 });
 
 // ---------------------
-// SETTINGS 
+// SETTINGS UPDATE
 // ---------------------
-
 router.put("/settings", authenticate, async (req, res) => {
   try {
-    // Support both `req.user.id` and `req.userId` depending on middleware implementation
     const userId = req.user?.id || req.userId;
     const { shopName, shopPassword, adminPassword, workerPassword } = req.body;
 
-    // 1. Fetch current user to verify existence
     const userResult = await pool.query("SELECT id FROM users WHERE id = $1", [userId]);
     if (userResult.rows.length === 0) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // 2. Prepare dynamic update fields
     let updateFields = [];
     let queryParams = [];
     let counter = 1;
@@ -94,111 +67,126 @@ router.put("/settings", authenticate, async (req, res) => {
       updateFields.push(`shop_name = $${counter++}`);
       queryParams.push(shopName);
     }
-
-    // 3. Hash new passwords only if they are provided
     if (shopPassword) {
-      const hashedShopPass = await bcrypt.hash(shopPassword, 10);
+      const hashed = await bcrypt.hash(shopPassword, 10);
       updateFields.push(`password = $${counter++}`);
-      queryParams.push(hashedShopPass);
+      queryParams.push(hashed);
     }
-
     if (adminPassword) {
-      const hashedAdminPass = await bcrypt.hash(adminPassword, 10);
+      const hashed = await bcrypt.hash(adminPassword, 10);
       updateFields.push(`admin_password = $${counter++}`);
-      queryParams.push(hashedAdminPass);
+      queryParams.push(hashed);
     }
-
     if (workerPassword) {
-      const hashedWorkerPass = await bcrypt.hash(workerPassword, 10);
+      const hashed = await bcrypt.hash(workerPassword, 10);
       updateFields.push(`worker_password = $${counter++}`);
-      queryParams.push(hashedWorkerPass);
+      queryParams.push(hashed);
     }
 
-    if (updateFields.length === 0) {
-      return res.status(400).json({ message: "No fields provided for update" });
-    }
+    if (updateFields.length === 0) return res.status(400).json({ message: "No fields provided" });
 
-    // 4. Execute the update
     queryParams.push(userId);
-    const updateQuery = `
-      UPDATE users 
-      SET ${updateFields.join(", ")} 
-      WHERE id = $${counter} 
-      RETURNING shop_name
-    `;
+    const result = await pool.query(
+      `UPDATE users SET ${updateFields.join(", ")} WHERE id = $${counter} RETURNING shop_name`,
+      queryParams
+    );
 
-    const result = await pool.query(updateQuery, queryParams);
-
-    // 5. Update local storage on frontend if shop name changed
-    return res.status(200).json({ 
-      message: "Settings updated successfully",
-      shopName: result.rows[0].shop_name 
-    });
-
+    return res.status(200).json({ message: "Settings updated successfully", shopName: result.rows[0].shop_name });
   } catch (err) {
-    console.error("Settings update error:", err);
+    console.error("Settings error:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
 
 // ---------------------
-// VERIFY ROLE ROUTE (With Subscription Guard)
+// VERIFY ROLE (Worker Login Trigger)
 // ---------------------
 router.post("/verify-role", async (req, res) => {
   try {
-    const { userId, role, password } = req.body;
+    // 1. We now expect workerName from the frontend request body
+    const { userId, role, password, workerName } = req.body;
 
     if (!userId || !role || !password) {
-      return res.status(400).json({ error: "userId, role, and password are required" });
+      return res.status(400).json({ error: "Required fields missing" });
     }
 
-    // 1. Fetch user, passwords AND subscription status
     const result = await pool.query(
-      "SELECT id, admin_password, worker_password, subscription_status, subscription_expiry FROM users WHERE id = $1",
+      "SELECT id, name, admin_password, worker_password, subscription_status, subscription_expiry FROM users WHERE id = $1",
       [userId]
     );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    if (result.rows.length === 0) return res.status(404).json({ error: "User not found" });
 
     const user = result.rows[0];
-
-    // 2. Pick the correct hashed password based on the role
     const hashedPassword = role === "admin" ? user.admin_password : user.worker_password;
-
-    // 3. Compare input password with hash
     const valid = await bcrypt.compare(password, hashedPassword);
 
-    if (!valid) {
-      return res.status(401).json({ valid: false, error: "Incorrect password" });
-    }
+    if (!valid) return res.status(401).json({ valid: false, error: "Incorrect password" });
 
-    // 4. SUBSCRIPTION CHECK LOGIC
-    // We only block them AFTER we know the password is correct
+    // Subscription check
     const now = new Date();
     const expiryDate = user.subscription_expiry ? new Date(user.subscription_expiry) : null;
-    
-    // Check if status is not active OR if the current date is past the expiry date
-    const isExpired = expiryDate && now > expiryDate;
-    const isInactive = user.subscription_status !== "active";
-
-    if (isInactive || isExpired) {
-      return res.status(403).json({ 
-        valid: true, // Password was correct
-        subscribed: false, 
-        error: "Your subscription has expired or is inactive." 
-      });
+    if (user.subscription_status !== "active" || (expiryDate && now > expiryDate)) {
+      return res.status(403).json({ valid: true, subscribed: false, error: "Subscription expired." });
     }
 
-    // 5. Success!
-    return res.json({ 
-      valid: true, 
-      subscribed: true 
-    });
+    // --- NOTIFICATION TRIGGER ---
+    if (role === "worker") {
+      try {
+        // Use workerName from frontend, fallback to user.name if empty
+        const staffIdentity = workerName || "Staff Member";
+        const notificationMsg = `${staffIdentity} has initialized the terminal.`;
 
+        await pool.query(
+          "INSERT INTO notifications (user_id, worker_name, message, type) VALUES ($1, $2, $3, $4)",
+          [user.id, staffIdentity, notificationMsg, 'login']
+        );
+      } catch (notifyErr) {
+        console.error("Notification trigger failed:", notifyErr);
+      }
+    }
+
+    return res.json({ valid: true, subscribed: true });
   } catch (err) {
     console.error("Role Verification Error:", err);
+    return res.status(500).json({ error: "Server error" });
+  }
+});
+
+// ---------------------
+// GET LATEST UNREAD NOTIFICATION (Owner Side)
+// ---------------------
+router.get("/notifications/latest", authenticate, async (req, res) => {
+  try {
+    const userId = req.user?.id || req.userId;
+    const result = await pool.query(
+      "SELECT * FROM notifications WHERE user_id = $1 AND is_read = FALSE ORDER BY created_at DESC LIMIT 1",
+      [userId]
+    );
+    return res.json(result.rows[0] || null);
+  } catch (err) {
+    console.error("Fetch Notification Error:", err);
+    return res.status(500).json({ error: "Server error" });
+  }
+});
+
+// ---------------------
+// MARK NOTIFICATION AS READ (The "Silencer")
+// ---------------------
+router.patch("/notifications/:id/read", authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id || req.userId;
+
+    const result = await pool.query(
+      "UPDATE notifications SET is_read = TRUE WHERE id = $1 AND user_id = $2 RETURNING id",
+      [id, userId]
+    );
+
+    if (result.rows.length === 0) return res.status(404).json({ error: "Alert not found" });
+    return res.status(200).json({ message: "Alert acknowledged" });
+  } catch (err) {
+    console.error("Update Notification Error:", err);
     return res.status(500).json({ error: "Server error" });
   }
 });
