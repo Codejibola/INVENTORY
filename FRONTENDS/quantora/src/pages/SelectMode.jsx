@@ -170,6 +170,20 @@ export default function SelectMode() {
             Shop: <span className="text-white font-medium uppercase tracking-wider">{user.shopName || user.shop_name}</span>
           </p>
           <p className="mt-1 text-xs md:text-sm text-slate-500">Secure selection for business management</p>
+          <div className="mt-4 rounded-3xl border border-slate-800 bg-slate-900/90 px-4 py-4 text-[11px] text-slate-300">
+            <div className="flex items-start gap-3">
+              <Info size={18} className="text-blue-400 flex-shrink-0" />
+              <div>
+                <p className="font-semibold text-slate-100">Install this app for faster access</p>
+                <ol className="list-decimal list-inside space-y-1 text-slate-400">
+                  <li>Open your browser menu (⋮ or ⋯).</li>
+                  <li>Select “Install app”, “Add to Home screen”, or “Add to device”.</li>
+                  <li>Confirm the install and add the app to your home screen or desktop.</li>
+                  <li>Use the new icon to open your store directly next time.</li>
+                </ol>
+              </div>
+            </div>
+          </div>
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
