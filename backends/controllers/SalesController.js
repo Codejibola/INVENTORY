@@ -21,7 +21,6 @@ const getLogoDataUri = () => {
 const logoDataUri = getLogoDataUri();
 // ------------------
 
-// HELPER: Get today's date in YYYY-MM-DD format based on server time
 const getTodayDate = () => new Date().toLocaleDateString('en-CA');
 
 export const getAllSales = async (req, res) => {
@@ -35,11 +34,10 @@ export const getAllSales = async (req, res) => {
 };
 
 /**
- * UPDATED: Captures soldBy from the frontend terminal
+ * UPDATED: Now handles receiptData for dual-table syncing
  */
 export const recordSale = async (req, res) => {
-  // Extract soldBy along with other details
-  const { productId, quantity, price, soldBy } = req.body;
+  const { productId, quantity, price, soldBy, receiptData } = req.body;
   const userId = req.userId;
 
   if (!productId || !quantity || !price) {
@@ -49,21 +47,34 @@ export const recordSale = async (req, res) => {
   }
 
   try {
-    // Pass soldBy as the 5th argument to the model
-    const saleRes = await Sales.insertSale(userId, productId, quantity, price, soldBy);
+    // Passes receiptData as the 6th argument to the model
+    const saleRes = await Sales.insertSale(userId, productId, quantity, price, soldBy, receiptData);
     
     res.status(201).json({
       message: "Sale recorded successfully",
       sale: {
         id: saleRes.rows[0].id,
         profit: Number(saleRes.rows[0].profit_loss ?? 0),
-        soldBy: saleRes.rows[0].sold_by, // Return the name in response
+        soldBy: saleRes.rows[0].sold_by,
         created_at: saleRes.rows[0].created_at
       },
     });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: err.message || "Server error recording sale" });
+  }
+};
+
+/**
+ * NEW: Fetch archived receipts for the history UI
+ */
+export const getReceiptsHistory = async (req, res) => {
+  try {
+    const { rows } = await Sales.fetchReceiptsHistory(req.userId);
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error fetching receipt history" });
   }
 };
 
@@ -109,14 +120,12 @@ export const downloadDailySalesData = async (req, res) => {
     let date = req.params.date;
     if (date === 'today') date = new Date().toLocaleDateString('en-CA');
 
-    // The model updated earlier now returns 'sold_by' in this query
     const { rows } = await Sales.fetchSalesByDate(req.userId, date);
     
     if (!rows.length) {
       return res.status(404).json({ message: "No sales found for this date." });
     }
 
-    // Raw data sent to frontend includes the worker name automatically now
     res.json({
       shopName: rows[0].shop_name || "Quantora Stores",
       date: date,

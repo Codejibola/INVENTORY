@@ -135,7 +135,7 @@ router.post("/verify-role", async (req, res) => {
       try {
         // Use workerName from frontend, fallback to user.name if empty
         const staffIdentity = workerName || "Staff Member";
-        const notificationMsg = `${staffIdentity} has initialized the terminal.`;
+        const notificationMsg = `${staffIdentity} just logged in.`;
 
         await pool.query(
           "INSERT INTO notifications (user_id, worker_name, message, type) VALUES ($1, $2, $3, $4)",

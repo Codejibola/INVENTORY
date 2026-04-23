@@ -2,7 +2,7 @@ import express from "express";
 import {
   getAllProducts,
   getProductById, 
-  getProductByBarcode, // <--- Add this
+  getProductByBarcode, 
   createProduct,
   updateProduct,
   updateStock,
@@ -15,10 +15,7 @@ const router = express.Router();
 
 router.post("/updateStock", authenticate, userLimiter, updateStock);
 router.get("/products", authenticate, userLimiter, getAllProducts);
-
-// NEW: Scan lookup route
 router.get("/products/scan/:barcode", authenticate, userLimiter, getProductByBarcode);
-
 router.get("/products/:id", authenticate, userLimiter, getProductById);
 router.post("/products", authenticate, userLimiter, createProduct);
 router.put("/products/:id", authenticate, userLimiter, updateProduct);

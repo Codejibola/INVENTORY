@@ -76,10 +76,10 @@ router.post('/webhook', express.raw({ type: '*/*' }), async (req, res) => {
       const { amount: paidAmount, metadata } = event.data;
       const { userId, planType } = metadata || {};
 
-      // 3. SECURE VERIFICATION: Check if the amount paid matches our price record
+      // 3. SECURE VERIFICATION: Check if the amount paid matches the price record
       if (paidAmount !== SECURE_PRICES[planType]) {
         console.error(`PRICE MISMATCH: User ${userId} paid ${paidAmount} for ${planType}`);
-        return res.sendStatus(200); // Still 200 so Paystack stops retrying, but we don't upgrade
+        return res.sendStatus(200); 
       }
 
       if (userId) {
