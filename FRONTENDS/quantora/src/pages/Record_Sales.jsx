@@ -157,11 +157,33 @@ export default function RecordSales() {
     if (basket.length === 0) return;
     setLoading(true);
     try {
-      for (const item of basket) {
+      for (let i = 0; i < basket.length; i++) {
+        const item = basket[i];
+        const payload = { 
+          productId: item.productId, 
+          quantity: item.quantity, 
+          price: item.subtotal,
+          soldBy: currentUser?.name || "Admin"
+        };
+
+        // Only send receiptData on the first item when downloading receipt
+        if (shouldDownload && i === 0) {
+          payload.receiptData = {
+            customerName: customerName || "Walk-in Customer",
+            workerName: currentUser?.name || "Admin",
+            items: basket.map(b => ({
+              name: b.name,
+              quantity: b.quantity,
+              unitPrice: b.unitPrice,
+              subtotal: b.subtotal
+            }))
+          };
+        }
+
         await apiFetch(`${LOCAL_ENV.API_URL}/api/sales`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ productId: item.productId, quantity: item.quantity, price: item.subtotal }),
+          body: JSON.stringify(payload),
         });
       }
       if (shouldDownload) generatePDF();
