@@ -166,8 +166,8 @@ export default function RecordSales() {
           soldBy: currentUser?.name || "Admin"
         };
 
-        // Only send receiptData on the first item when downloading receipt
-        if (shouldDownload && i === 0) {
+        // Send receiptData on the first item for archival (always, regardless of print)
+        if (i === 0) {
           payload.receiptData = {
             customerName: customerName || "Walk-in Customer",
             workerName: currentUser?.name || "Admin",

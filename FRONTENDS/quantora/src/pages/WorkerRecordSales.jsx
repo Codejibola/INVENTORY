@@ -188,8 +188,8 @@ export default function WorkerRecordSales() {
           soldBy: activeStaffName && activeStaffName !== "Unknown Staff" ? activeStaffName : "Worker"
         };
 
-        // Only send receiptData on the first item when downloading receipt
-        if (shouldDownload && i === 0) {
+        // Send receiptData on the first item for archival (always, regardless of print)
+        if (i === 0) {
           payload.receiptData = {
             customerName: customerName || "Walk-in Customer",
             workerName: activeStaffName && activeStaffName !== "Unknown Staff" ? activeStaffName : "Worker",

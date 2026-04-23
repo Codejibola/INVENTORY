@@ -13,6 +13,7 @@ import LoginPopup from "./components/LoginPop"; // Your new popup component
 import Dashboard from "./pages/Dashboard";
 import Manage_Products from "./pages/Manage_Products";
 import Reports from "./pages/Reports";
+import Receipts from "./pages/Receipts";
 import RecordSales from "./pages/Record_Sales";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
@@ -75,6 +76,7 @@ export default function App() {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/manage_products" element={<Manage_Products />} />
                 <Route path="/recordSales" element={<RecordSales />} />
+                <Route path="/receipts" element={<Receipts />} />
                 <Route path="/reports" element={<Reports />} />
                 <Route path="/notifications" element={<Notification />} />
                 <Route path="/feedback" element={<Feedback />} />
