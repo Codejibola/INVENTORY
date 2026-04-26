@@ -11,7 +11,7 @@ import { useAuth } from '../context/AuthContext';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import { 
   FileText, Download, Search, Loader2, 
-  Printer, CheckCircle2, AlertCircle, ArrowLeft
+  Printer, CheckCircle2, ArrowLeft
 } from 'lucide-react';
 
 const ReceiptTerminal = () => {
@@ -25,7 +25,7 @@ const ReceiptTerminal = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [error, setError] = useState(null);
   const [downloadingPDF, setDownloadingPDF] = useState(false);
-  const [viewMode, setViewMode] = useState('list'); // 'list' or 'detail' for mobile responsiveness
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'detail'
 
   // Helpers
   const toTitleCase = (str) => {
@@ -70,8 +70,8 @@ const ReceiptTerminal = () => {
       });
 
       setReceipts(parsedReceipts);
-      if (window.innerWidth >= 1024) {
-        setSelectedReceipt(parsedReceipts[0] || null);
+      if (window.innerWidth >= 1024 && parsedReceipts.length > 0) {
+        setSelectedReceipt(parsedReceipts[0]);
       }
     } catch (err) {
       setError("Failed to sync with Quantora Ledger.");
@@ -82,80 +82,84 @@ const ReceiptTerminal = () => {
 
   useEffect(() => { fetchReceipts(); }, [fetchReceipts]);
 
-  // COMPLETE PDF FUNCTION
-const downloadPDF = () => {
-    const doc = new jsPDF();
-    const accent = [37, 99, 235]; // Quantora Blue
-    const grandTotal = basket.reduce((acc, i) => acc + i.subtotal, 0);
+  const downloadPDF = async (receiptData) => {
+    if (!receiptData || downloadingPDF) return;
     
-    // 1. Header & Branding
-    doc.setFillColor(252, 252, 252);
-    doc.rect(0, 0, 210, 50, 'F');
-    if (logo) doc.addImage(logo, 'PNG', 15, 12, 25, 25);
-
-    doc.setFont("helvetica", "bold").setFontSize(28).setTextColor(accent[0], accent[1], accent[2]);
-    doc.text(currentUser?.shop_name?.toUpperCase() || "BELLO STORES", 195, 25, { align: "right" });
+    setDownloadingPDF(true);
     
-    doc.setFontSize(10).setTextColor(100).setFont("helvetica", "normal");
-    doc.text("Official Transaction Receipt", 195, 32, { align: "right" });
-    doc.text(`Ref: QT-${Math.floor(Math.random() * 1000000000)}`, 195, 38, { align: "right" });
+    try {
+      // Small delay to allow React to render the loading state
+      await new Promise(resolve => setTimeout(resolve, 300));
 
-    // 2. Info Section
-    doc.setFont("helvetica", "bold").setFontSize(11).setTextColor(50);
-    doc.text("BILLED TO", 15, 65);
-    doc.text("DATE & TIME", 120, 65);
-    
-    doc.setFont("helvetica", "normal").setTextColor(100);
-    doc.text(customerName || "Walk-in Customer", 15, 72);
-    doc.text(new Date().toLocaleString(), 120, 72);
-
-    // 3. Properly Aligned Table
-    autoTable(doc, {
-      startY: 80,
-      head: [['ITEM DESCRIPTION', 'QTY', 'UNIT PRICE (N)', 'SUBTOTAL (N)']],
-      body: basket.map(i => [
-        toTitleCase(i.name), 
-        i.quantity, 
-        `N${i.unitPrice.toLocaleString()}`, 
-        `N${i.subtotal.toLocaleString()}`
-      ]),
-      headStyles: { fillColor: accent, textColor: [255, 255, 255], fontSize: 10, halign: 'center' },
-      columnStyles: {
-        0: { halign: 'left' },
-        1: { halign: 'center' },
-        2: { halign: 'center' },
-        3: { halign: 'right' }
-      },
-      theme: 'grid',
-      styles: { lineColor: [240, 240, 240], textColor: 80, cellPadding: 4 }
-    });
-
-    const finalY = doc.lastAutoTable.finalY + 15;
-
-    // 4. Total Price Box
-    doc.setFillColor(accent[0], accent[1], accent[2]).rect(125, finalY, 70, 15, 'F');
-    doc.setTextColor(255).setFontSize(14).setFont("helvetica", "bold");
-    doc.text(`TOTAL: N${grandTotal.toLocaleString()}`, 160, finalY + 9.5, { align: "center" });
-
-    // 5. THE SIGNATURE SECTION (Exact Match to your Design)
-    if (signature) {
-      const sigCenterX = 160; // Aligned with the center of the Total box
-      const sigY = finalY + 25;
+      const doc = new jsPDF();
+      const accent = [37, 99, 235]; // Quantora Blue
       
-      // The Stamp/Signature Image
-      // Positioned to be centered relative to the Total box above it
-      doc.addImage(signature, 'PNG', sigCenterX - 17.5, sigY, 35, 18); 
+      // 1. Header & Branding
+      doc.setFillColor(252, 252, 252);
+      doc.rect(0, 0, 210, 50, 'F');
+      if (logo) doc.addImage(logo, 'PNG', 15, 12, 25, 25);
+
+      doc.setFont("helvetica", "bold").setFontSize(24).setTextColor(accent[0], accent[1], accent[2]);
+      doc.text(currentUser?.shop_name?.toUpperCase() || "QUANTORA MERCHANT", 195, 25, { align: "right" });
       
-      // Thick Blue Underline
-      doc.setDrawColor(accent[0], accent[1], accent[2]).setLineWidth(0.8);
-      doc.line(sigCenterX - 20, sigY + 21, sigCenterX + 20, sigY + 21); 
+      doc.setFontSize(10).setTextColor(100).setFont("helvetica", "normal");
+      doc.text("Official Transaction Receipt", 195, 32, { align: "right" });
+      doc.text(`Ref: QT-${receiptData.id}`, 195, 38, { align: "right" });
+
+      // 2. Info Section
+      doc.setFont("helvetica", "bold").setFontSize(11).setTextColor(50);
+      doc.text("BILLED TO", 15, 65);
+      doc.text("DATE & TIME", 120, 65);
       
-      // Bold Blue Label
-      doc.setTextColor(accent[0], accent[1], accent[2]).setFontSize(8).setFont("helvetica", "bold");
-      doc.text("AUTHORIZED SIGNATURE", sigCenterX, sigY + 26, { align: "center" });
+      doc.setFont("helvetica", "normal").setTextColor(100);
+      doc.text(receiptData.customer_name || "Walk-in Customer", 15, 72);
+      doc.text(new Date(receiptData.created_at || Date.now()).toLocaleString(), 120, 72);
+
+      // 3. Table
+      autoTable(doc, {
+        startY: 80,
+        head: [['ITEM DESCRIPTION', 'QTY', 'UNIT PRICE (N)', 'SUBTOTAL (N)']],
+        body: receiptData.items.map(i => [
+          i.name, 
+          i.quantity, 
+          `N${i.price.toLocaleString()}`, 
+          `N${(i.price * i.quantity).toLocaleString()}`
+        ]),
+        headStyles: { fillColor: accent, textColor: [255, 255, 255], fontSize: 10, halign: 'center' },
+        columnStyles: {
+          0: { halign: 'left' },
+          1: { halign: 'center' },
+          2: { halign: 'center' },
+          3: { halign: 'right' }
+        },
+        theme: 'grid',
+        styles: { lineColor: [240, 240, 240], textColor: 80, cellPadding: 4 }
+      });
+
+      const finalY = doc.lastAutoTable.finalY + 15;
+
+      // 4. Total Price Box
+      doc.setFillColor(accent[0], accent[1], accent[2]).rect(125, finalY, 70, 15, 'F');
+      doc.setTextColor(255).setFontSize(14).setFont("helvetica", "bold");
+      doc.text(`TOTAL: N${receiptData.total_amount.toLocaleString()}`, 160, finalY + 9.5, { align: "center" });
+
+      // 5. Signature Section
+      if (signature) {
+        const sigCenterX = 160;
+        const sigY = finalY + 25;
+        doc.addImage(signature, 'PNG', sigCenterX - 17.5, sigY, 35, 18); 
+        doc.setDrawColor(accent[0], accent[1], accent[2]).setLineWidth(0.8);
+        doc.line(sigCenterX - 20, sigY + 21, sigCenterX + 20, sigY + 21); 
+        doc.setTextColor(accent[0], accent[1], accent[2]).setFontSize(8).setFont("helvetica", "bold");
+        doc.text("AUTHORIZED SIGNATURE", sigCenterX, sigY + 26, { align: "center" });
+      }
+
+      doc.save(`Receipt_QT-${receiptData.id}.pdf`);
+    } catch (err) {
+      console.error("PDF Export failed", err);
+    } finally {
+      setDownloadingPDF(false);
     }
-
-    doc.save(`Receipt_${customerName || 'Sale'}.pdf`);
   };
 
   const handleSelect = (receipt) => {
@@ -180,7 +184,7 @@ const downloadPDF = () => {
           <main className="flex-1 p-2 md:p-6 lg:p-8 w-full max-w-[1600px] mx-auto overflow-hidden">
             <div className="flex h-[82vh] bg-[#111113] overflow-hidden rounded-2xl border border-white/5 shadow-2xl relative">
               
-              {/* LEFT: MASTER LIST - Hidden on mobile if detail is open */}
+              {/* LEFT: MASTER LIST */}
               <div className={`w-full lg:w-1/2 flex flex-col border-r border-white/5 bg-[#0D0D0F] transition-all duration-300 ${viewMode === 'detail' ? 'hidden lg:flex' : 'flex'}`}>
                 <div className="p-4 md:p-6 border-b border-white/5">
                   <h1 className="text-sm font-black tracking-[0.2em] text-white/40 mb-4 uppercase">Internal Ledger</h1>
@@ -219,21 +223,22 @@ const downloadPDF = () => {
                 </div>
               </div>
 
-              {/* RIGHT: DETAIL VIEW - Full screen on mobile if detail is open */}
+              {/* RIGHT: DETAIL VIEW */}
               <div className={`w-full lg:w-1/2 flex flex-col bg-[#050506] transition-all duration-300 ${viewMode === 'list' ? 'hidden lg:flex' : 'flex'}`}>
                 {selectedReceipt ? (
                   <div className="flex flex-col h-full relative">
-                    {/* Mobile Back Button */}
+                    
+                    {/* RESPONSIVE BACK BUTTON */}
                     <button 
                       onClick={() => setViewMode('list')}
-                      className="lg:hidden absolute top-4 left-4 z-20 p-2 bg-white/5 rounded-full text-white"
+                      className="lg:hidden absolute top-6 left-6 z-30 flex items-center justify-center w-10 h-10 bg-[#1A1A1E] border border-white/10 rounded-full text-white shadow-xl active:scale-95 transition-transform"
                     >
-                      <ArrowLeft size={20} />
+                      <ArrowLeft size={18} />
                     </button>
 
                     <div className="p-4 md:p-8 flex flex-col h-full">
                       <div className="bg-[#111113] rounded-2xl p-6 md:p-8 flex-1 flex flex-col border border-white/5 shadow-inner">
-                        <div className="flex justify-between items-start border-b border-white/10 pb-6 mb-6">
+                        <div className="flex justify-between items-start border-b border-white/10 pb-6 mb-6 mt-12 lg:mt-0">
                           <div>
                             <h2 className="text-lg font-black text-white italic tracking-tighter">RECEIPT</h2>
                             <p className="text-[10px] font-bold text-slate-500">REF: {selectedReceipt.id}</p>

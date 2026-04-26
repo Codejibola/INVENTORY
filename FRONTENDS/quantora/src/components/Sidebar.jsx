@@ -6,7 +6,8 @@ import {
   LayoutDashboard, 
   Package, 
   Edit3, 
-  Receipt, 
+  FileText, // Updated icon for Receipts
+  BarChart3, // Updated icon for Reports
   Settings as SettingsIcon, 
   MessageSquare, 
   Crown, 
@@ -24,8 +25,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     { name: "Dashboard", icon: <LayoutDashboard size={18} />, to: "/dashboard" },
     { name: "Manage Products", icon: <Package size={18} />, to: "/Manage_Products" },
     { name: "Record Sales", icon: <Edit3 size={18} />, to: "/recordSales" },
-    { name: "Receipts", icon: <Receipt size={18} />, to: "/receipts" },
-    { name: "Reports", icon: <Receipt size={18} />, to: "/reports" },
+    { name: "Receipts", icon: <FileText size={18} />, to: "/receipts" }, // Changed
+    { name: "Reports", icon: <BarChart3 size={18} />, to: "/reports" },  // Changed
     { name: "Subscription", icon: <Crown size={18} />, to: "/subscription" },
     { name: "Feedback", icon: <MessageSquare size={18} />, to: "/feedback" },
     { name: "Settings", icon: <SettingsIcon size={18} />, to: "/settings" },
@@ -75,7 +76,6 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           </h2>
         </div>
 
-        {/* Scrollable middle part */}
         <nav className="flex-1 space-y-1 overflow-y-auto pr-2 custom-scrollbar">
           <p className="text-[10px] font-black text-gray-700 uppercase tracking-[0.2em] px-4 mb-4">Core Menu</p>
           {links.map((link) => (
@@ -123,7 +123,6 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                   </button>
                 </div>
 
-                {/* Nav links are now scrollable if they exceed screen height */}
                 <nav className="flex-1 space-y-2 overflow-y-auto pr-2">
                   {links.map((link) => (
                     <NavLink 
@@ -136,7 +135,6 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                 </nav>
               </div>
 
-              {/* Pinned Logout Button */}
               <div className="mt-4 pt-4 border-t border-white/5">
                 <button
                   onClick={() => { handleLogout(); setIsOpen(false); }}
