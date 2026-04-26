@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import LOCAL_ENV from '../../ENV.js';
 import logo from '../assets/logo.webp';
 import signature from '../assets/signature.webp';
@@ -83,61 +83,79 @@ const ReceiptTerminal = () => {
   useEffect(() => { fetchReceipts(); }, [fetchReceipts]);
 
   // COMPLETE PDF FUNCTION
-  const downloadPDF = async (receipt) => {
-    if (!receipt || downloadingPDF) return;
-    setDownloadingPDF(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      const doc = new jsPDF();
-      const accent = [37, 99, 235]; 
+const downloadPDF = () => {
+    const doc = new jsPDF();
+    const accent = [37, 99, 235]; // Quantora Blue
+    const grandTotal = basket.reduce((acc, i) => acc + i.subtotal, 0);
+    
+    // 1. Header & Branding
+    doc.setFillColor(252, 252, 252);
+    doc.rect(0, 0, 210, 50, 'F');
+    if (logo) doc.addImage(logo, 'PNG', 15, 12, 25, 25);
 
-      // Header Background
-      doc.setFillColor(245, 247, 250);
-      doc.rect(0, 0, 210, 45, 'F');
+    doc.setFont("helvetica", "bold").setFontSize(28).setTextColor(accent[0], accent[1], accent[2]);
+    doc.text(currentUser?.shop_name?.toUpperCase() || "BELLO STORES", 195, 25, { align: "right" });
+    
+    doc.setFontSize(10).setTextColor(100).setFont("helvetica", "normal");
+    doc.text("Official Transaction Receipt", 195, 32, { align: "right" });
+    doc.text(`Ref: QT-${Math.floor(Math.random() * 1000000000)}`, 195, 38, { align: "right" });
+
+    // 2. Info Section
+    doc.setFont("helvetica", "bold").setFontSize(11).setTextColor(50);
+    doc.text("BILLED TO", 15, 65);
+    doc.text("DATE & TIME", 120, 65);
+    
+    doc.setFont("helvetica", "normal").setTextColor(100);
+    doc.text(customerName || "Walk-in Customer", 15, 72);
+    doc.text(new Date().toLocaleString(), 120, 72);
+
+    // 3. Properly Aligned Table
+    autoTable(doc, {
+      startY: 80,
+      head: [['ITEM DESCRIPTION', 'QTY', 'UNIT PRICE (N)', 'SUBTOTAL (N)']],
+      body: basket.map(i => [
+        toTitleCase(i.name), 
+        i.quantity, 
+        `N${i.unitPrice.toLocaleString()}`, 
+        `N${i.subtotal.toLocaleString()}`
+      ]),
+      headStyles: { fillColor: accent, textColor: [255, 255, 255], fontSize: 10, halign: 'center' },
+      columnStyles: {
+        0: { halign: 'left' },
+        1: { halign: 'center' },
+        2: { halign: 'center' },
+        3: { halign: 'right' }
+      },
+      theme: 'grid',
+      styles: { lineColor: [240, 240, 240], textColor: 80, cellPadding: 4 }
+    });
+
+    const finalY = doc.lastAutoTable.finalY + 15;
+
+    // 4. Total Price Box
+    doc.setFillColor(accent[0], accent[1], accent[2]).rect(125, finalY, 70, 15, 'F');
+    doc.setTextColor(255).setFontSize(14).setFont("helvetica", "bold");
+    doc.text(`TOTAL: N${grandTotal.toLocaleString()}`, 160, finalY + 9.5, { align: "center" });
+
+    // 5. THE SIGNATURE SECTION (Exact Match to your Design)
+    if (signature) {
+      const sigCenterX = 160; // Aligned with the center of the Total box
+      const sigY = finalY + 25;
       
-      if (logo) {
-        try { doc.addImage(logo, 'WEBP', 15, 10, 22, 22); } catch(e) {}
-      }
+      // The Stamp/Signature Image
+      // Positioned to be centered relative to the Total box above it
+      doc.addImage(signature, 'PNG', sigCenterX - 17.5, sigY, 35, 18); 
+      
+      // Thick Blue Underline
+      doc.setDrawColor(accent[0], accent[1], accent[2]).setLineWidth(0.8);
+      doc.line(sigCenterX - 20, sigY + 21, sigCenterX + 20, sigY + 21); 
+      
+      // Bold Blue Label
+      doc.setTextColor(accent[0], accent[1], accent[2]).setFontSize(8).setFont("helvetica", "bold");
+      doc.text("AUTHORIZED SIGNATURE", sigCenterX, sigY + 26, { align: "center" });
+    }
 
-      doc.setFont("helvetica", "bold").setFontSize(22).setTextColor(accent[0], accent[1], accent[2]);
-      doc.text("QUANTORA RETAIL", 195, 22, { align: "right" });
-      doc.setFontSize(9).setTextColor(100).setFont("helvetica", "normal");
-      doc.text(`Official Receipt: QT-${receipt.id}`, 195, 28, { align: "right" });
-
-      // Info Section
-      doc.setFont("helvetica", "bold").setFontSize(10).setTextColor(40);
-      doc.text("CUSTOMER", 15, 60);
-      doc.text("DATE", 120, 60);
-      doc.setFont("helvetica", "normal").setTextColor(80);
-      doc.text(receipt.customer_name || "General Merchant", 15, 66);
-      doc.text(new Date(receipt.created_at).toLocaleString(), 120, 66);
-
-      // Table
-      doc.autoTable({
-        startY: 75,
-        head: [['DESCRIPTION', 'QTY', 'PRICE', 'TOTAL']],
-        body: receipt.items.map(i => [i.name, i.quantity, `N${i.price.toLocaleString()}`, `N${(i.quantity * i.price).toLocaleString()}`]),
-        headStyles: { fillColor: accent, halign: 'center' },
-        styles: { fontSize: 9, cellPadding: 4 },
-        columnStyles: { 3: { halign: 'right' } }
-      });
-
-      const finalY = doc.lastAutoTable.finalY + 10;
-      doc.setFillColor(accent[0], accent[1], accent[2]).rect(130, finalY, 65, 12, 'F');
-      doc.setTextColor(255).setFontSize(12).setFont("helvetica", "bold");
-      doc.text(`TOTAL: N${receipt.total_amount.toLocaleString()}`, 162.5, finalY + 8, { align: "center" });
-
-      if (signature) {
-        try { doc.addImage(signature, 'WEBP', 145, finalY + 20, 30, 15); } catch(e) {}
-        doc.setDrawColor(accent[0], accent[1], accent[2]).setLineWidth(0.5);
-        doc.line(140, finalY + 36, 180, finalY + 36);
-        doc.setTextColor(accent[0], accent[1], accent[2]).setFontSize(7).text("AUTHORIZED", 160, finalY + 40, { align: "center" });
-      }
-
-      doc.save(`Receipt_QT_${receipt.id}.pdf`);
-    } catch (err) {
-      console.error("PDF Error", err);
-    } finally { setDownloadingPDF(false); }
+    doc.save(`Receipt_${customerName || 'Sale'}.pdf`);
   };
 
   const handleSelect = (receipt) => {
