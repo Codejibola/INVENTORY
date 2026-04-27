@@ -167,7 +167,7 @@ export default function SelectMode() {
             <span className="text-blue-500">Q</span>uantora
           </h1>
           <p className="mt-3 text-sm md:text-base text-slate-400">
-            Shop: <span className="text-white font-medium uppercase tracking-wider">{user.shopName || user.shop_name}</span>
+            Shop: <span className="text-white font-medium uppercase tracking-wider">{user?.shopName || user?.shop_name}</span>
           </p>
           <p className="mt-1 text-xs md:text-sm text-slate-500">Secure selection for business management</p>
           <div className="mt-4 rounded-3xl border border-slate-800 bg-slate-900/90 px-4 py-4 text-[11px] text-slate-300">
@@ -295,6 +295,46 @@ export default function SelectMode() {
                   {loading ? "Verifying..." : "Access Mode"}
                 </button>
                 <button onClick={() => setShowModal(false)} className="w-full py-3 rounded-2xl bg-transparent text-slate-500 font-bold text-xs uppercase hover:text-white transition-colors">Cancel</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* SUBSCRIPTION ALERT MODAL */}
+        {showSubModal && (
+          <motion.div 
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-black/95 backdrop-blur-xl px-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="w-full max-w-md bg-slate-900 border border-white/10 rounded-[2.5rem] p-8 text-center shadow-2xl"
+            >
+              <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <AlertCircle className="text-red-500" size={32} />
+              </div>
+              
+              <h2 className="text-xl font-black text-white uppercase tracking-tight mb-2">Subscription Required</h2>
+              <p className="text-slate-400 text-sm mb-8">
+                Your shop's digital infrastructure is currently inactive. Please renew your subscription to access the terminal.
+              </p>
+
+              <div className="flex flex-col gap-3">
+                <button 
+                  onClick={() => navigate("/subscription")}
+                  className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black uppercase tracking-widest text-xs transition shadow-lg"
+                >
+                  Renew Subscription
+                </button>
+                <button 
+                  onClick={() => setShowSubModal(false)}
+                  className="py-3 text-slate-500 font-bold text-xs uppercase hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
               </div>
             </motion.div>
           </motion.div>
